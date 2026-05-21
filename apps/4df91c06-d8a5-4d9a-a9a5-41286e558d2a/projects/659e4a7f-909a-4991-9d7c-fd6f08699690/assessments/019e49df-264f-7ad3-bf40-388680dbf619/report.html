@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Assessment - ZavaAlertService</title>
+<style>
+:root {
+  --bg-primary: #ffffff;
+  --bg-card: #f8f9fa;
+  --bg-page: #f0f1f3;
+  --text-primary: #24292f;
+  --text-secondary: #57606a;
+  --text-muted: #6b7280;
+  --border-color: #d0d7de;
+  --border-light: #e1e4e8;
+  --link-color: #2563eb;
+  --color-mandatory: #E3008C;
+  --color-potential: #637CEF;
+  --color-optional: #A19F9D;
+  --font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  --font-mono: 'Cascadia Code', 'Consolas', 'Courier New', monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-family); font-size: 13px; color: var(--text-primary); background: var(--bg-primary); line-height: 1.5; margin: 0; padding: 0; }
+a { color: var(--link-color); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Page layout ───────────────────────────────────────────── */
+.main { margin: 0; padding: 24px 32px; background: var(--bg-primary); }
+.back-link { color: var(--text-muted); font-size: 13px; margin-bottom: 16px; display: block; }
+h1 { font-weight: 600; font-size: 20px; color: var(--text-primary); margin-bottom: 20px; }
+
+/* ── Report cards (matches VS Code .vscode-report-card) ──── */
+.report-card { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 4px; padding: 12px; margin-bottom: 20px; }
+.report-card h2 { font-size: 14px; font-weight: 600; margin: 0; color: var(--text-primary); }
+.report-card-body { margin-top: 16px; }
+
+/* ── Application Information (two-column) ────────────────── */
+.app-info-container { display: flex; gap: 8px; flex-wrap: wrap; }
+.app-info-column { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 8px; }
+.app-info-row { display: flex; align-items: baseline; }
+.app-info-label { width: 136px; flex-shrink: 0; font-weight: 600; color: var(--text-primary); }
+.app-info-value { flex: 1; color: var(--text-primary); }
+
+/* ── Issue Summary (pie charts + legend) ─────────────────── */
+.cards-container { display: flex; align-items: stretch; gap: 20px; flex-wrap: wrap; }
+.issue-summary-card { flex: 2; }
+.domain-summary-container { display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-around; }
+.domain-summary-item { flex: 1; min-width: 120px; text-align: center; padding: 0 16px; border-right: 1px solid var(--border-light); }
+.domain-summary-item:last-child { border-right: none; }
+.domain-summary-item h3 { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-top: 8px; }
+.domain-summary-item .count { font-size: 12px; color: var(--text-secondary); }
+.criticality-legend { display: flex; flex-wrap: wrap; gap: 15px; padding-top: 12px; justify-content: center; }
+.criticality-legend .legend-item { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-secondary); }
+.legend-swatch { display: inline-block; width: 1em; height: 1em; border-radius: 2px; }
+
+/* ── Issue list tables ───────────────────────────────────── */
+.issue-section { margin-top: 20px; }
+.issue-section h2 { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+.issue-table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 600px; }
+.issue-table th { text-align: left; text-transform: uppercase; font-weight: 600; font-size: calc(13px * 0.875); padding: 6px 8px; background: var(--bg-card); border-bottom: 1px solid var(--border-color); color: var(--text-secondary); position: sticky; top: 0; z-index: 1; }
+.issue-table td { padding: 12px 8px; border-bottom: 1px solid var(--border-light); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
+.col-issue { width: 55%; }
+.col-criticality { width: 25%; }
+.col-storypoint { width: 20%; }
+
+/* ── Target dropdown ─────────────────────────────────────── */
+.target-select-container { margin: 4px 0 16px 0; display: flex; align-items: center; gap: 8px; }
+.target-select-container label { font-weight: 600; color: var(--text-primary); font-size: 14px; }
+.target-select-container select { font-family: var(--font-family); font-size: 13px; padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer; }
+
+/* ── Filter bar ──────────────────────────────────────────── */
+.filter-bar { display: flex; flex-wrap: wrap; gap: 16px; margin: 16px 0 8px 0; align-items: center; }
+.multi-select { position: relative; display: inline-block; min-width: 140px; }
+.multi-select-btn { font-family: var(--font-family); font-size: 13px; padding: 4px 24px 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer; width: 100%; text-align: left; position: relative; white-space: nowrap; }
+.multi-select-btn::after { content: '\25BE'; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--text-secondary); }
+.multi-select-dropdown { display: none; position: absolute; top: 100%; left: 0; min-width: 100%; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 100; margin-top: 2px; }
+.multi-select.open .multi-select-dropdown { display: block; }
+.multi-select-option { display: flex; align-items: center; gap: 6px; padding: 5px 10px; cursor: pointer; font-size: 13px; white-space: nowrap; }
+.multi-select-option:hover { background: var(--bg-secondary); }
+.multi-select-option input[type=checkbox] { margin: 0; cursor: pointer; }
+.clear-filters { font-size: 12px; color: var(--link-color); cursor: pointer; margin-left: 4px; }
+
+/* ── Criticality labels (colored square + text) ──────────── */
+.crit-label { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; white-space: nowrap; }
+.crit-square { display: inline-block; width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+.crit-square-mandatory { background: var(--color-mandatory); }
+.crit-square-potential { background: var(--color-potential); }
+.crit-square-optional { background: var(--color-optional); }
+
+/* ── Expandable rows ─────────────────────────────────────── */
+.expand-btn { background: none; border: none; cursor: pointer; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 11px; transition: transform 0.15s; padding: 0; vertical-align: middle; flex-shrink: 0; }
+.expand-btn.open { transform: rotate(90deg); }
+.issue-title-cell { display: flex; align-items: center; gap: 4px; }
+.detail-row td { padding: 0; border-bottom: 1px solid var(--border-light); white-space: normal; overflow: visible; text-overflow: clip; }
+.detail-content { display: flex; gap: 0; padding: 8px 8px 8px 32px; min-width: 0; }
+.file-list { flex: 0 0 50%; min-width: 0; overflow: hidden; }
+.file-list table { width: 100%; border-collapse: collapse; }
+.file-list th { font-size: calc(13px * 0.875); text-transform: uppercase; font-weight: 600; color: var(--text-secondary); padding: 6px 8px; border-bottom: 1px solid var(--border-color); text-align: left; height: 32px; }
+.file-list td { font-size: 13px; padding: 6px 8px; border-bottom: 1px solid var(--border-light); color: var(--text-primary); }
+.file-list .file-path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 300px; display: block; }
+.file-list .position { font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary); }
+.explanation-panel { flex: 1; padding-left: 16px; min-width: 0; overflow-wrap: break-word; word-wrap: break-word; }
+.explanation-panel h4 { font-size: calc(13px * 0.875); text-transform: uppercase; font-weight: 600; color: var(--text-secondary); padding: 6px 0; border-bottom: 1px solid var(--border-color); height: 32px; margin: 0; }
+.explanation-panel p { font-size: 13px; padding: 8px 0; color: var(--text-primary); line-height: 1.6; white-space: normal; word-break: break-word; }
+
+/* ── Experimental badge ──────────────────────────────────── */
+.badge-experimental { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; background: #fef9c3; color: #854d0e; vertical-align: middle; margin-left: 8px; cursor: default; }
+
+/* ── Footer ──────────────────────────────────────────────── */
+.footer { text-align: center; margin-top: 24px; color: var(--text-muted); font-size: 13px; }
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 800px) {
+  .main { padding: 16px; }
+  .app-info-container { flex-direction: column; }
+  .domain-summary-container { flex-direction: column; }
+  .domain-summary-item { border-right: none; border-bottom: 1px solid var(--border-light); padding-bottom: 12px; }
+  .detail-content { flex-direction: column; }
+  .file-list { flex: none; width: 100%; }
+  .explanation-panel { padding-left: 0; padding-top: 8px; }
+}
+/* ── Tab navigation ──────────────────────────────────────── */
+.tab-nav { display: flex; gap: 0; border-bottom: 1px solid var(--border-color); margin-bottom: 28px; flex-wrap: wrap; }
+.tab-btn { background: none; border: none; border-bottom: 2px solid transparent; padding: 10px 18px; font-size: 13px; font-family: var(--font-family); color: var(--text-secondary); cursor: pointer; margin-bottom: -1px; white-space: nowrap; position: relative; }
+.tab-btn:hover { color: var(--text-primary); }
+.tab-btn.active { color: var(--link-color); border-bottom-color: var(--link-color); font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ── Tooltip on tab ──────────────────────────────────────── */
+.tab-btn[data-tooltip]::after { content: attr(data-tooltip); position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); background: #24292f; color: #ffffff; font-size: 12px; font-weight: 400; padding: 6px 10px; border-radius: 4px; white-space: normal; width: max-content; max-width: 260px; text-align: center; pointer-events: none; opacity: 0; transition: opacity 0.15s; z-index: 100; }
+.tab-btn[data-tooltip]:hover::after { opacity: 1; }
+
+/* ── Fact content — prose column ─────────────────────────── */
+.fact-content { max-width: 860px; margin: 0 auto; line-height: 1.75; color: var(--text-primary); font-size: 14px; }
+.fact-content h1 { font-size: 22px; font-weight: 700; margin: 0 0 6px 0; color: var(--text-primary); letter-spacing: -0.01em; }
+.fact-content h1 + p { margin-top: 6px; color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
+.fact-content h2 { font-size: 17px; font-weight: 700; margin: 36px 0 12px 0; padding-bottom: 6px; border-bottom: 1px solid var(--border-color); color: var(--text-primary); letter-spacing: -0.01em; }
+.fact-content h3 { font-size: 14px; font-weight: 700; margin: 24px 0 8px 0; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.04em; font-size: 12px; color: var(--text-secondary); }
+.fact-content p { margin: 10px 0; color: var(--text-primary); }
+.fact-content ul, .fact-content ol { margin: 10px 0 10px 22px; }
+.fact-content li { margin: 5px 0; }
+.fact-content a { color: var(--link-color); }
+.fact-content a:hover { text-decoration: underline; }
+
+/* ── Fact tables ─────────────────────────────────────────── */
+.table-wrap { overflow-x: auto; margin: 16px 0; }
+.fact-content table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 13px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); }
+.fact-content thead { background: var(--bg-card); }
+.fact-content th { text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; padding: 8px 14px; border-bottom: 1px solid var(--border-color); color: var(--text-secondary); }
+.fact-content td { padding: 9px 14px; border-bottom: 1px solid var(--border-light); vertical-align: top; color: var(--text-primary); }
+.fact-content tr:last-child td { border-bottom: none; }
+.fact-content tbody tr:hover { background: #f6f8fa; }
+
+/* ── Fact code ───────────────────────────────────────────── */
+.fact-content code { font-family: var(--font-mono); font-size: 12px; background: #f0f1f3; padding: 2px 6px; border-radius: 4px; color: #c7254e; }
+.fact-content pre { background: #f6f8fa; border: 1px solid var(--border-light); border-radius: 6px; padding: 14px 16px; overflow-x: auto; margin: 14px 0; }
+.fact-content pre code { background: none; color: var(--text-primary); padding: 0; border-radius: 0; }
+.fact-content hr { border: none; border-top: 1px solid var(--border-light); margin: 28px 0; }
+.fact-content strong { font-weight: 600; }
+.fact-content em { font-style: italic; }
+.fact-content blockquote { border-left: 3px solid var(--border-color); margin: 12px 0; padding: 4px 16px; color: var(--text-secondary); }
+.fact-unavailable { padding: 32px 0; }
+.fact-unavailable h3 { font-size: 16px; font-weight: 600; color: var(--text-primary); text-transform: none; letter-spacing: 0; margin: 0 0 12px 0; }
+.fact-unavailable p { margin: 0 0 8px 0; color: var(--text-secondary); }
+.fact-unavailable ol, .fact-unavailable ul { margin: 0 0 0 22px; color: var(--text-primary); }
+.fact-unavailable li { margin: 6px 0; }
+
+/* ── Mermaid diagram card ─────────────────────────────────── */
+.mermaid { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 8px; padding: 24px 16px; margin: 20px 0; overflow-x: auto; text-align: center; cursor: pointer; position: relative; }
+.mermaid:hover { border-color: var(--border-color); }
+.mermaid svg { max-width: 100%; height: auto !important; display: inline-block; }
+.mermaid-zoom-hint { position: absolute; top: 8px; right: 10px; font-size: 11px; color: var(--text-muted); opacity: 0; transition: opacity 0.15s; pointer-events: none; }
+.mermaid:hover .mermaid-zoom-hint { opacity: 1; }
+
+/* ── Diagram lightbox ────────────────────────────────────── */
+.diagram-lightbox { display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.7); backdrop-filter: blur(2px); align-items: center; justify-content: center; cursor: zoom-out; padding: 48px 32px; }
+.diagram-lightbox.open { display: flex; }
+.diagram-lightbox-inner { background: #ffffff; border-radius: 10px; padding: 32px; width: 88vw; max-height: 88vh; overflow: hidden; cursor: default; box-shadow: 0 24px 64px rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; }
+.diagram-lightbox-inner svg { width: 100% !important; height: auto !important; max-height: 76vh; display: block; }
+.diagram-lightbox-close { position: fixed; top: 20px; right: 24px; background: #ffffff; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-primary); box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 1001; }
+.diagram-lightbox-close:hover { background: var(--bg-card); }
+.diagram-lightbox-hint { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.55); color: #ffffff; font-size: 12px; padding: 6px 14px; border-radius: 20px; pointer-events: none; white-space: nowrap; z-index: 1001; }
+</style>
+<script>
+window.__mermaidPending = [];
+window.__mermaidReady = false;
+window.__renderMermaidIn = function(container) {
+  // Until the real implementation overrides this (after the ES module import
+  // resolves), just queue the container so we can render it later.
+  if (container) { window.__mermaidPending.push(container); }
+};
+</script>
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+mermaid.initialize({ startOnLoad: false, theme: 'default', flowchart: { useMaxWidth: true }, sequence: { useMaxWidth: true } });
+
+// Real implementation: actually run mermaid on the unprocessed diagrams in the
+// given container (only ones not already rendered). Adds a "Click to expand"
+// hint span after each successful render so the lightbox affordance is
+// discoverable.
+window.__renderMermaidIn = function(container) {
+  var nodes = container ? container.querySelectorAll('.mermaid:not([data-processed])') : [];
+  if (nodes.length > 0) {
+    mermaid.run({ nodes: Array.from(nodes) }).then(function() {
+      nodes.forEach(function(node) {
+        if (!node.querySelector('.mermaid-zoom-hint')) {
+          var hint = document.createElement('span');
+          hint.className = 'mermaid-zoom-hint';
+          hint.textContent = 'Click to expand';
+          node.appendChild(hint);
+        }
+      });
+    });
+  }
+};
+
+// Drain any containers that were queued by the shim while mermaid was loading.
+// Use a Set to dedupe in case a container was both queued and is also the
+// initial-active panel below.
+var drained = new Set();
+(window.__mermaidPending || []).forEach(function(c) {
+  if (!drained.has(c)) { drained.add(c); window.__renderMermaidIn(c); }
+});
+window.__mermaidPending = [];
+window.__mermaidReady = true;
+
+// Render diagrams visible on initial load (the active tab panel(s) may not have
+// been queued by anyone — DOMContentLoaded handlers run before this if the
+// module is cached, after this if it's not, so handle both cases here).
+function renderActivePanels() {
+  document.querySelectorAll('.tab-panel.active').forEach(function(p) {
+    if (!drained.has(p)) { drained.add(p); window.__renderMermaidIn(p); }
+  });
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', renderActivePanels);
+} else {
+  renderActivePanels();
+}
+</script>
+</head><body>
+<div id="diagram-lightbox" class="diagram-lightbox" role="dialog" aria-modal="true">
+  <button class="diagram-lightbox-close" id="diagram-lightbox-close" aria-label="Close">&#x2715;</button>
+  <div class="diagram-lightbox-hint">Scroll to zoom &nbsp;·&nbsp; Drag to pan &nbsp;·&nbsp; Double-click to reset</div>
+  <div class="diagram-lightbox-inner" id="diagram-lightbox-inner"></div>
+</div>
+<div class="main">
+<a class="back-link" href="../../index.html">&#8592; Back to aggregate dashboard</a>
+<h1>ZavaAlertService</h1>
+<div class="report-card">
+  <h2>Application Information</h2>
+  <div class="report-card-body">
+    <div class="app-info-container">
+      <div class="app-info-column">
+        <div class="app-info-row"><span class="app-info-label">Application Name</span><span class="app-info-value">ZavaAlertService</span></div>
+        <div class="app-info-row"><span class="app-info-label">Effort</span><span class="app-info-value" id="effort-display">S (total story points: 13)</span></div>
+      </div>
+      <div class="app-info-column">
+        <div class="app-info-row"><span class="app-info-label">Build Tools</span><span class="app-info-value">MSBuild</span></div>
+        <div class="app-info-row"><span class="app-info-label">Frameworks</span><span class="app-info-value">.NETFramework,Version=v4.8</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+<nav class="tab-nav">
+  <button class="tab-btn active" data-tab="tab-issues" data-tooltip="Issues detected in the source code">Issues</button>
+  <button class="tab-btn" data-tab="tab-arch" data-tooltip="How the app&#39;s layers connect — from UI to data.">Architecture</button>
+  <button class="tab-btn" data-tab="tab-api" data-tooltip="Endpoints exposed by this app and how services communicate.">API Contracts</button>
+  <button class="tab-btn" data-tab="tab-config" data-tooltip="Environment settings, runtime profiles, and deployment manifests.">Configuration</button>
+  <button class="tab-btn" data-tab="tab-workflows" data-tooltip="Domain entities and the core flows users move through.">Business Workflows</button>
+  <button class="tab-btn" data-tab="tab-deps" data-tooltip="Libraries and frameworks this app depends on, grouped by category.">Dependencies</button>
+  <button class="tab-btn" data-tab="tab-data" data-tooltip="Database schema, entity relationships, and persistence behavior.">Data Model</button>
+</nav>
+<div id="tab-issues" class="tab-panel active">
+<div class="target-select-container">
+  <label for="target-select">Target Compute Service:</label>
+  <select id="target-select" onchange="onTargetChange(this.value)">
+    <option value="AppService.Windows">Azure App Service</option>
+    <option value="AppService.Linux">Azure Kubernetes Service</option>
+    <option value="AKS.Linux">Azure Container Apps</option>
+    <option value="AKS.Windows">Azure App Service Container</option>
+    <option value="ACA">Azure App Service Managed Instance</option>
+  </select>
+</div>
+<div class="report-card">
+  <h2>Issue Summary</h2>
+  <div class="report-card-body">
+    <div class="domain-summary-container" id="donut-container">
+      <div class="domain-summary-item">
+<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;transform:rotate(-90deg);">
+  <circle cx="50" cy="50" r="35" fill="none" stroke="var(--color-potential)" stroke-width="15" stroke-dasharray="86.46 219.91" stroke-dashoffset="-0.00"/>
+  <circle cx="50" cy="50" r="35" fill="none" stroke="var(--color-optional)" stroke-width="15" stroke-dasharray="130.45 219.91" stroke-dashoffset="-87.96"/>
+</svg>
+
+        <h3>Cloud Readiness</h3>
+        <div class="count">5 issues</div>
+      </div>
+      <div class="domain-summary-item">
+<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;transform:rotate(-90deg);">
+  <circle cx="50" cy="50" r="35" fill="none" stroke="var(--color-mandatory)" stroke-width="15" stroke-dasharray="219.91 219.91" stroke-dashoffset="-0.00"/>
+</svg>
+
+        <h3>DotNET Upgrade</h3>
+        <div class="count">2 issues</div>
+      </div>
+    </div>
+    <div class="criticality-legend">
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--color-mandatory)"></span>Mandatory</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--color-potential)"></span>Potential</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--color-optional)"></span>Optional</div>
+    </div>
+  </div>
+</div>
+<div class="filter-bar" id="filter-bar">
+  <div class="multi-select" id="domain-ms">
+    <button class="multi-select-btn" onclick="toggleMultiSelect('domain-ms')">Domain</button>
+    <div class="multi-select-dropdown">
+      <label class="multi-select-option"><input type="checkbox" value="cloud-readiness" onchange="onMultiSelectChange('domain-ms','Domain')"/> Cloud Readiness</label>
+      <label class="multi-select-option"><input type="checkbox" value="dotnet-upgrade" onchange="onMultiSelectChange('domain-ms','Domain')"/> DotNET Upgrade</label>
+    </div>
+  </div>
+  <div class="multi-select" id="criticality-ms">
+    <button class="multi-select-btn" onclick="toggleMultiSelect('criticality-ms')">Criticality</button>
+    <div class="multi-select-dropdown">
+      <label class="multi-select-option"><input type="checkbox" value="potential" onchange="onMultiSelectChange('criticality-ms','Criticality')"/> Potential</label>
+      <label class="multi-select-option"><input type="checkbox" value="optional" onchange="onMultiSelectChange('criticality-ms','Criticality')"/> Optional</label>
+    </div>
+  </div>
+  <a class="clear-filters" href="javascript:void(0)" onclick="clearAllFilters()">Clear all</a>
+</div>
+<div class="issue-section" data-domain="cloud-readiness">
+  <h2>Cloud Readiness</h2>
+  <table class="issue-table">
+    <colgroup><col class="col-issue"/><col class="col-criticality"/><col class="col-storypoint"/></colgroup>
+    <thead><tr><th>Issue Category</th><th>Criticality</th><th>Story Point</th></tr></thead>
+    <tbody>
+    <tr class="issue-row" data-criticality="potential" data-targets='{"AppService.Windows":{"effort":1,"severity":"potential"},"AppService.Linux":{"effort":1,"severity":"potential"},"AKS.Linux":{"effort":1,"severity":"potential"},"AKS.Windows":{"effort":1,"severity":"potential"},"ACA":{"effort":1,"severity":"potential"},"AppServiceContainer.Linux":{"effort":1,"severity":"potential"},"AppServiceContainer.Windows":{"effort":1,"severity":"potential"},"AppServiceManagedInstance.Windows":{"effort":1,"severity":"potential"}}' data-default-effort="1" data-default-severity="potential" data-rule="Local.0006" onclick="toggleRow('row-cloudreadiness-0', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-cloudreadiness-0">&#x276F;</button> Hardcoded URLs detected</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-potential"></span>Potential</span></td>
+      <td class="sp-cell">1</td>
+    </tr>
+    <tr class="detail-row" id="row-cloudreadiness-0" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="RabbitMqPublisher.cs">RabbitMqPublisher.cs</span></td><td><span class="position">Line 20, Col 40</span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>Your application has hardcoded URLs that might correspond to services that are not accessible on Azure.</p><p>Review and ensure that the application is attempting to access URLs that would be available from Azure. You might need to migrate those services to Azure too, this way you will get the benefit of lower latency in the cloud.</p><p>If your application needs to depend on services that run on-premises, you can connect your Azure and local networks with ExpressRoute, Hybrid Connections, or VPN solutions.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="potential" data-targets='{"AppService.Windows":{"effort":3,"severity":"potential"},"AppService.Linux":{"effort":3,"severity":"potential"},"AKS.Linux":{"effort":3,"severity":"potential"},"AKS.Windows":{"effort":3,"severity":"potential"},"ACA":{"effort":3,"severity":"potential"},"AppServiceContainer.Linux":{"effort":3,"severity":"potential"},"AppServiceContainer.Windows":{"effort":3,"severity":"potential"},"AppServiceManagedInstance.Windows":{"effort":3,"severity":"potential"}}' data-default-effort="3" data-default-severity="potential" data-rule="Database.0002" onclick="toggleRow('row-cloudreadiness-1', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-cloudreadiness-1">&#x276F;</button> SQL database connection detected</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-potential"></span>Potential</span></td>
+      <td class="sp-cell">3</td>
+    </tr>
+    <tr class="detail-row" id="row-cloudreadiness-1" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="web.config">web.config</span></td><td><span class="position"></span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>SQL database connection detected.</p><p>Ensure the database is available/reachable on Azure.</p><p>If it is not, there are multiple ways you can move your data to Azure:<br/>    1. Migrate to Azure SQL Database.<br/>    2. Consider Azure SQL Managed Instance if you need features that are not available in Azure SQL Database and you don’t want to use a VM.<br/>    3. Migrate your database servers directly to SQL Server on Azure VMs.</p><p>To assess database migration effort, you can use Azure Migrate tool, see the link below.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="optional" data-targets='{"AppService.Windows":{"effort":3,"severity":"optional"},"AppService.Linux":{"effort":3,"severity":"optional"},"AKS.Linux":{"effort":3,"severity":"optional"},"AKS.Windows":{"effort":3,"severity":"optional"},"ACA":{"effort":3,"severity":"optional"},"AppServiceContainer.Linux":{"effort":3,"severity":"optional"},"AppServiceContainer.Windows":{"effort":3,"severity":"optional"},"AppServiceManagedInstance.Windows":{"effort":3,"severity":"mandatory"}}' data-default-effort="3" data-default-severity="optional" data-rule="Security.0003" onclick="toggleRow('row-cloudreadiness-2', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-cloudreadiness-2">&#x276F;</button> Hardcoded sensitive data detected</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-optional"></span>Optional</span></td>
+      <td class="sp-cell">3</td>
+    </tr>
+    <tr class="detail-row" id="row-cloudreadiness-2" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="DbConfig.cs">DbConfig.cs</span></td><td><span class="position">Line 22, Col 20</span></td></tr>
+            <tr><td><span class="file-path" title="DbConfig.cs">DbConfig.cs</span></td><td><span class="position">Line 13, Col 47</span></td></tr>
+            <tr><td><span class="file-path" title="DbConfig.cs">DbConfig.cs</span></td><td><span class="position">Line 13, Col 62</span></td></tr>
+            <tr><td><span class="file-path" title="RabbitMqPublisher.cs">RabbitMqPublisher.cs</span></td><td><span class="position">Line 17, Col 62</span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>Hardcoded sensitive data detected.</p><p>If you are targeting Managed Instance on Azure App Service, externalize secrets to Key Vault/App Configuration; use managed identity instead of passwords or embedded connection strings.</p><p>While if targeting other Azure compute services:</p><p>Avoid placing sensitive data such as passwords, ids, tokens etc., directly in config files and code since it compromises the security of your application.</p><p>Use Azure App Configuration or Azure KeyVault to store secrets.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="optional" data-targets='{"AppService.Windows":{"effort":3,"severity":"optional"},"AppService.Linux":{"effort":3,"severity":"optional"},"AKS.Linux":{"effort":3,"severity":"optional"},"AKS.Windows":{"effort":3,"severity":"optional"},"ACA":{"effort":3,"severity":"optional"},"AppServiceContainer.Linux":{"effort":3,"severity":"optional"},"AppServiceContainer.Windows":{"effort":3,"severity":"optional"},"AppServiceManagedInstance.Windows":{"effort":3,"severity":"optional"}}' data-default-effort="3" data-default-severity="optional" data-rule="Database.0003" onclick="toggleRow('row-cloudreadiness-3', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-cloudreadiness-3">&#x276F;</button> System.Data.SqlClient dependency detected</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-optional"></span>Optional</span></td>
+      <td class="sp-cell">3</td>
+    </tr>
+    <tr class="detail-row" id="row-cloudreadiness-3" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="web.config">web.config</span></td><td><span class="position"></span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>System.Data.SqlClient dependency is detected.</p><p>While System.Data.SqlClient will work in Azure, the newer Microsoft.Data.SqlClient package is the primary .NET SQL client moving forward and receiving the latest features. For example, Microsoft.Data.SqlClient easily allows use of Azure Managed Identity from a connection string.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="optional" data-targets='{"AppService.Windows":{"effort":3,"severity":"optional"},"AppService.Linux":{"effort":3,"severity":"optional"},"AKS.Linux":{"effort":3,"severity":"optional"},"AKS.Windows":{"effort":3,"severity":"optional"},"ACA":{"effort":3,"severity":"optional"},"AppServiceContainer.Linux":{"effort":3,"severity":"optional"},"AppServiceContainer.Windows":{"effort":3,"severity":"optional"},"AppServiceManagedInstance.Windows":{"effort":3,"severity":"optional"}}' data-default-effort="3" data-default-severity="optional" data-rule="Security.0002" onclick="toggleRow('row-cloudreadiness-4', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-cloudreadiness-4">&#x276F;</button> Connection strings without configuration builders detected</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-optional"></span>Optional</span></td>
+      <td class="sp-cell">3</td>
+    </tr>
+    <tr class="detail-row" id="row-cloudreadiness-4" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="web.config">web.config</span></td><td><span class="position"></span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>Connection strings without configuration builders detected.  </p><p> Keeping connection strings directly in the app is not the best practice and might introduce security risks, increased maintenance, scalability challenges or compliance standards (such as PCI DSS, GDPR, etc.). </p><p> Instead, it is recommended to use configuration builders to get secrets from secure sources in Azure environment.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+</div>
+<div class="issue-section" data-domain="dotnet-upgrade">
+  <h2>DotNET Upgrade</h2>
+  <table class="issue-table">
+    <colgroup><col class="col-issue"/><col class="col-criticality"/><col class="col-storypoint"/></colgroup>
+    <thead><tr><th>Issue Category</th><th>Criticality</th><th>Story Point</th></tr></thead>
+    <tbody>
+    <tr class="issue-row" data-criticality="mandatory" data-targets='{}' data-default-effort="1" data-default-severity="mandatory" data-rule="Project.0001" onclick="toggleRow('row-dotnetupgrade-0', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-dotnetupgrade-0">&#x276F;</button> Project file needs to be converted to SDK-style</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-mandatory"></span>Mandatory</span></td>
+      <td class="sp-cell">1</td>
+    </tr>
+    <tr class="detail-row" id="row-dotnetupgrade-0" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="ZavaAlertService.csproj">ZavaAlertService.csproj</span></td><td><span class="position"></span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>Project file needs to be converted to SDK-style. Modern .NET framework projects require a change in the project file format and use SDK corresponding to project flavor and functionality.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="mandatory" data-targets='{}' data-default-effort="1" data-default-severity="mandatory" data-rule="Project.0002" onclick="toggleRow('row-dotnetupgrade-1', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-dotnetupgrade-1">&#x276F;</button> Project&#39;s target framework(s) needs to be changed</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-mandatory"></span>Mandatory</span></td>
+      <td class="sp-cell">1</td>
+    </tr>
+    <tr class="detail-row" id="row-dotnetupgrade-1" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="ZavaAlertService.csproj">ZavaAlertService.csproj</span></td><td><span class="position"></span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>Project&#39;s target framework(s) needs to be changed to the new target framework that you selected for this upgrade.</p><p>During upgrade target framework will be adjusted to corresponding platform when applicable. In some cases project would result in multiple target frameworks after the upgrade if it was using features that now have their own platforms in modern .NET frameworks (windows, iOS, Android etc).</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+  <p style="margin-top:12px;"><a href="scenarios/dotnet-version-upgrade/assessment.html">View DotNET Upgrade Assessment →</a></p>
+</div>
+</div><!-- #tab-issues -->
+<div id="tab-arch" class="tab-panel">
+  <div class="fact-content"><h1 id="architecture-diagram">Architecture Diagram</h1>
+<p>ZavaAlertService is a .NET Framework 4.8 WCF (Windows Communication Foundation) service that evaluates banking transactions against configurable alert rules and publishes triggered alerts to a RabbitMQ notification queue.</p>
+<h2 id="application-architecture">Application Architecture</h2>
+<div class="mermaid">
+flowchart TD
+    subgraph Client["Client Layer"]
+        WCFClient["WCF / SOAP Clients"]
+        HealthClient["HTTP Health Check Client"]
+    end
+    subgraph App["Application Layer - .NET Framework 4.8 WCF"]
+        WCFEndpoint["WCF BasicHttpBinding Endpoint"]
+        AlertSvc["AlertService"]
+        HealthHandler["HealthHandler (ASHX)"]
+    end
+    subgraph Config["Configuration"]
+        DbConfig["DbConfig (env / web.config)"]
+    end
+    subgraph Data["Data Layer"]
+        SqlClient["System.Data.SqlClient (ADO.NET)"]
+        DB[("SQL Server")]
+    end
+    subgraph Messaging["Messaging"]
+        RabbitMqPub["RabbitMqPublisher (HTTP)"]
+        RMQ[("RabbitMQ")]
+    end
+
+    WCFClient -->|"SOAP over HTTP"| WCFEndpoint
+    HealthClient -->|"GET /health"| HealthHandler
+    WCFEndpoint -->|"delegates"| AlertSvc
+    AlertSvc -->|"reads connection string"| DbConfig
+    AlertSvc -->|"ADO.NET queries"| SqlClient
+    SqlClient -->|"TCP SQL"| DB
+    AlertSvc -->|"publishes alert events"| RabbitMqPub
+    RabbitMqPub -->|"HTTP Management API POST"| RMQ
+</div>
+<h3 id="technology-stack-summary">Technology Stack Summary</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Layer</th><th>Technology</th><th>Version</th><th>Purpose</th></tr></thead><tbody>
+<tr><td>Service Host</td><td>WCF (Windows Communication Foundation)</td><td>.NET 4.8</td><td>Exposes SOAP service via BasicHttpBinding</td></tr>
+<tr><td>Runtime</td><td>Mono + XSP4</td><td>6.12</td><td>Cross-platform runtime and web server host</td></tr>
+<tr><td>Business Logic</td><td>C# AlertService</td><td>.NET 4.8</td><td>Evaluates transactions against alert rules</td></tr>
+<tr><td>Data Access</td><td>ADO.NET (System.Data.SqlClient)</td><td>.NET 4.8</td><td>Direct SQL Server access via SqlCommand/SqlConnection</td></tr>
+<tr><td>Database</td><td>SQL Server</td><td>N/A</td><td>Stores transactions, alert rules, and alert history</td></tr>
+<tr><td>Messaging</td><td>RabbitMQ Management HTTP API</td><td>N/A</td><td>Publishes alert events to the notifications exchange</td></tr>
+<tr><td>Health Check</td><td>ASP.NET ASHX Handler</td><td>.NET 4.8</td><td>Returns HTTP 200 &quot;OK&quot; for liveness probes</td></tr>
+<tr><td>Configuration</td><td>Environment Variables + web.config</td><td>N/A</td><td>Database and RabbitMQ connection parameters</td></tr>
+</tbody></table></div>
+<h3 id="data-storage-external-services">Data Storage &amp; External Services</h3>
+<p>The application uses a SQL Server database (<code>ZavaBankDB</code>) as its primary data store, accessed directly via ADO.NET without an ORM. Key tables include <code>Transactions</code>, <code>Accounts</code>, <code>AlertRules</code>, <code>AccountAlerts</code>, and <code>AlertHistory</code>. External messaging is handled through RabbitMQ&#39;s HTTP Management API (not the native AMQP client), publishing alert events to the <code>zava.notifications</code> exchange. Both database and RabbitMQ credentials are injected via environment variables (<code>DB_HOST</code>, <code>DB_PORT</code>, <code>RABBITMQ_HOST</code>, etc.) with fallback to <code>web.config</code> connection strings.</p>
+<h3 id="key-architectural-decisions">Key Architectural Decisions</h3>
+<ul>
+<li><strong>WCF over BasicHttpBinding</strong>: Exposes all service operations as SOAP endpoints, making the service consumable by any SOAP-compatible client over plain HTTP without transport security.</li>
+<li><strong>RabbitMQ via HTTP Management API</strong>: Alert events are published through the RabbitMQ HTTP Management API rather than the AMQP protocol, avoiding a native client library dependency on Mono.</li>
+<li><strong>Environment-first configuration</strong>: <code>DbConfig</code> reads environment variables first and falls back to <code>web.config</code> connection strings, enabling container-friendly deployment.</li>
+</ul>
+<h2 id="component-relationships">Component Relationships</h2>
+<div class="mermaid">
+flowchart LR
+    subgraph Presentation["Presentation"]
+        WCFEndpoint["WCF Endpoint (AlertService.svc)"]
+        HealthHandler["HealthHandler"]
+    end
+    subgraph Business["Business Logic"]
+        AlertSvc["AlertService"]
+        RuleEngine["Rule Evaluation (IsTriggered)"]
+    end
+    subgraph DataAccess["Data Access"]
+        SqlClient["ADO.NET SqlConnection/SqlCommand"]
+        DbConfig["DbConfig"]
+    end
+    subgraph Infra["Infrastructure"]
+        RabbitMqPub["RabbitMqPublisher"]
+    end
+    subgraph Contracts["Contracts"]
+        IAlertService["IAlertService"]
+        AlertContracts["Data Contracts (AlertRuleDefinition, AlertRuleInfo, AlertEvent, etc.)"]
+    end
+
+    WCFEndpoint -->|"implements"| IAlertService
+    WCFEndpoint -->|"delegates"| AlertSvc
+    AlertSvc -->|"implements"| IAlertService
+    AlertSvc -->|"uses"| RuleEngine
+    AlertSvc -->|"reads/writes"| SqlClient
+    AlertSvc -->|"publishes alert events"| RabbitMqPub
+    SqlClient -->|"connection string from"| DbConfig
+    AlertSvc -->|"uses data contracts"| AlertContracts
+    RuleEngine -->|"uses data contracts"| AlertContracts
+</div>
+<h3 id="component-inventory">Component Inventory</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Component</th><th>Layer</th><th>Type</th><th>Responsibility</th></tr></thead><tbody>
+<tr><td>AlertService.svc</td><td>Presentation</td><td>WCF Service Host</td><td>Entry point for WCF SOAP requests; routes to <code>AlertService</code></td></tr>
+<tr><td>HealthHandler</td><td>Presentation</td><td>ASHX HTTP Handler</td><td>Returns &quot;OK&quot; for health/liveness probes</td></tr>
+<tr><td>IAlertService</td><td>Contracts</td><td>WCF Service Contract</td><td>Defines the four SOAP operations exposed by the service</td></tr>
+<tr><td>AlertService</td><td>Business Logic</td><td>WCF Service Implementation</td><td>Orchestrates transaction evaluation, rule loading, and alert dispatch</td></tr>
+<tr><td>IsTriggered (inline)</td><td>Business Logic</td><td>Rule Evaluation Logic</td><td>Evaluates each rule code (LOW_BAL, LARGE_TXN, OVERDRAFT, etc.) against transaction data</td></tr>
+<tr><td>DbConfig</td><td>Data Access</td><td>Configuration Helper</td><td>Resolves SQL Server connection string from environment variables or web.config</td></tr>
+<tr><td>ADO.NET SqlClient</td><td>Data Access</td><td>Data Access Layer</td><td>Executes parameterized SQL queries against SQL Server</td></tr>
+<tr><td>RabbitMqPublisher</td><td>Infrastructure</td><td>Messaging Publisher</td><td>Serializes alert events to JSON and posts them to RabbitMQ via HTTP Management API</td></tr>
+<tr><td>AlertRuleDefinition</td><td>Contracts</td><td>Data Contract (DTO)</td><td>Input contract for creating/updating alert rules</td></tr>
+<tr><td>AlertRuleInfo</td><td>Contracts</td><td>Data Contract (DTO)</td><td>Read model for a single alert rule assigned to an account</td></tr>
+<tr><td>AlertEvaluationResponse</td><td>Contracts</td><td>Data Contract (DTO)</td><td>Result of evaluating a transaction against all active rules</td></tr>
+<tr><td>AlertRuleMutationResponse</td><td>Contracts</td><td>Data Contract (DTO)</td><td>Result of a create or update rule operation</td></tr>
+<tr><td>AlertEvent (internal)</td><td>Contracts</td><td>Internal Model</td><td>Event payload published to RabbitMQ when a rule is triggered</td></tr>
+<tr><td>EvaluatedRule (internal)</td><td>Contracts</td><td>Internal Model</td><td>Intermediate model for active rules loaded from the database</td></tr>
+</tbody></table></div>
+</div>
+</div>
+<div id="tab-api" class="tab-panel">
+  <div class="fact-content"><h1 id="api-service-communication-contracts">API &amp; Service Communication Contracts</h1>
+<p>ZavaAlertService exposes four SOAP/WCF operations over a single BasicHttpBinding endpoint plus one HTTP health-check handler, with asynchronous alert dispatch to RabbitMQ via the HTTP Management API.</p>
+<h2 id="service-catalog">Service Catalog</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Port</th><th>Category</th><th>Purpose</th></tr></thead><tbody>
+<tr><td>ZavaAlertService (WCF)</td><td>8080</td><td>Business</td><td>Evaluates banking transactions against alert rules; creates and retrieves alert rules</td></tr>
+<tr><td>HealthHandler (ASHX)</td><td>8080</td><td>Observability</td><td>Liveness probe returning &quot;OK&quot; at <code>/health</code></td></tr>
+</tbody></table></div>
+<h2 id="api-endpoints-inventory">API Endpoints Inventory</h2>
+<p>WCF services expose operations via SOAP envelopes rather than discrete HTTP REST paths. All operations are reachable at the service endpoint URL (<code>/AlertService.svc</code>).</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Protocol</th><th>Operation / Path</th><th>Request Type</th><th>Response Type</th></tr></thead><tbody>
+<tr><td>AlertService</td><td>SOAP/WCF</td><td><code>EvaluateTransaction</code></td><td><code>long transactionId</code></td><td><code>AlertEvaluationResponse</code></td></tr>
+<tr><td>AlertService</td><td>SOAP/WCF</td><td><code>GetAlertRules</code></td><td><code>int accountId</code></td><td><code>AlertRulesResponse</code></td></tr>
+<tr><td>AlertService</td><td>SOAP/WCF</td><td><code>CreateAlertRule</code></td><td><code>AlertRuleDefinition</code></td><td><code>AlertRuleMutationResponse</code></td></tr>
+<tr><td>AlertService</td><td>SOAP/WCF</td><td><code>UpdateAlertRule</code></td><td><code>int ruleId</code>, <code>AlertRuleDefinition</code></td><td><code>AlertRuleMutationResponse</code></td></tr>
+<tr><td>HealthHandler</td><td>HTTP GET</td><td><code>/health</code></td><td>—</td><td><code>text/plain</code> &quot;OK&quot;</td></tr>
+</tbody></table></div>
+<h2 id="management-observability-endpoints">Management &amp; Observability Endpoints</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Endpoint</th><th>Notes</th></tr></thead><tbody>
+<tr><td>HealthHandler</td><td>GET <code>/health</code></td><td>Returns HTTP 200 with body &quot;OK&quot;; no WSDL or metrics endpoint</td></tr>
+<tr><td>AlertService</td><td>GET <code>/AlertService.svc?wsdl</code></td><td>WCF metadata endpoint (enabled via <code>serviceMetadata httpGetEnabled=&quot;true&quot;</code>)</td></tr>
+</tbody></table></div>
+<p>No custom metrics, Prometheus scrape endpoint, or Application Insights integration is present.</p>
+<h2 id="dtos-contracts">DTOs &amp; Contracts</h2>
+<p>All data contracts are annotated with <code>[DataContract]</code> / <code>[DataMember]</code> (WCF serialization via <code>System.Runtime.Serialization</code>). There are no OpenAPI/Swagger specs, protobuf schemas, or GraphQL definitions.</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Class</th><th>Role</th><th>Notes</th></tr></thead><tbody>
+<tr><td><code>AlertRuleDefinition</code></td><td>Request body (Create/Update)</td><td>Input for creating or updating an alert rule; mutable class</td></tr>
+<tr><td><code>AlertRulesResponse</code></td><td>Response (GetAlertRules)</td><td>Contains <code>AccountId</code> and a list of <code>AlertRuleInfo</code></td></tr>
+<tr><td><code>AlertRuleInfo</code></td><td>Response item (GetAlertRules)</td><td>Read model for a single account-level alert rule assignment</td></tr>
+<tr><td><code>AlertEvaluationResponse</code></td><td>Response (EvaluateTransaction)</td><td>Result of rule evaluation; includes triggered rule codes and queue publish status</td></tr>
+<tr><td><code>AlertRuleMutationResponse</code></td><td>Response (Create/Update)</td><td>Mutation result with success flag, generated IDs, and message</td></tr>
+<tr><td><code>AlertEvent</code></td><td>Internal / messaging payload</td><td>Serialized to JSON by <code>JavaScriptSerializer</code> and sent to RabbitMQ; not exposed in the WCF contract</td></tr>
+<tr><td><code>EvaluatedRule</code></td><td>Internal intermediary</td><td>Loaded from the database during <code>EvaluateTransaction</code>; not exposed in the WCF contract</td></tr>
+</tbody></table></div>
+<p>For full field-level details see <code>data-architecture.md</code>.</p>
+<h2 id="communication-patterns">Communication Patterns</h2>
+<p><strong>Synchronous (Inbound):</strong> Clients communicate with the service via SOAP over HTTP using <code>BasicHttpBinding</code>. No transport security (TLS/HTTPS) is configured — all SOAP traffic is plain HTTP. No authentication or authorization is enforced at the WCF binding or service behavior level; all four operations are publicly accessible with no credential checks.</p>
+<p><strong>Asynchronous (Outbound):</strong> When a rule is triggered during <code>EvaluateTransaction</code>, <code>RabbitMqPublisher</code> posts an <code>AlertEvent</code> JSON payload to the RabbitMQ <code>zava.notifications</code> exchange using the HTTP Management API (<code>POST /api/exchanges/{vhost}/zava.notifications/publish</code>). This approach uses fire-and-forget semantics with a simple try/catch; there are no retry policies, delivery confirmations, publisher confirms, or circuit-breaker patterns. If the HTTP call fails for any reason, the alert is silently dropped (<code>return false</code>) and the failure is recorded only in the <code>AlertHistory.NotificationSent</code> column.</p>
+<p><strong>Service Discovery:</strong> No service discovery mechanism is present. The RabbitMQ host, port, and credentials are resolved from environment variables at runtime (<code>RABBITMQ_HOST</code>, <code>RABBITMQ_MANAGEMENT_PORT</code>, <code>RABBITMQ_USER</code>, <code>RABBITMQ_PASSWORD</code>, <code>RABBITMQ_VHOST</code>) with hard-coded defaults (<code>rabbitmq</code>, <code>15672</code>, <code>zava_app</code>, <code>zava_pass</code>, <code>/zavabank</code>). The SQL Server connection is likewise resolved from environment variables or the <code>web.config</code> connection string.</p>
+<p><strong>Resilience:</strong> No retry, circuit-breaker, timeout, or bulkhead patterns are implemented for either SQL Server access or RabbitMQ publishing. All outbound HTTP calls to RabbitMQ use the default <code>HttpWebRequest</code> timeout (approximately 100 seconds).</p>
+<p><strong>Security Posture:</strong> No TLS, no authentication, and no authorization are configured. All WCF endpoints are publicly accessible over plain HTTP. The <code>web.config</code> contains a hard-coded SQL Server password (<code>Zava123!</code>) in the default connection string fallback.</p>
+<h2 id="service-technology-matrix">Service Technology Matrix</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Web Framework</th><th>Data Access</th><th>Discovery</th><th>Gateway</th><th>Health</th><th>Cache</th><th>Metrics</th></tr></thead><tbody>
+<tr><td>ZavaAlertService</td><td>WCF BasicHttpBinding (.NET 4.8)</td><td>ADO.NET (SqlClient)</td><td>None (env vars)</td><td>None</td><td><code>/health</code> ASHX</td><td>None</td><td>None</td></tr>
+</tbody></table></div>
+<h2 id="service-communication-sequence">Service Communication Sequence</h2>
+<div class="mermaid">
+sequenceDiagram
+    participant Client as "SOAP Client"
+    participant WCF as "WCF Endpoint (AlertService.svc)"
+    participant Svc as "AlertService"
+    participant DB as "SQL Server"
+    participant MQ as "RabbitMQ (HTTP API)"
+
+    Client->>WCF: SOAP EvaluateTransaction(transactionId)
+    WCF->>Svc: EvaluateTransaction(transactionId)
+    Svc->>DB: SELECT transaction + account data
+    DB-->>Svc: accountId, amount, balanceAfter, channel
+    Svc->>DB: SELECT active alert rules for account
+    DB-->>Svc: List of EvaluatedRule
+    loop For each active rule
+        Svc->>Svc: IsTriggered(ruleCode, threshold, amount, ...)
+        alt Rule triggered
+            Svc->>MQ: POST /api/exchanges/.../publish (AlertEvent JSON)
+            alt Publish success
+                MQ-->>Svc: routed:true
+            else Publish failure
+                Svc-->>Svc: catch exception, return false
+            end
+            Svc->>DB: INSERT AlertHistory (NotificationSent=0/1)
+        end
+    end
+    Svc-->>WCF: AlertEvaluationResponse
+    WCF-->>Client: SOAP response
+</div>
+</div>
+</div>
+<div id="tab-config" class="tab-panel">
+  <div class="fact-content"><h1 id="configuration-externalized-settings-inventory">Configuration &amp; Externalized Settings Inventory</h1>
+<p>ZavaAlertService externalizes all sensitive configuration through environment variables, with a single <code>web.config</code> file serving as the fallback configuration source for both database connectivity and WCF service hosting.</p>
+<h2 id="configuration-sources">Configuration Sources</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Source</th><th>Type</th><th>Path/Location</th><th>Notes</th></tr></thead><tbody>
+<tr><td><code>web.config</code></td><td>XML config</td><td><code>/web.config</code></td><td>Primary ASP.NET/WCF configuration: connection string fallback, WCF bindings, HTTP handlers</td></tr>
+<tr><td>Environment Variables</td><td>Runtime injection</td><td>Process environment</td><td>Database host/port/name/user/password; RabbitMQ host/port/user/password/vhost</td></tr>
+<tr><td><code>Dockerfile</code></td><td>Container definition</td><td><code>/Dockerfile</code></td><td>Defines base image (Mono 6.12), build steps, exposed port, and startup command</td></tr>
+</tbody></table></div>
+<p>No Spring Cloud Config, Azure App Configuration, AWS AppConfig, Consul KV, HashiCorp Vault, or Azure KeyVault integrations are present.</p>
+<h2 id="build-profiles">Build Profiles</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Profile</th><th>Activation</th><th>Purpose</th><th>Key Dependencies/Plugins</th></tr></thead><tbody>
+<tr><td>Debug (MSBuild)</td><td>Default when no <code>-c Release</code> specified</td><td>Development build; full debug symbols</td><td>Output to <code>bin\Debug\</code></td></tr>
+<tr><td>Release (MSBuild)</td><td>Manual: <code>-c Release</code></td><td>Optimized production build</td><td>Output to <code>bin\Release\</code></td></tr>
+<tr><td>Mono (<code>mcs</code>)</td><td>Dockerfile</td><td>Cross-platform Linux build via Mono C# compiler</td><td>References <code>System.dll</code>, <code>System.Web.dll</code>, <code>System.Data.dll</code>, <code>System.Configuration.dll</code>, <code>System.Web.Extensions.dll</code>, <code>System.Xml.dll</code>, <code>System.Net.Http.dll</code>, <code>System.ServiceModel.dll</code>, <code>System.Runtime.Serialization.dll</code></td></tr>
+</tbody></table></div>
+<p>The project does not use MSBuild SDK-style projects, so there are no <code>&lt;PropertyGroup Condition&gt;</code> environment-specific overrides beyond Debug/Release output paths.</p>
+<h2 id="runtime-profiles">Runtime Profiles</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Profile</th><th>Activation Method</th><th>Config Files</th><th>Key Overrides</th></tr></thead><tbody>
+<tr><td>Default (env vars present)</td><td>Environment variables set (<code>DB_HOST</code>, <code>RABBITMQ_HOST</code>, etc.)</td><td>None — bypasses <code>web.config</code> connection strings</td><td>DB and RabbitMQ connection built from individual env vars</td></tr>
+<tr><td>Fallback (no env vars)</td><td>Automatic when env vars are absent</td><td><code>web.config</code> <code>&lt;connectionStrings&gt;</code></td><td>Uses hardcoded <code>Server=sqlserver,1433;Database=ZavaBankDB;User Id=sa;Password=Zava123!</code></td></tr>
+</tbody></table></div>
+<p>No <code>ASPNETCORE_ENVIRONMENT</code>, profile-specific <code>appsettings.{Env}.json</code> files, or <code>&lt;appSettings&gt;</code> profile switching are used.</p>
+<h2 id="properties-inventory">Properties Inventory</h2>
+<h3 id="database-connection-dbconfig">Database Connection (DbConfig)</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Property Key (Env Var)</th><th>Default (web.config fallback)</th><th>Source</th><th>Notes</th></tr></thead><tbody>
+<tr><td><code>DB_HOST</code> / <code>DATABASE_HOST</code></td><td><code>sqlserver</code> (from web.config)</td><td>Environment variable</td><td>SQL Server hostname; primary key checked first, fallback key second</td></tr>
+<tr><td><code>DB_PORT</code> / <code>DATABASE_PORT</code></td><td><code>1433</code> (from web.config)</td><td>Environment variable</td><td>SQL Server port</td></tr>
+<tr><td><code>DB_NAME</code> / <code>DATABASE_NAME</code></td><td><code>ZavaBankDB</code> (from web.config)</td><td>Environment variable</td><td>Database name</td></tr>
+<tr><td><code>DB_USER</code> / <code>DATABASE_USER</code></td><td><code>sa</code> (from web.config)</td><td>Environment variable</td><td>SQL Server login</td></tr>
+<tr><td><code>DB_PASSWORD</code> / <code>DATABASE_PASSWORD</code></td><td><code>Zava123!</code> (from web.config)</td><td>Environment variable</td><td>SQL Server password — hardcoded in web.config fallback</td></tr>
+</tbody></table></div>
+<h3 id="rabbitmq-connection-rabbitmqpublisher">RabbitMQ Connection (RabbitMqPublisher)</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Property Key (Env Var)</th><th>Default (hardcoded)</th><th>Source</th><th>Notes</th></tr></thead><tbody>
+<tr><td><code>RABBITMQ_HOST</code></td><td><code>rabbitmq</code></td><td>Environment variable</td><td>RabbitMQ server hostname</td></tr>
+<tr><td><code>RABBITMQ_MANAGEMENT_PORT</code></td><td><code>15672</code></td><td>Environment variable</td><td>HTTP Management API port (not AMQP port)</td></tr>
+<tr><td><code>RABBITMQ_USER</code></td><td><code>zava_app</code></td><td>Environment variable</td><td>RabbitMQ username</td></tr>
+<tr><td><code>RABBITMQ_PASSWORD</code></td><td><code>zava_pass</code></td><td>Environment variable</td><td>RabbitMQ password — hardcoded as code default</td></tr>
+<tr><td><code>RABBITMQ_VHOST</code></td><td><code>/zavabank</code></td><td>Environment variable</td><td>RabbitMQ virtual host</td></tr>
+</tbody></table></div>
+<h3 id="wcf-service-webconfig">WCF Service (web.config)</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Property Key</th><th>Value</th><th>Source</th><th>Notes</th></tr></thead><tbody>
+<tr><td>Service name</td><td><code>ZavaAlertService.AlertService</code></td><td>web.config</td><td>WCF service class binding</td></tr>
+<tr><td>Binding</td><td><code>basicHttpBinding</code></td><td>web.config</td><td>Plain HTTP SOAP binding</td></tr>
+<tr><td><code>serviceMetadata httpGetEnabled</code></td><td><code>true</code></td><td>web.config</td><td>Enables WSDL at <code>?wsdl</code></td></tr>
+<tr><td><code>serviceDebug includeExceptionDetailInFaults</code></td><td><code>true</code></td><td>web.config</td><td>Exposes exception details in SOAP faults — should be disabled in production</td></tr>
+<tr><td><code>multipleSiteBindingsEnabled</code></td><td><code>true</code></td><td>web.config</td><td>Allows WCF to bind to multiple hostnames</td></tr>
+<tr><td><code>compilation debug</code></td><td><code>true</code></td><td>web.config</td><td>Debug compilation enabled — should be <code>false</code> in production</td></tr>
+<tr><td><code>customErrors mode</code></td><td><code>Off</code></td><td>web.config</td><td>Custom error pages disabled — exposes raw ASP.NET error pages</td></tr>
+</tbody></table></div>
+<h2 id="startup-parameters-resource-requirements">Startup Parameters &amp; Resource Requirements</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Runtime Options</th><th>Memory</th><th>Instance Count</th><th>Notes</th></tr></thead><tbody>
+<tr><td>ZavaAlertService</td><td><code>xsp4 --port 8080 --address 0.0.0.0 --nonstop</code></td><td>Not specified</td><td>1 (single container)</td><td>No memory limits or CPU quotas defined in Dockerfile</td></tr>
+</tbody></table></div>
+<p>No JVM heap settings (not applicable — Mono runtime). No Kubernetes resource manifests or Docker Compose resource limits are present.</p>
+<h2 id="startup-dependency-chain">Startup Dependency Chain</h2>
+<p>The application has no built-in startup dependency management. It starts immediately on container launch and will fail at runtime (not startup) if SQL Server or RabbitMQ are unavailable:</p>
+<ol>
+<li><strong>Mono/XSP4</strong> starts and loads the WCF service host — no readiness probe, no wait mechanism.</li>
+<li><strong>SQL Server</strong> must be reachable before the first WCF request is processed; the application throws <code>SqlException</code> at request time if unavailable.</li>
+<li><strong>RabbitMQ</strong> must be reachable during <code>EvaluateTransaction</code> when a rule fires; publish failures are silently caught and the alert is marked as not sent.</li>
+</ol>
+<p>There is no <code>dockerize</code>, Docker Compose <code>depends_on</code>, Kubernetes readiness probe, or retry-on-startup configuration.</p>
+<h2 id="secrets-sensitive-configuration">Secrets &amp; Sensitive Configuration</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Secret Reference</th><th>Type</th><th>Storage</th></tr></thead><tbody>
+<tr><td><code>DB_PASSWORD</code> / <code>DATABASE_PASSWORD</code></td><td>Database password</td><td>Environment variable (plaintext)</td></tr>
+<tr><td><code>RABBITMQ_PASSWORD</code></td><td>Message broker password</td><td>Environment variable (plaintext)</td></tr>
+<tr><td><code>web.config</code> → <code>ZavaBankDb</code> connection string password</td><td>Database password</td><td>Plaintext in source-controlled <code>web.config</code> — value: [MASKED]</td></tr>
+<tr><td><code>RABBITMQ_USER</code> / <code>RABBITMQ_PASSWORD</code> code defaults</td><td>Message broker credentials</td><td>Hardcoded string literals in <code>RabbitMqPublisher.cs</code> — [MASKED]</td></tr>
+</tbody></table></div>
+<h3 id="secrets-provisioning-workflow">Secrets Provisioning Workflow</h3>
+<p>Secrets are provisioned entirely via environment variables injected at container runtime. No secret management service (HashiCorp Vault, Azure Key Vault, AWS Secrets Manager) or encrypted property mechanism is used.</p>
+<p><strong>Current flow:</strong></p>
+<ol>
+<li>At deployment time, environment variables (<code>DB_HOST</code>, <code>DB_PASSWORD</code>, <code>RABBITMQ_PASSWORD</code>, etc.) must be manually set in the container runtime environment (e.g., Docker run arguments, Docker Compose <code>environment:</code> block, or Kubernetes <code>Secret</code>-backed <code>envFrom</code>).</li>
+<li>If environment variables are absent, <code>DbConfig</code> falls back to the <code>web.config</code> connection string, which contains a hardcoded plaintext password committed to source control.</li>
+<li><code>RabbitMqPublisher</code> has hardcoded credential defaults (<code>zava_app</code> / <code>zava_pass</code>) that are used if the environment variables are not set.</li>
+</ol>
+<p><strong>Risks:</strong></p>
+<ul>
+<li>The <code>web.config</code> connection string contains a plaintext database password in source control.</li>
+<li>RabbitMQ credential defaults are hardcoded in <code>RabbitMqPublisher.cs</code>.</li>
+<li>No rotation, auditing, or least-privilege access model is in place.</li>
+</ul>
+<h2 id="feature-flags">Feature Flags</h2>
+<p>No feature flag framework, <code>@ConditionalOnProperty</code>, <code>.NET FeatureManagement</code>, or custom toggle mechanism is present. Configuration branches are limited to the environment-variable-vs-web.config fallback logic in <code>DbConfig</code>.</p>
+<h2 id="framework-runtime-versions">Framework &amp; Runtime Versions</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Component</th><th>Version</th><th>Source</th></tr></thead><tbody>
+<tr><td>Target Framework</td><td>.NET Framework 4.8</td><td><code>ZavaAlertService.csproj</code> <code>&lt;TargetFrameworkVersion&gt;v4.8&lt;/TargetFrameworkVersion&gt;</code></td></tr>
+<tr><td>WCF (System.ServiceModel)</td><td>4.8 (BCL)</td><td><code>ZavaAlertService.csproj</code> <code>&lt;Reference Include=&quot;System.ServiceModel&quot; /&gt;</code></td></tr>
+<tr><td>ASP.NET (System.Web)</td><td>4.8 (BCL)</td><td><code>ZavaAlertService.csproj</code> <code>&lt;Reference Include=&quot;System.Web&quot; /&gt;</code></td></tr>
+<tr><td>Container Runtime</td><td>Mono 6.12</td><td><code>Dockerfile</code> <code>FROM mono:6.12</code></td></tr>
+<tr><td>Web Server</td><td>XSP4 (Mono)</td><td><code>Dockerfile</code> CMD <code>xsp4 --port 8080</code></td></tr>
+<tr><td>C# Compiler</td><td><code>mcs</code> (Mono C# Compiler)</td><td><code>Dockerfile</code> <code>RUN mcs ...</code></td></tr>
+<tr><td>Build Tool</td><td>MSBuild (via <code>ZavaAlertService.csproj</code>)</td><td><code>ZavaAlertService.csproj</code> <code>ToolsVersion=&quot;4.0&quot;</code></td></tr>
+<tr><td>Exposed Port</td><td>8080</td><td><code>Dockerfile</code> <code>EXPOSE 8080</code></td></tr>
+</tbody></table></div>
+</div>
+</div>
+<div id="tab-workflows" class="tab-panel">
+  <div class="fact-content"><h1 id="core-business-workflows">Core Business Workflows</h1>
+<p>ZavaAlertService is a banking alert engine that evaluates financial transactions against customer-configured alert rules and dispatches notifications to a downstream messaging queue when those rules are triggered.</p>
+<h2 id="domain-entities">Domain Entities</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Entity</th><th>Service / Bounded Context</th><th>Description</th><th>Key Relationships</th></tr></thead><tbody>
+<tr><td>Transaction</td><td>Banking Core (read-only from this service)</td><td>A financial debit or credit on a bank account, including amount, post-transaction balance, and channel</td><td>Belongs to one Account</td></tr>
+<tr><td>Account</td><td>Banking Core (read-only from this service)</td><td>A customer bank account that can have transactions and alert rule assignments</td><td>Belongs to one Customer; has many Transactions and AccountAlerts</td></tr>
+<tr><td>AlertRule</td><td>Alert Management</td><td>A reusable rule definition (code, name, default threshold, category) that can be activated for any account</td><td>Referenced by many AccountAlerts</td></tr>
+<tr><td>AccountAlert</td><td>Alert Management</td><td>An account-level assignment of an alert rule, with an optional threshold override and preferred notification channel</td><td>Links one Account to one AlertRule</td></tr>
+<tr><td>AlertHistory</td><td>Alert Audit</td><td>An immutable audit record created each time a rule is evaluated and found to have fired for a transaction</td><td>Belongs to one AccountAlert</td></tr>
+<tr><td>AlertEvent</td><td>Notification Dispatch</td><td>An internal event payload published to RabbitMQ when a rule fires; carries transaction and rule metadata for the notification service</td><td>Derived from Transaction + AlertRule data</td></tr>
+</tbody></table></div>
+<h2 id="service-to-domain-mapping">Service-to-Domain Mapping</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Domain Context</th><th>Owned Entities</th><th>External Dependencies</th></tr></thead><tbody>
+<tr><td>ZavaAlertService</td><td>Alert Management + Audit</td><td>AlertRule, AccountAlert, AlertHistory, AlertEvent</td><td>Reads Transaction and Account from shared ZavaBankDB (owned by core banking); writes to RabbitMQ notifications exchange</td></tr>
+</tbody></table></div>
+<p>Cross-context data exchange: This service reads <code>Transactions</code> and <code>Accounts</code> directly from the shared banking database rather than via a REST API. The <code>Transaction.AccountID</code> and <code>Account.CustomerID</code> serve as cross-context identifiers. The RabbitMQ exchange is a one-way outbound channel to the notification service; there is no inbound event consumption.</p>
+<h2 id="primary-workflows">Primary Workflows</h2>
+<h3 id="workflow-1-transaction-alert-evaluation">Workflow 1: Transaction Alert Evaluation</h3>
+<p>The core business workflow — triggered by a SOAP client (typically the core banking platform after posting a transaction):</p>
+<ol>
+<li><strong>Receive transaction ID</strong> via <code>EvaluateTransaction(transactionId)</code> SOAP operation.</li>
+<li><strong>Validate input</strong>: <code>transactionId</code> must be greater than 0; otherwise a SOAP fault is returned.</li>
+<li><strong>Load transaction data</strong>: Query SQL Server for the transaction record, joining to the Accounts table to retrieve <code>accountId</code>, <code>amount</code>, <code>balanceAfter</code>, <code>customerId</code>, and <code>channel</code>.</li>
+<li><strong>Load active alert rules</strong>: Retrieve all enabled <code>AccountAlerts</code> joined to their <code>AlertRules</code> for the account, applying per-account threshold overrides where set.</li>
+<li><strong>Evaluate each rule</strong> using the rule code as a dispatch key (see Business Rules section).</li>
+<li><strong>For each triggered rule</strong>:</li>
+</ol>
+<p>   a. Construct an <code>AlertEvent</code> payload.</p>
+<p>   b. Publish to RabbitMQ via HTTP Management API (fire-and-forget).</p>
+<p>   c. Insert an <code>AlertHistory</code> record with the trigger value, notification sent status, and a details string.</p>
+<ol>
+<li><strong>Return</strong> <code>AlertEvaluationResponse</code> listing all triggered rule codes and whether any alert was published to the queue.</li>
+</ol>
+<h3 id="workflow-2-create-alert-rule">Workflow 2: Create Alert Rule</h3>
+<p>Triggered by a SOAP client managing account alert configuration:</p>
+<ol>
+<li><strong>Validate input</strong>: <code>RuleName</code>, <code>RuleCode</code>, <code>AccountId</code>, and <code>CustomerId</code> are all required.</li>
+<li><strong>Insert AlertRules record</strong>: Creates the rule definition with the provided name, code, category, threshold, and active status within a SQL transaction.</li>
+<li><strong>Insert AccountAlerts record</strong>: Links the new rule to the specified account and customer, with the provided notification channel preference.</li>
+<li><strong>Commit transaction</strong>: Both inserts succeed atomically or both are rolled back.</li>
+<li><strong>Return</strong> <code>AlertRuleMutationResponse</code> with the new <code>RuleId</code> and <code>AccountAlertId</code>.</li>
+</ol>
+<h3 id="workflow-3-update-alert-rule">Workflow 3: Update Alert Rule</h3>
+<p>Triggered by a SOAP client modifying an existing alert rule:</p>
+<ol>
+<li><strong>Validate input</strong>: <code>ruleId</code> must be greater than 0; <code>RuleName</code> and <code>RuleCode</code> are required.</li>
+<li><strong>Update AlertRules record</strong>: Modifies rule metadata within a SQL transaction.</li>
+<li><strong>Upsert AccountAlerts record</strong> (if <code>AccountId &gt; 0</code>): Updates an existing account-rule assignment or inserts a new one if none exists.</li>
+<li><strong>Commit transaction</strong>: Both operations succeed atomically.</li>
+<li><strong>Return</strong> <code>AlertRuleMutationResponse</code> with the updated <code>RuleId</code> and <code>AccountAlertId</code>.</li>
+</ol>
+<h3 id="workflow-4-retrieve-alert-rules-for-an-account">Workflow 4: Retrieve Alert Rules for an Account</h3>
+<p>A read-only workflow returning all configured rules for an account:</p>
+<ol>
+<li><strong>Validate input</strong>: <code>accountId</code> must be greater than 0.</li>
+<li><strong>Query AccountAlerts</strong> joined to AlertRules, applying per-account threshold overrides, ordered by rule name.</li>
+<li><strong>Return</strong> <code>AlertRulesResponse</code> with the full list of <code>AlertRuleInfo</code> items.</li>
+</ol>
+<h2 id="cross-service-data-flows">Cross-Service Data Flows</h2>
+<p>ZavaAlertService is a single-service application with no service-to-service REST calls. Its cross-context data flows are:</p>
+<p><strong>Inbound (read):</strong> The service reads <code>Transactions</code> and <code>Accounts</code> data directly from the shared <code>ZavaBankDB</code> database — data owned by the core banking platform. There is no API call to a banking service; ownership boundaries are logical, not physical.</p>
+<p><strong>Outbound (async):</strong> When a rule fires, an <code>AlertEvent</code> JSON payload is published to the RabbitMQ <code>zava.notifications</code> exchange via the HTTP Management API. The notification service (a separate consumer, not part of this codebase) is responsible for reading from this exchange and dispatching the actual notification (email, SMS, push, etc.) to the customer. If the RabbitMQ publish call fails, the event is silently dropped — there is no retry, dead-letter handling, or compensating action. The <code>AlertHistory.NotificationSent</code> flag records whether the publish succeeded, but no re-delivery mechanism exists.</p>
+<h2 id="business-workflow-sequence">Business Workflow Sequence</h2>
+<div class="mermaid">
+sequenceDiagram
+    participant BankingCore as "Core Banking Platform"
+    participant Svc as "AlertService"
+    participant DB as "SQL Server (ZavaBankDB)"
+    participant MQ as "RabbitMQ (Notification Exchange)"
+    participant NotifSvc as "Notification Service"
+
+    BankingCore->>Svc: EvaluateTransaction(transactionId)
+    Svc->>Svc: Validate transactionId > 0
+    Svc->>DB: Load transaction + account data
+    DB-->>Svc: amount, balanceAfter, channel, customerId
+    Svc->>DB: Load active alert rules for account
+    DB-->>Svc: List of enabled AccountAlerts with rules
+
+    loop For each active rule
+        Svc->>Svc: Evaluate rule code against transaction data
+        alt Rule is triggered
+            Svc->>MQ: Publish AlertEvent (JSON via HTTP API)
+            alt Publish succeeds
+                MQ-->>Svc: routed:true
+                Svc->>DB: INSERT AlertHistory (NotificationSent=true)
+                MQ-->>NotifSvc: Alert event consumed
+                NotifSvc-->>NotifSvc: Dispatch notification to customer
+            else Publish fails (network/broker error)
+                Note over Svc: Exception silently caught
+                Svc->>DB: INSERT AlertHistory (NotificationSent=false)
+                Note over MQ,NotifSvc: Alert lost - no retry or dead-letter
+            end
+        end
+    end
+
+    Svc-->>BankingCore: AlertEvaluationResponse (triggered rules, publishedToQueue)
+</div>
+<h2 id="business-rules-decision-logic">Business Rules &amp; Decision Logic</h2>
+<h3 id="alert-rule-evaluation-codes">Alert Rule Evaluation Codes</h3>
+<p>Five built-in rule codes are recognized. Unknown rule codes silently evaluate to <code>false</code> (not triggered):</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Rule Code</th><th>Trigger Condition</th><th>Notes</th></tr></thead><tbody>
+<tr><td><code>LOW_BAL</code></td><td><code>balanceAfter &lt; threshold</code></td><td>Fires when account balance falls below the configured threshold after the transaction</td></tr>
+<tr><td><code>LARGE_TXN</code></td><td><code>abs(amount) &gt;= threshold</code></td><td>Fires when the absolute transaction amount meets or exceeds the threshold</td></tr>
+<tr><td><code>OVERDRAFT</code></td><td><code>balanceAfter &lt; 0</code></td><td>Fires when the account goes negative; threshold is ignored</td></tr>
+<tr><td><code>INTL_WIRE</code></td><td><code>channel</code> contains &quot;WIRE&quot; (case-insensitive) AND <code>abs(amount) &gt;= threshold</code></td><td>Fires on international wire transfers above a threshold</td></tr>
+<tr><td><code>DAILY_SPEND</code></td><td>Sum of today&#39;s debit amounts for the account &gt;= threshold</td><td>Requires an additional SQL query to compute the daily spend total</td></tr>
+</tbody></table></div>
+<h3 id="threshold-resolution">Threshold Resolution</h3>
+<p>When loading account-level rules, the threshold is resolved as: use the <code>AccountAlerts.Threshold</code> override if it is non-empty; otherwise fall back to <code>AlertRules.DefaultThreshold</code>. If neither parses as a valid decimal, <code>0</code> is used.</p>
+<h3 id="validation-rules">Validation Rules</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Operation</th><th>Validation</th><th>Error Behavior</th></tr></thead><tbody>
+<tr><td><code>EvaluateTransaction</code></td><td><code>transactionId &gt; 0</code></td><td>SOAP <code>FaultException</code> if invalid</td></tr>
+<tr><td><code>EvaluateTransaction</code></td><td>Transaction must exist in DB</td><td>SOAP <code>FaultException(&quot;Transaction was not found.&quot;)</code></td></tr>
+<tr><td><code>GetAlertRules</code></td><td><code>accountId &gt; 0</code></td><td>SOAP <code>FaultException</code> if invalid</td></tr>
+<tr><td><code>CreateAlertRule</code></td><td><code>rule != null</code>, <code>RuleName</code> and <code>RuleCode</code> non-empty, <code>AccountId &gt; 0</code>, <code>CustomerId &gt; 0</code></td><td>SOAP <code>FaultException</code> if invalid</td></tr>
+<tr><td><code>UpdateAlertRule</code></td><td><code>ruleId &gt; 0</code>, <code>rule != null</code>, <code>RuleName</code> and <code>RuleCode</code> non-empty</td><td>SOAP <code>FaultException</code> if invalid; <code>FaultException(&quot;Alert rule was not found.&quot;)</code> if <code>ruleId</code> not in DB</td></tr>
+</tbody></table></div>
+<h3 id="transaction-boundaries">Transaction Boundaries</h3>
+<p><code>CreateAlertRule</code> and <code>UpdateAlertRule</code> use explicit <code>SqlTransaction</code> objects to wrap their multi-statement DDL sequences. The <code>EvaluateTransaction</code> workflow does not use an explicit transaction — each <code>INSERT AlertHistory</code> statement is auto-committed independently, meaning a failure mid-loop could leave partial history records without rolling back already-published alert events.</p>
+<h3 id="error-handling">Error Handling</h3>
+<p>All SOAP operations surface errors as WCF <code>FaultException</code> with a plain-text message. There are no typed fault contracts (<code>FaultException&lt;T&gt;</code>). The <code>serviceDebug includeExceptionDetailInFaults=&quot;true&quot;</code> setting in <code>web.config</code> causes full .NET stack traces to be returned in SOAP fault responses, which is a security risk in production.</p>
+<h3 id="audit-trail">Audit Trail</h3>
+<p>Every triggered rule produces an <code>AlertHistory</code> record containing: the trigger value (amount), notification delivery status, and a human-readable <code>Details</code> string including rule code, account ID, balance after, and channel. This provides an immutable audit trail of all rule firings, but there is no separate structured event log or change-tracking mechanism.</p>
+</div>
+</div>
+<div id="tab-deps" class="tab-panel">
+  <div class="fact-content"><h1 id="dependency-map">Dependency Map</h1>
+<p>ZavaAlertService is a .NET Framework 4.8 WCF application with no third-party NuGet package dependencies — it relies exclusively on built-in .NET Framework assemblies for all functionality.</p>
+<h2 id="dependencies">Dependencies</h2>
+<div class="mermaid">
+flowchart LR
+    App["ZavaAlertService"]
+
+    subgraph WCF["Web / Service Frameworks"]
+        SystemServiceModel["System.ServiceModel v4.8 (WCF)"]
+        SystemWeb["System.Web v4.8 (ASP.NET)"]
+        SystemWebExt["System.Web.Extensions v4.8"]
+    end
+    subgraph DB["Database / Data Access"]
+        SystemData["System.Data v4.8 (ADO.NET)"]
+        SystemDataSqlClient["System.Data.SqlClient (BCL)"]
+    end
+    subgraph Serial["Serialization"]
+        SystemRuntimeSerial["System.Runtime.Serialization v4.8"]
+    end
+    subgraph Core["Core Runtime"]
+        System["System v4.8"]
+        SystemCore["System.Core v4.8"]
+        SystemConfig["System.Configuration v4.8"]
+    end
+
+    App -->|"WCF service hosting"| WCF
+    App -->|"SQL Server access"| DB
+    App -->|"WCF data contracts"| Serial
+    App -->|"core runtime"| Core
+</div>
+<h3 id="dependency-summary">Dependency Summary</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Category</th><th>Count</th><th>Key Libraries</th><th>Notes</th></tr></thead><tbody>
+<tr><td>Web / Service Frameworks</td><td>3</td><td>System.ServiceModel 4.8, System.Web 4.8, System.Web.Extensions 4.8</td><td>WCF + ASP.NET HTTP handler stack on .NET Framework 4.8</td></tr>
+<tr><td>Database / Data Access</td><td>2</td><td>System.Data 4.8, System.Data.SqlClient (BCL)</td><td>Direct ADO.NET; no ORM</td></tr>
+<tr><td>Serialization</td><td>1</td><td>System.Runtime.Serialization 4.8</td><td>WCF DataContract/DataMember attributes</td></tr>
+<tr><td>Core Runtime</td><td>3</td><td>System, System.Core, System.Configuration</td><td>Standard BCL assemblies</td></tr>
+</tbody></table></div>
+<h3 id="version-compatibility-risks">Version &amp; Compatibility Risks</h3>
+<p>All dependencies are built-in .NET Framework 4.8 BCL assemblies. .NET Framework 4.8 remains in a supported (maintenance) state but will not receive new features. <code>System.ServiceModel</code> (WCF) and <code>System.Web</code> (classic ASP.NET/ASMX) are not available in .NET Core or .NET 5+; migrating to modern .NET would require replacing WCF endpoints with gRPC or ASP.NET Core minimal APIs, and replacing <code>System.Web</code> HTTP handlers with ASP.NET Core middleware. The <code>System.Data.SqlClient</code> BCL package is superseded by the cross-platform <code>Microsoft.Data.SqlClient</code> NuGet package and would need to be replaced during any .NET modernization effort.</p>
+<h3 id="notable-observations">Notable Observations</h3>
+<ul>
+<li><strong>Zero third-party NuGet packages</strong>: The project has an empty <code>packages.config</code> and no <code>PackageReference</code> items — all functionality is built from .NET Framework BCL assemblies only, which simplifies dependency management but limits access to modern libraries.</li>
+<li><strong>RabbitMQ via HTTP instead of AMQP client</strong>: Rather than using the official RabbitMQ .NET client NuGet package, the project uses raw <code>HttpWebRequest</code> calls to the RabbitMQ Management HTTP API. This is unconventional and loses reliability guarantees (delivery acknowledgements, publisher confirms) provided by the AMQP protocol.</li>
+<li><strong>WCF on Mono runtime</strong>: The Dockerfile uses the Mono 6.12 runtime with <code>xsp4</code> to host this .NET Framework application on Linux. Mono&#39;s WCF support is partial and may cause runtime compatibility issues that would not appear on full .NET Framework on Windows.</li>
+<li><strong>ADO.NET without ORM</strong>: All database interactions use hand-crafted inline SQL strings with <code>SqlCommand</code>/<code>SqlConnection</code>. There is no Entity Framework or other ORM, making the data access layer more brittle and harder to migrate to modern persistence patterns.</li>
+</ul>
+<h2 id="test-dependencies">Test Dependencies</h2>
+<p>No test dependencies detected.</p>
+<p>Total test-scope dependencies: 0</p>
+<p>No test project or test framework references were found in <code>ZavaAlertService.csproj</code> or <code>packages.config</code>. The project has no unit, integration, or end-to-end test infrastructure.</p>
+</div>
+</div>
+<div id="tab-data" class="tab-panel">
+  <div class="fact-content"><h1 id="data-architecture-persistence-layer">Data Architecture &amp; Persistence Layer</h1>
+<p>ZavaAlertService uses a single SQL Server database accessed entirely through raw ADO.NET (<code>SqlConnection</code>/<code>SqlCommand</code>) with no ORM layer. The schema consists of five inferred tables discovered from inline SQL queries in <code>AlertService.cs</code>.</p>
+<h2 id="database-configuration">Database Configuration</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service/Module</th><th>DB Type</th><th>Profile</th><th>Driver</th><th>Connection</th><th>Migration Tool</th></tr></thead><tbody>
+<tr><td>ZavaAlertService</td><td>SQL Server</td><td>All</td><td>System.Data.SqlClient (BCL)</td><td>Resolved from env vars (<code>DB_HOST</code>, <code>DB_PORT</code>, <code>DB_NAME</code>, <code>DB_USER</code>, <code>DB_PASSWORD</code>) with fallback to <code>web.config</code> <code>ZavaBankDb</code> connection string</td><td>None — no migration tooling; schema must be managed externally</td></tr>
+</tbody></table></div>
+<p>No database migration tool (Flyway, Liquibase, EF Migrations) is present. The schema is assumed to pre-exist. Refer to <code>configuration-inventory.md</code> for full environment variable and connection string details.</p>
+<h2 id="data-ownership-per-service">Data Ownership per Service</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Tables Owned</th><th>ORM Framework</th><th>Caching</th><th>Notes</th></tr></thead><tbody>
+<tr><td>ZavaAlertService</td><td>Transactions (read-only), Accounts (read-only), AlertRules, AccountAlerts, AlertHistory</td><td>None — raw ADO.NET</td><td>None</td><td>Transactions and Accounts are read-only from this service&#39;s perspective; they are owned/written by upstream banking services. AlertRules, AccountAlerts, and AlertHistory are written by this service.</td></tr>
+</tbody></table></div>
+<h2 id="entity-model">Entity Model</h2>
+<p>&gt; Note: Entities are inferred from inline SQL in <code>AlertService.cs</code> — no ORM annotations or explicit model classes exist for the database schema.</p>
+<div class="mermaid">
+erDiagram
+    Accounts ||--o{ Transactions : "has"
+    Accounts ||--o{ AccountAlerts : "has"
+    AlertRules ||--o{ AccountAlerts : "governs"
+    AccountAlerts ||--o{ AlertHistory : "records"
+
+    Transactions {
+        bigint TransactionID PK
+        int AccountID FK
+        decimal Amount
+        decimal BalanceAfter
+        string Channel
+        datetime TransactionDate
+    }
+    Accounts {
+        int AccountID PK
+        int CustomerID
+    }
+    AlertRules {
+        int RuleID PK
+        string RuleName
+        string RuleCode
+        string DefaultThreshold
+        string Category
+        bit IsActive
+        datetime CreatedDate
+    }
+    AccountAlerts {
+        int AccountAlertID PK
+        int CustomerID
+        int AccountID FK
+        int RuleID FK
+        string Threshold
+        string NotificationChannel
+        bit IsEnabled
+        datetime CreatedDate
+        datetime ModifiedDate
+    }
+    AlertHistory {
+        int HistoryID PK
+        int AccountAlertID FK
+        datetime TriggeredDate
+        string TriggerValue
+        bit NotificationSent
+        datetime NotificationDate
+        string Details
+    }
+</div>
+<h2 id="key-repository-methods">Key Repository Methods</h2>
+<p>There are no formal repository classes or interfaces. All data access is performed inline within <code>AlertService</code> using direct <code>SqlCommand</code> calls. The following table documents the logical queries used:</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Query / Method</th><th>Notable SQL</th><th>Purpose</th></tr></thead><tbody>
+<tr><td>AlertService</td><td><code>EvaluateTransaction</code> — fetch transaction</td><td><code>SELECT t.AccountID, t.Amount, t.BalanceAfter, a.CustomerID, t.Channel FROM Transactions t INNER JOIN Accounts a ... WHERE t.TransactionID = @TransactionID</code></td><td>Loads transaction and account data to drive rule evaluation</td></tr>
+<tr><td>AlertService</td><td><code>LoadAccountRules</code></td><td><code>SELECT aa.AccountAlertID, ar.RuleID, ar.RuleCode, ar.RuleName, ISNULL(NULLIF(aa.Threshold,&#39;&#39;), ar.DefaultThreshold) AS Threshold, aa.NotificationChannel FROM AccountAlerts aa INNER JOIN AlertRules ar ... WHERE aa.AccountID = @AccountID AND aa.IsEnabled = 1 AND ar.IsActive = 1</code></td><td>Loads all enabled alert rules for an account</td></tr>
+<tr><td>AlertService</td><td><code>GetDailySpend</code></td><td><code>SELECT ISNULL(SUM(CASE WHEN Amount &lt; 0 THEN ABS(Amount) ELSE 0 END), 0) FROM Transactions WHERE AccountID = @AccountID AND CAST(TransactionDate AS DATE) = CAST((SELECT TransactionDate FROM Transactions WHERE TransactionID = @TransactionID) AS DATE)</code></td><td>Computes today&#39;s total spending for the DAILY_SPEND rule</td></tr>
+<tr><td>AlertService</td><td><code>INSERT AlertHistory</code></td><td><code>INSERT INTO AlertHistory (AccountAlertID, TriggeredDate, TriggerValue, NotificationSent, NotificationDate, Details) VALUES (...)</code></td><td>Persists a triggered-rule audit record after each alert fires</td></tr>
+<tr><td>AlertService</td><td><code>GetAlertRules</code></td><td><code>SELECT aa.AccountAlertID, ar.RuleID, aa.AccountID, ar.RuleName, ar.RuleCode, ... FROM AccountAlerts aa INNER JOIN AlertRules ar ... WHERE aa.AccountID = @AccountID ORDER BY ar.RuleName</code></td><td>Returns all alert rule assignments for an account</td></tr>
+<tr><td>AlertService</td><td><code>CreateAlertRule</code></td><td><code>INSERT INTO AlertRules (...); SELECT CAST(SCOPE_IDENTITY() AS INT)</code> then <code>INSERT INTO AccountAlerts (...)</code> — both in a single <code>SqlTransaction</code></td><td>Creates a new alert rule and assigns it to an account atomically</td></tr>
+<tr><td>AlertService</td><td><code>UpdateAlertRule</code></td><td><code>UPDATE AlertRules ... WHERE RuleID = @RuleID</code> then conditional <code>UPDATE/INSERT AccountAlerts</code> — both in a single <code>SqlTransaction</code></td><td>Updates alert rule definition and upserts account-level override</td></tr>
+</tbody></table></div>
+<p>Transaction management uses explicit <code>SqlTransaction</code> objects (wrapped in <code>connection.BeginTransaction()</code> / <code>transaction.Commit()</code>) for the <code>CreateAlertRule</code> and <code>UpdateAlertRule</code> operations.</p>
+<h2 id="caching-strategy">Caching Strategy</h2>
+<p>No caching layer is present. All data is read directly from SQL Server on every request with no in-process or distributed cache. The <code>DAILY_SPEND</code> calculation in particular re-queries all of today&#39;s transactions on every evaluation, which could become a performance bottleneck under high transaction volume.</p>
+<h2 id="data-ownership-boundaries">Data Ownership Boundaries</h2>
+<p>ZavaAlertService operates against a single shared <code>ZavaBankDB</code> SQL Server database. It has write ownership over <code>AlertRules</code>, <code>AccountAlerts</code>, and <code>AlertHistory</code>, while <code>Transactions</code> and <code>Accounts</code> are read-only from this service&#39;s perspective — they are expected to be populated by an upstream core banking service. There is no database-per-service isolation. All SQL is executed via direct connection from within the service process; there is no data API boundary between this service and the shared banking database.</p>
+<h3 id="data-classification-sensitivity">Data Classification &amp; Sensitivity</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Entity / Table</th><th>Sensitive Fields</th><th>Classification</th><th>Controls in Place</th></tr></thead><tbody>
+<tr><td>Transactions</td><td><code>Amount</code>, <code>BalanceAfter</code></td><td>Financial / PCI-adjacent</td><td>None — no encryption-at-rest, masking, or field-level access controls configured</td></tr>
+<tr><td>Accounts</td><td><code>CustomerID</code></td><td>PII (indirect identifier)</td><td>None</td></tr>
+<tr><td>AccountAlerts</td><td><code>CustomerID</code>, <code>NotificationChannel</code></td><td>PII (notification preferences)</td><td>None</td></tr>
+<tr><td>AlertHistory</td><td><code>TriggerValue</code>, <code>Details</code> (contains account ID and balance)</td><td>Financial / PCI-adjacent</td><td>None</td></tr>
+<tr><td>AlertRules</td><td>None</td><td>Non-sensitive</td><td>N/A</td></tr>
+</tbody></table></div>
+<p>Financial transaction amounts and account balances are stored and logged in plain text with no encryption-at-rest, tokenization, or masking. The <code>web.config</code> default connection string embeds a plain-text SQL Server password (<code>Zava123!</code>). No field-level encryption, data masking, or column-level security controls are configured.</p>
+</div>
+</div>
+<p class="footer">Your feedback is invaluable &mdash; <a href="https://aka.ms/ghcp-appmod/feedback">Share feedback</a></p>
+<script>
+function toggleRow(rowId, triggerRow) {
+  var detail = document.getElementById(rowId);
+  var btn = document.getElementById('btn-' + rowId);
+  if (!detail) return;
+  var visible = detail.style.display !== 'none';
+  detail.style.display = visible ? 'none' : 'table-row';
+  if (btn) btn.classList.toggle('open', !visible);
+}
+(function() {
+  var nav = document.querySelector('.tab-nav');
+  if (!nav) return;
+  nav.addEventListener('click', function(e) {
+    var btn = e.target.closest('.tab-btn');
+    if (!btn) return;
+    var targetId = btn.getAttribute('data-tab');
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+    btn.classList.add('active');
+    var panel = document.getElementById(targetId);
+    if (panel) {
+      panel.classList.add('active');
+      // Render any mermaid diagrams in this panel that haven't been processed yet
+      if (window.__mermaidReady) { window.__renderMermaidIn(panel); }
+    }
+  });
+})();
+
+// ── Diagram lightbox ────────────────────────────────────────
+(function() {
+  var lightbox = document.getElementById('diagram-lightbox');
+  var inner = document.getElementById('diagram-lightbox-inner');
+  var closeBtn = document.getElementById('diagram-lightbox-close');
+  if (!lightbox || !inner || !closeBtn) return;
+
+  var scale = 1;
+  var translateX = 0;
+  var translateY = 0;
+  var isDragging = false;
+  var dragStartX = 0;
+  var dragStartY = 0;
+
+  function applyTransform() {
+    var svg = inner.querySelector('svg');
+    if (svg) {
+      svg.style.transform = 'translate(' + translateX + 'px, ' + translateY + 'px) scale(' + scale + ')';
+      svg.style.transformOrigin = 'center center';
+      svg.style.transition = 'none';
+    }
+  }
+
+  function resetTransform() {
+    scale = 1; translateX = 0; translateY = 0;
+    applyTransform();
+  }
+
+  function openLightbox(svgEl) {
+    inner.innerHTML = svgEl.outerHTML;
+    var injected = inner.querySelector('svg');
+    if (injected) {
+      injected.removeAttribute('width');
+      injected.removeAttribute('height');
+      injected.style.cursor = 'grab';
+    }
+    resetTransform();
+    lightbox.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLightbox() {
+    lightbox.classList.remove('open');
+    inner.innerHTML = '';
+    document.body.style.overflow = '';
+    resetTransform();
+  }
+
+  inner.addEventListener('wheel', function(e) {
+    e.preventDefault();
+    var delta = e.deltaY > 0 ? 0.9 : 1.1;
+    scale = Math.min(Math.max(scale * delta, 0.3), 8);
+    applyTransform();
+  }, { passive: false });
+
+  inner.addEventListener('mousedown', function(e) {
+    if (e.button !== 0) return;
+    isDragging = true;
+    dragStartX = e.clientX - translateX;
+    dragStartY = e.clientY - translateY;
+    var svg = inner.querySelector('svg');
+    if (svg) { svg.style.cursor = 'grabbing'; }
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', function(e) {
+    if (!isDragging) return;
+    translateX = e.clientX - dragStartX;
+    translateY = e.clientY - dragStartY;
+    applyTransform();
+  });
+
+  document.addEventListener('mouseup', function() {
+    if (!isDragging) return;
+    isDragging = false;
+    var svg = inner.querySelector('svg');
+    if (svg) { svg.style.cursor = 'grab'; }
+  });
+
+  inner.addEventListener('dblclick', function() { resetTransform(); });
+
+  document.addEventListener('click', function(e) {
+    var card = e.target.closest('.mermaid');
+    if (!card) return;
+    if (e.target.closest('.diagram-lightbox-close')) return;
+    var svg = card.querySelector('svg');
+    if (svg) { openLightbox(svg); }
+  });
+
+  closeBtn.addEventListener('click', closeLightbox);
+
+  lightbox.addEventListener('click', function(e) {
+    if (e.target === lightbox) { closeLightbox(); }
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') { closeLightbox(); }
+  });
+})();
+
+var _currentTarget = '';
+
+function toggleMultiSelect(id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  // Close others
+  document.querySelectorAll('.multi-select.open').forEach(function(ms) { if (ms.id !== id) ms.classList.remove('open'); });
+  el.classList.toggle('open');
+}
+
+// Close dropdowns on outside click
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.multi-select')) {
+    document.querySelectorAll('.multi-select.open').forEach(function(ms) { ms.classList.remove('open'); });
+  }
+});
+
+function getMultiSelectValues(msId) {
+  var el = document.getElementById(msId);
+  if (!el) return [];
+  var checked = el.querySelectorAll('input[type=checkbox]:checked');
+  var vals = [];
+  for (var i = 0; i < checked.length; i++) vals.push(checked[i].value);
+  return vals;
+}
+
+function onMultiSelectChange(msId, label) {
+  var el = document.getElementById(msId);
+  if (!el) return;
+  var vals = getMultiSelectValues(msId);
+  var total = el.querySelectorAll('input[type=checkbox]').length;
+  var btn = el.querySelector('.multi-select-btn');
+  if (btn) {
+    btn.textContent = vals.length > 0 && vals.length < total ? label + ' (' + vals.length + ')' : label;
+  }
+  applyFilters();
+}
+
+function applyFilters() {
+  var selectedDomains = getMultiSelectValues('domain-ms');
+  var selectedCrits = getMultiSelectValues('criticality-ms');
+
+  // Domain filter: show/hide entire sections (empty = show all)
+  var sections = document.querySelectorAll('.issue-section');
+  for (var i = 0; i < sections.length; i++) {
+    var domain = sections[i].getAttribute('data-domain');
+    sections[i].style.display = (selectedDomains.length === 0 || selectedDomains.indexOf(domain) >= 0) ? '' : 'none';
+  }
+
+  // Row-level filtering: respect target + criticality
+  var rows = document.querySelectorAll('.issue-row');
+  for (var i = 0; i < rows.length; i++) {
+    var row = rows[i];
+    var section = row.closest('.issue-section');
+    if (section && section.style.display === 'none') {
+      row.style.display = 'none';
+      var next = row.nextElementSibling;
+      if (next && next.classList.contains('detail-row')) next.style.display = 'none';
+      continue;
+    }
+
+    // Check target filter
+    var show = true;
+    if (_currentTarget && row.hasAttribute('data-targets')) {
+      var targetsStr = row.getAttribute('data-targets');
+      if (targetsStr && targetsStr !== '{}') {
+        try {
+          var targets = JSON.parse(targetsStr);
+          if (Object.keys(targets).length > 0 && !targets[_currentTarget]) {
+            show = false;
+          }
+        } catch(e) {}
+      }
+    }
+
+    // Check criticality filter
+    if (show && selectedCrits.length > 0) {
+      var crit = row.getAttribute('data-criticality');
+      if (selectedCrits.indexOf(crit) < 0) show = false;
+    }
+
+    row.style.display = show ? '' : 'none';
+    var nextRow = row.nextElementSibling;
+    if (nextRow && nextRow.classList.contains('detail-row')) {
+      if (!show) nextRow.style.display = 'none';
+    }
+  }
+}
+
+function clearAllFilters() {
+  document.querySelectorAll('.multi-select input[type=checkbox]').forEach(function(cb) { cb.checked = false; });
+  var domainBtn = document.querySelector('#domain-ms .multi-select-btn');
+  if (domainBtn) domainBtn.textContent = 'Domain';
+  var critBtn = document.querySelector('#criticality-ms .multi-select-btn');
+  if (critBtn) critBtn.textContent = 'Criticality';
+  applyFilters();
+}
+
+function onTargetChange(targetId) {
+  _currentTarget = targetId;
+  var rows = document.querySelectorAll('.issue-row[data-targets]');
+  var totalEffort = 0;
+  var domainCrits = {}; // domain -> {mandatory:0, potential:0, optional:0}
+
+  for (var i = 0; i < rows.length; i++) {
+    var row = rows[i];
+    var targets = JSON.parse(row.getAttribute('data-targets'));
+    var section = row.closest('.issue-section');
+    var domain = section ? section.getAttribute('data-domain') : '';
+
+    if (!targets || Object.keys(targets).length === 0) {
+      // No target data (e.g. security) — always show
+      var sp = parseFloat(row.querySelector('.sp-cell').textContent) || 0;
+      totalEffort += sp;
+      if (!domainCrits[domain]) domainCrits[domain] = {mandatory:0,potential:0,optional:0};
+      var crit = row.getAttribute('data-criticality') || 'optional';
+      domainCrits[domain][crit] = (domainCrits[domain][crit] || 0) + 1;
+      continue;
+    }
+
+    var override = targets[targetId];
+    if (!override) {
+      // Issue doesn't apply to this target
+      continue;
+    }
+
+    // Apply severity override
+    var newSeverity = (override.severity || row.getAttribute('data-default-severity') || '').toLowerCase();
+    row.setAttribute('data-criticality', newSeverity);
+    var critCell = row.querySelector('.crit-cell');
+    if (critCell) {
+      var critText = newSeverity === 'mandatory' ? 'Mandatory' : newSeverity === 'potential' ? 'Potential' : 'Optional';
+      var cssClass = newSeverity === 'mandatory' ? 'crit-square-mandatory' : newSeverity === 'potential' ? 'crit-square-potential' : 'crit-square-optional';
+      critCell.innerHTML = '<span class="crit-label"><span class="crit-square ' + cssClass + '"></span>' + critText + '</span>';
+    }
+
+    // Apply effort override
+    var newEffort = override.effort !== undefined ? override.effort : parseFloat(row.getAttribute('data-default-effort')) || 0;
+    var spCell = row.querySelector('.sp-cell');
+    if (spCell) spCell.textContent = newEffort;
+    totalEffort += newEffort;
+
+    if (!domainCrits[domain]) domainCrits[domain] = {mandatory:0,potential:0,optional:0};
+    domainCrits[domain][newSeverity] = (domainCrits[domain][newSeverity] || 0) + 1;
+  }
+
+  // Also add security findings effort (they don't have per-target data)
+  var secSection = document.querySelector('.issue-section[data-domain="security"]');
+  if (secSection) {
+    var secRows = secSection.querySelectorAll('.issue-row');
+    for (var j = 0; j < secRows.length; j++) {
+      if (!secRows[j].hasAttribute('data-targets') || secRows[j].getAttribute('data-targets') === '') {
+        var sp = parseFloat(secRows[j].querySelector('.sp-cell').textContent) || 0;
+        totalEffort += sp;
+        if (!domainCrits['security']) domainCrits['security'] = {mandatory:0,potential:0,optional:0};
+        var sc = secRows[j].getAttribute('data-criticality') || 'optional';
+        domainCrits['security'][sc] = (domainCrits['security'][sc] || 0) + 1;
+      }
+    }
+  }
+
+  // Update effort display
+  var label = totalEffort < 20 ? 'S' : totalEffort < 50 ? 'M' : totalEffort < 100 ? 'L' : 'XL';
+  var effortEl = document.getElementById('effort-display');
+  if (effortEl) effortEl.textContent = label + ' (total story points: ' + totalEffort + ')';
+
+  // Update donut charts
+  updateDonuts(domainCrits);
+
+  // Re-apply domain/criticality filters
+  applyFilters();
+}
+
+function updateDonuts(domainCrits) {
+  var container = document.getElementById('donut-container');
+  if (!container) return;
+  container.innerHTML = '';
+  var domainNames = {'cloud-readiness':'Cloud Readiness','java-upgrade':'Java Upgrade','dotnet-upgrade':'DotNET Upgrade','security':'Security'};
+  var domainOrder = ['cloud-readiness','java-upgrade','dotnet-upgrade','security'];
+  for (var d = 0; d < domainOrder.length; d++) {
+    var key = domainOrder[d];
+    var c = domainCrits[key];
+    if (!c || (c.mandatory + c.potential + c.optional) === 0) continue;
+    var total = c.mandatory + c.potential + c.optional;
+    var div = document.createElement('div');
+    div.className = 'domain-summary-item';
+    div.innerHTML = buildDonutSvg(c.mandatory, c.potential, c.optional) +
+      '<h3>' + domainNames[key] + '</h3>' +
+      '<div class="count">' + total + ' issue' + (total !== 1 ? 's' : '') + '</div>';
+    container.appendChild(div);
+  }
+}
+
+function buildDonutSvg(m, p, o) {
+  var total = m + p + o;
+  if (total === 0) return '<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;"><circle cx="50" cy="50" r="35" fill="none" stroke="#d0d7de" stroke-width="15" opacity="0.5"/></svg>';
+  var r = 35, circ = 2 * Math.PI * r, offset = 0;
+  var svg = '<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;transform:rotate(-90deg);">';
+  var segs = [{c:m,color:'var(--color-mandatory)'},{c:p,color:'var(--color-potential)'},{c:o,color:'var(--color-optional)'}];
+  for (var i = 0; i < segs.length; i++) {
+    if (segs[i].c === 0) continue;
+    var segLen = (segs[i].c / total) * circ;
+    var gap = total > segs[i].c ? 1.5 : 0;
+    var drawLen = Math.max(segLen - gap, 0.5);
+    svg += '<circle cx="50" cy="50" r="' + r + '" fill="none" stroke="' + segs[i].color + '" stroke-width="15" stroke-dasharray="' + drawLen.toFixed(2) + ' ' + circ.toFixed(2) + '" stroke-dashoffset="' + (-offset).toFixed(2) + '"/>';
+    offset += segLen;
+  }
+  svg += '</svg>';
+  return svg;
+}
+</script>
+<script>document.addEventListener('DOMContentLoaded', function() { onTargetChange('AppService.Windows'); });</script>
+</div></body></html>

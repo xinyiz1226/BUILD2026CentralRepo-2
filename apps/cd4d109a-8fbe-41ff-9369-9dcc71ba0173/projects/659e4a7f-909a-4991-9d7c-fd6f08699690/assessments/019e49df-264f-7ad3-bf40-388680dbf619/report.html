@@ -1,0 +1,1450 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Assessment - ZavaACHProcessor</title>
+<style>
+:root {
+  --bg-primary: #ffffff;
+  --bg-card: #f8f9fa;
+  --bg-page: #f0f1f3;
+  --text-primary: #24292f;
+  --text-secondary: #57606a;
+  --text-muted: #6b7280;
+  --border-color: #d0d7de;
+  --border-light: #e1e4e8;
+  --link-color: #2563eb;
+  --color-mandatory: #E3008C;
+  --color-potential: #637CEF;
+  --color-optional: #A19F9D;
+  --font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  --font-mono: 'Cascadia Code', 'Consolas', 'Courier New', monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-family); font-size: 13px; color: var(--text-primary); background: var(--bg-primary); line-height: 1.5; margin: 0; padding: 0; }
+a { color: var(--link-color); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Page layout ───────────────────────────────────────────── */
+.main { margin: 0; padding: 24px 32px; background: var(--bg-primary); }
+.back-link { color: var(--text-muted); font-size: 13px; margin-bottom: 16px; display: block; }
+h1 { font-weight: 600; font-size: 20px; color: var(--text-primary); margin-bottom: 20px; }
+
+/* ── Report cards (matches VS Code .vscode-report-card) ──── */
+.report-card { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 4px; padding: 12px; margin-bottom: 20px; }
+.report-card h2 { font-size: 14px; font-weight: 600; margin: 0; color: var(--text-primary); }
+.report-card-body { margin-top: 16px; }
+
+/* ── Application Information (two-column) ────────────────── */
+.app-info-container { display: flex; gap: 8px; flex-wrap: wrap; }
+.app-info-column { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 8px; }
+.app-info-row { display: flex; align-items: baseline; }
+.app-info-label { width: 136px; flex-shrink: 0; font-weight: 600; color: var(--text-primary); }
+.app-info-value { flex: 1; color: var(--text-primary); }
+
+/* ── Issue Summary (pie charts + legend) ─────────────────── */
+.cards-container { display: flex; align-items: stretch; gap: 20px; flex-wrap: wrap; }
+.issue-summary-card { flex: 2; }
+.domain-summary-container { display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-around; }
+.domain-summary-item { flex: 1; min-width: 120px; text-align: center; padding: 0 16px; border-right: 1px solid var(--border-light); }
+.domain-summary-item:last-child { border-right: none; }
+.domain-summary-item h3 { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-top: 8px; }
+.domain-summary-item .count { font-size: 12px; color: var(--text-secondary); }
+.criticality-legend { display: flex; flex-wrap: wrap; gap: 15px; padding-top: 12px; justify-content: center; }
+.criticality-legend .legend-item { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-secondary); }
+.legend-swatch { display: inline-block; width: 1em; height: 1em; border-radius: 2px; }
+
+/* ── Issue list tables ───────────────────────────────────── */
+.issue-section { margin-top: 20px; }
+.issue-section h2 { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+.issue-table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 600px; }
+.issue-table th { text-align: left; text-transform: uppercase; font-weight: 600; font-size: calc(13px * 0.875); padding: 6px 8px; background: var(--bg-card); border-bottom: 1px solid var(--border-color); color: var(--text-secondary); position: sticky; top: 0; z-index: 1; }
+.issue-table td { padding: 12px 8px; border-bottom: 1px solid var(--border-light); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
+.col-issue { width: 55%; }
+.col-criticality { width: 25%; }
+.col-storypoint { width: 20%; }
+
+/* ── Target dropdown ─────────────────────────────────────── */
+.target-select-container { margin: 4px 0 16px 0; display: flex; align-items: center; gap: 8px; }
+.target-select-container label { font-weight: 600; color: var(--text-primary); font-size: 14px; }
+.target-select-container select { font-family: var(--font-family); font-size: 13px; padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer; }
+
+/* ── Filter bar ──────────────────────────────────────────── */
+.filter-bar { display: flex; flex-wrap: wrap; gap: 16px; margin: 16px 0 8px 0; align-items: center; }
+.multi-select { position: relative; display: inline-block; min-width: 140px; }
+.multi-select-btn { font-family: var(--font-family); font-size: 13px; padding: 4px 24px 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer; width: 100%; text-align: left; position: relative; white-space: nowrap; }
+.multi-select-btn::after { content: '\25BE'; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--text-secondary); }
+.multi-select-dropdown { display: none; position: absolute; top: 100%; left: 0; min-width: 100%; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 100; margin-top: 2px; }
+.multi-select.open .multi-select-dropdown { display: block; }
+.multi-select-option { display: flex; align-items: center; gap: 6px; padding: 5px 10px; cursor: pointer; font-size: 13px; white-space: nowrap; }
+.multi-select-option:hover { background: var(--bg-secondary); }
+.multi-select-option input[type=checkbox] { margin: 0; cursor: pointer; }
+.clear-filters { font-size: 12px; color: var(--link-color); cursor: pointer; margin-left: 4px; }
+
+/* ── Criticality labels (colored square + text) ──────────── */
+.crit-label { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; white-space: nowrap; }
+.crit-square { display: inline-block; width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+.crit-square-mandatory { background: var(--color-mandatory); }
+.crit-square-potential { background: var(--color-potential); }
+.crit-square-optional { background: var(--color-optional); }
+
+/* ── Expandable rows ─────────────────────────────────────── */
+.expand-btn { background: none; border: none; cursor: pointer; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 11px; transition: transform 0.15s; padding: 0; vertical-align: middle; flex-shrink: 0; }
+.expand-btn.open { transform: rotate(90deg); }
+.issue-title-cell { display: flex; align-items: center; gap: 4px; }
+.detail-row td { padding: 0; border-bottom: 1px solid var(--border-light); white-space: normal; overflow: visible; text-overflow: clip; }
+.detail-content { display: flex; gap: 0; padding: 8px 8px 8px 32px; min-width: 0; }
+.file-list { flex: 0 0 50%; min-width: 0; overflow: hidden; }
+.file-list table { width: 100%; border-collapse: collapse; }
+.file-list th { font-size: calc(13px * 0.875); text-transform: uppercase; font-weight: 600; color: var(--text-secondary); padding: 6px 8px; border-bottom: 1px solid var(--border-color); text-align: left; height: 32px; }
+.file-list td { font-size: 13px; padding: 6px 8px; border-bottom: 1px solid var(--border-light); color: var(--text-primary); }
+.file-list .file-path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 300px; display: block; }
+.file-list .position { font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary); }
+.explanation-panel { flex: 1; padding-left: 16px; min-width: 0; overflow-wrap: break-word; word-wrap: break-word; }
+.explanation-panel h4 { font-size: calc(13px * 0.875); text-transform: uppercase; font-weight: 600; color: var(--text-secondary); padding: 6px 0; border-bottom: 1px solid var(--border-color); height: 32px; margin: 0; }
+.explanation-panel p { font-size: 13px; padding: 8px 0; color: var(--text-primary); line-height: 1.6; white-space: normal; word-break: break-word; }
+
+/* ── Experimental badge ──────────────────────────────────── */
+.badge-experimental { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; background: #fef9c3; color: #854d0e; vertical-align: middle; margin-left: 8px; cursor: default; }
+
+/* ── Footer ──────────────────────────────────────────────── */
+.footer { text-align: center; margin-top: 24px; color: var(--text-muted); font-size: 13px; }
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 800px) {
+  .main { padding: 16px; }
+  .app-info-container { flex-direction: column; }
+  .domain-summary-container { flex-direction: column; }
+  .domain-summary-item { border-right: none; border-bottom: 1px solid var(--border-light); padding-bottom: 12px; }
+  .detail-content { flex-direction: column; }
+  .file-list { flex: none; width: 100%; }
+  .explanation-panel { padding-left: 0; padding-top: 8px; }
+}
+/* ── Tab navigation ──────────────────────────────────────── */
+.tab-nav { display: flex; gap: 0; border-bottom: 1px solid var(--border-color); margin-bottom: 28px; flex-wrap: wrap; }
+.tab-btn { background: none; border: none; border-bottom: 2px solid transparent; padding: 10px 18px; font-size: 13px; font-family: var(--font-family); color: var(--text-secondary); cursor: pointer; margin-bottom: -1px; white-space: nowrap; position: relative; }
+.tab-btn:hover { color: var(--text-primary); }
+.tab-btn.active { color: var(--link-color); border-bottom-color: var(--link-color); font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ── Tooltip on tab ──────────────────────────────────────── */
+.tab-btn[data-tooltip]::after { content: attr(data-tooltip); position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); background: #24292f; color: #ffffff; font-size: 12px; font-weight: 400; padding: 6px 10px; border-radius: 4px; white-space: normal; width: max-content; max-width: 260px; text-align: center; pointer-events: none; opacity: 0; transition: opacity 0.15s; z-index: 100; }
+.tab-btn[data-tooltip]:hover::after { opacity: 1; }
+
+/* ── Fact content — prose column ─────────────────────────── */
+.fact-content { max-width: 860px; margin: 0 auto; line-height: 1.75; color: var(--text-primary); font-size: 14px; }
+.fact-content h1 { font-size: 22px; font-weight: 700; margin: 0 0 6px 0; color: var(--text-primary); letter-spacing: -0.01em; }
+.fact-content h1 + p { margin-top: 6px; color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
+.fact-content h2 { font-size: 17px; font-weight: 700; margin: 36px 0 12px 0; padding-bottom: 6px; border-bottom: 1px solid var(--border-color); color: var(--text-primary); letter-spacing: -0.01em; }
+.fact-content h3 { font-size: 14px; font-weight: 700; margin: 24px 0 8px 0; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.04em; font-size: 12px; color: var(--text-secondary); }
+.fact-content p { margin: 10px 0; color: var(--text-primary); }
+.fact-content ul, .fact-content ol { margin: 10px 0 10px 22px; }
+.fact-content li { margin: 5px 0; }
+.fact-content a { color: var(--link-color); }
+.fact-content a:hover { text-decoration: underline; }
+
+/* ── Fact tables ─────────────────────────────────────────── */
+.table-wrap { overflow-x: auto; margin: 16px 0; }
+.fact-content table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 13px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); }
+.fact-content thead { background: var(--bg-card); }
+.fact-content th { text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; padding: 8px 14px; border-bottom: 1px solid var(--border-color); color: var(--text-secondary); }
+.fact-content td { padding: 9px 14px; border-bottom: 1px solid var(--border-light); vertical-align: top; color: var(--text-primary); }
+.fact-content tr:last-child td { border-bottom: none; }
+.fact-content tbody tr:hover { background: #f6f8fa; }
+
+/* ── Fact code ───────────────────────────────────────────── */
+.fact-content code { font-family: var(--font-mono); font-size: 12px; background: #f0f1f3; padding: 2px 6px; border-radius: 4px; color: #c7254e; }
+.fact-content pre { background: #f6f8fa; border: 1px solid var(--border-light); border-radius: 6px; padding: 14px 16px; overflow-x: auto; margin: 14px 0; }
+.fact-content pre code { background: none; color: var(--text-primary); padding: 0; border-radius: 0; }
+.fact-content hr { border: none; border-top: 1px solid var(--border-light); margin: 28px 0; }
+.fact-content strong { font-weight: 600; }
+.fact-content em { font-style: italic; }
+.fact-content blockquote { border-left: 3px solid var(--border-color); margin: 12px 0; padding: 4px 16px; color: var(--text-secondary); }
+.fact-unavailable { padding: 32px 0; }
+.fact-unavailable h3 { font-size: 16px; font-weight: 600; color: var(--text-primary); text-transform: none; letter-spacing: 0; margin: 0 0 12px 0; }
+.fact-unavailable p { margin: 0 0 8px 0; color: var(--text-secondary); }
+.fact-unavailable ol, .fact-unavailable ul { margin: 0 0 0 22px; color: var(--text-primary); }
+.fact-unavailable li { margin: 6px 0; }
+
+/* ── Mermaid diagram card ─────────────────────────────────── */
+.mermaid { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 8px; padding: 24px 16px; margin: 20px 0; overflow-x: auto; text-align: center; cursor: pointer; position: relative; }
+.mermaid:hover { border-color: var(--border-color); }
+.mermaid svg { max-width: 100%; height: auto !important; display: inline-block; }
+.mermaid-zoom-hint { position: absolute; top: 8px; right: 10px; font-size: 11px; color: var(--text-muted); opacity: 0; transition: opacity 0.15s; pointer-events: none; }
+.mermaid:hover .mermaid-zoom-hint { opacity: 1; }
+
+/* ── Diagram lightbox ────────────────────────────────────── */
+.diagram-lightbox { display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.7); backdrop-filter: blur(2px); align-items: center; justify-content: center; cursor: zoom-out; padding: 48px 32px; }
+.diagram-lightbox.open { display: flex; }
+.diagram-lightbox-inner { background: #ffffff; border-radius: 10px; padding: 32px; width: 88vw; max-height: 88vh; overflow: hidden; cursor: default; box-shadow: 0 24px 64px rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; }
+.diagram-lightbox-inner svg { width: 100% !important; height: auto !important; max-height: 76vh; display: block; }
+.diagram-lightbox-close { position: fixed; top: 20px; right: 24px; background: #ffffff; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-primary); box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 1001; }
+.diagram-lightbox-close:hover { background: var(--bg-card); }
+.diagram-lightbox-hint { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.55); color: #ffffff; font-size: 12px; padding: 6px 14px; border-radius: 20px; pointer-events: none; white-space: nowrap; z-index: 1001; }
+</style>
+<script>
+window.__mermaidPending = [];
+window.__mermaidReady = false;
+window.__renderMermaidIn = function(container) {
+  // Until the real implementation overrides this (after the ES module import
+  // resolves), just queue the container so we can render it later.
+  if (container) { window.__mermaidPending.push(container); }
+};
+</script>
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+mermaid.initialize({ startOnLoad: false, theme: 'default', flowchart: { useMaxWidth: true }, sequence: { useMaxWidth: true } });
+
+// Real implementation: actually run mermaid on the unprocessed diagrams in the
+// given container (only ones not already rendered). Adds a "Click to expand"
+// hint span after each successful render so the lightbox affordance is
+// discoverable.
+window.__renderMermaidIn = function(container) {
+  var nodes = container ? container.querySelectorAll('.mermaid:not([data-processed])') : [];
+  if (nodes.length > 0) {
+    mermaid.run({ nodes: Array.from(nodes) }).then(function() {
+      nodes.forEach(function(node) {
+        if (!node.querySelector('.mermaid-zoom-hint')) {
+          var hint = document.createElement('span');
+          hint.className = 'mermaid-zoom-hint';
+          hint.textContent = 'Click to expand';
+          node.appendChild(hint);
+        }
+      });
+    });
+  }
+};
+
+// Drain any containers that were queued by the shim while mermaid was loading.
+// Use a Set to dedupe in case a container was both queued and is also the
+// initial-active panel below.
+var drained = new Set();
+(window.__mermaidPending || []).forEach(function(c) {
+  if (!drained.has(c)) { drained.add(c); window.__renderMermaidIn(c); }
+});
+window.__mermaidPending = [];
+window.__mermaidReady = true;
+
+// Render diagrams visible on initial load (the active tab panel(s) may not have
+// been queued by anyone — DOMContentLoaded handlers run before this if the
+// module is cached, after this if it's not, so handle both cases here).
+function renderActivePanels() {
+  document.querySelectorAll('.tab-panel.active').forEach(function(p) {
+    if (!drained.has(p)) { drained.add(p); window.__renderMermaidIn(p); }
+  });
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', renderActivePanels);
+} else {
+  renderActivePanels();
+}
+</script>
+</head><body>
+<div id="diagram-lightbox" class="diagram-lightbox" role="dialog" aria-modal="true">
+  <button class="diagram-lightbox-close" id="diagram-lightbox-close" aria-label="Close">&#x2715;</button>
+  <div class="diagram-lightbox-hint">Scroll to zoom &nbsp;·&nbsp; Drag to pan &nbsp;·&nbsp; Double-click to reset</div>
+  <div class="diagram-lightbox-inner" id="diagram-lightbox-inner"></div>
+</div>
+<div class="main">
+<a class="back-link" href="../../index.html">&#8592; Back to aggregate dashboard</a>
+<h1>ZavaACHProcessor</h1>
+<div class="report-card">
+  <h2>Application Information</h2>
+  <div class="report-card-body">
+    <div class="app-info-container">
+      <div class="app-info-column">
+        <div class="app-info-row"><span class="app-info-label">Application Name</span><span class="app-info-value">ZavaACHProcessor</span></div>
+        <div class="app-info-row"><span class="app-info-label">Java Version</span><span class="app-info-value">1.8</span></div>
+        <div class="app-info-row"><span class="app-info-label">Effort</span><span class="app-info-value" id="effort-display">M (total story points: 23)</span></div>
+      </div>
+      <div class="app-info-column">
+        <div class="app-info-row"><span class="app-info-label">Build Tools</span><span class="app-info-value">Gradle</span></div>
+        <div class="app-info-row"><span class="app-info-label">Frameworks</span><span class="app-info-value">N/A</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+<nav class="tab-nav">
+  <button class="tab-btn active" data-tab="tab-issues" data-tooltip="Issues detected in the source code">Issues</button>
+  <button class="tab-btn" data-tab="tab-arch" data-tooltip="How the app&#39;s layers connect — from UI to data.">Architecture</button>
+  <button class="tab-btn" data-tab="tab-api" data-tooltip="Endpoints exposed by this app and how services communicate.">API Contracts</button>
+  <button class="tab-btn" data-tab="tab-config" data-tooltip="Environment settings, runtime profiles, and deployment manifests.">Configuration</button>
+  <button class="tab-btn" data-tab="tab-workflows" data-tooltip="Domain entities and the core flows users move through.">Business Workflows</button>
+  <button class="tab-btn" data-tab="tab-deps" data-tooltip="Libraries and frameworks this app depends on, grouped by category.">Dependencies</button>
+  <button class="tab-btn" data-tab="tab-data" data-tooltip="Database schema, entity relationships, and persistence behavior.">Data Model</button>
+</nav>
+<div id="tab-issues" class="tab-panel active">
+<div class="target-select-container">
+  <label for="target-select">Target Compute Service:</label>
+  <select id="target-select" onchange="onTargetChange(this.value)">
+    <option value="azure-aks">Azure Kubernetes Service</option>
+    <option value="azure-appservice">Azure App Service</option>
+    <option value="azure-container-apps">Azure Container Apps</option>
+  </select>
+</div>
+<div class="report-card">
+  <h2>Issue Summary</h2>
+  <div class="report-card-body">
+    <div class="domain-summary-container" id="donut-container">
+      <div class="domain-summary-item">
+<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;transform:rotate(-90deg);">
+  <circle cx="50" cy="50" r="35" fill="none" stroke="var(--color-mandatory)" stroke-width="15" stroke-dasharray="130.45 219.91" stroke-dashoffset="-0.00"/>
+  <circle cx="50" cy="50" r="35" fill="none" stroke="var(--color-optional)" stroke-width="15" stroke-dasharray="86.46 219.91" stroke-dashoffset="-131.95"/>
+</svg>
+
+        <h3>Cloud Readiness</h3>
+        <div class="count">5 issues</div>
+      </div>
+      <div class="domain-summary-item">
+<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;transform:rotate(-90deg);">
+  <circle cx="50" cy="50" r="35" fill="none" stroke="var(--color-mandatory)" stroke-width="15" stroke-dasharray="219.91 219.91" stroke-dashoffset="-0.00"/>
+</svg>
+
+        <h3>Java Upgrade</h3>
+        <div class="count">1 issue</div>
+      </div>
+    </div>
+    <div class="criticality-legend">
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--color-mandatory)"></span>Mandatory</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--color-potential)"></span>Potential</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--color-optional)"></span>Optional</div>
+    </div>
+  </div>
+</div>
+<div class="filter-bar" id="filter-bar">
+  <div class="multi-select" id="domain-ms">
+    <button class="multi-select-btn" onclick="toggleMultiSelect('domain-ms')">Domain</button>
+    <div class="multi-select-dropdown">
+      <label class="multi-select-option"><input type="checkbox" value="cloud-readiness" onchange="onMultiSelectChange('domain-ms','Domain')"/> Cloud Readiness</label>
+      <label class="multi-select-option"><input type="checkbox" value="java-upgrade" onchange="onMultiSelectChange('domain-ms','Domain')"/> Java Upgrade</label>
+    </div>
+  </div>
+  <div class="multi-select" id="criticality-ms">
+    <button class="multi-select-btn" onclick="toggleMultiSelect('criticality-ms')">Criticality</button>
+    <div class="multi-select-dropdown">
+      <label class="multi-select-option"><input type="checkbox" value="mandatory" onchange="onMultiSelectChange('criticality-ms','Criticality')"/> Mandatory</label>
+      <label class="multi-select-option"><input type="checkbox" value="optional" onchange="onMultiSelectChange('criticality-ms','Criticality')"/> Optional</label>
+    </div>
+  </div>
+  <a class="clear-filters" href="javascript:void(0)" onclick="clearAllFilters()">Clear all</a>
+</div>
+<div class="issue-section" data-domain="cloud-readiness">
+  <h2>Cloud Readiness</h2>
+  <table class="issue-table">
+    <colgroup><col class="col-issue"/><col class="col-criticality"/><col class="col-storypoint"/></colgroup>
+    <thead><tr><th>Issue Category</th><th>Criticality</th><th>Story Point</th></tr></thead>
+    <tbody>
+    <tr class="issue-row" data-criticality="mandatory" data-targets='{"azure-aks":{"effort":3,"severity":"mandatory"},"azure-appservice":{"effort":3,"severity":"mandatory"},"azure-container-apps":{"effort":3,"severity":"mandatory"}}' data-default-effort="3" data-default-severity="mandatory" data-rule="unsecure-network-protocol-00000" onclick="toggleRow('row-cloudreadiness-0', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-cloudreadiness-0">&#x276F;</button> Use of unsecured network protocols or URI libraries</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-mandatory"></span>Mandatory</span></td>
+      <td class="sp-cell">3</td>
+    </tr>
+    <tr class="detail-row" id="row-cloudreadiness-0" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="src/main/resources/achprocessor.properties">src/main/resources/achprocessor.properties</span></td><td><span class="position">Line 16, Col 0</span></td></tr>
+            <tr><td><span class="file-path" title="bin/main/achprocessor.properties">bin/main/achprocessor.properties</span></td><td><span class="position">Line 16, Col 0</span></td></tr>
+            <tr><td><span class="file-path" title="src/main/java/com/zavabank/achprocessor/Main.java">src/main/java/com/zavabank/achprocessor/Main.java</span></td><td><span class="position">Line 168, Col 0</span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>Using secured protocols such as HTTPS and SFTP (over HTTP and FTP) should now be the norm as applications are more and more exposed and interconnected. <br/>This CloudReady patterns looks for unescured URI in the source code or deprecated URI libraries. <br/>Ideally, URLs should be replaced in your source code by secured protocols HTTPS and SFTP (and ensure the infrastructure implements these protocols for the resources your application calls, uses or references).</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="mandatory" data-targets='{"azure-aks":{"effort":3,"severity":"mandatory"},"azure-appservice":{"effort":3,"severity":"mandatory"},"azure-container-apps":{"effort":3,"severity":"mandatory"}}' data-default-effort="3" data-default-severity="mandatory" data-rule="cra-hardcoded-credential-default-pwd-04000" onclick="toggleRow('row-cloudreadiness-1', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-cloudreadiness-1">&#x276F;</button> CRA: Default or well-known password detected</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-mandatory"></span>Mandatory</span></td>
+      <td class="sp-cell">3</td>
+    </tr>
+    <tr class="detail-row" id="row-cloudreadiness-1" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="src/main/resources/achprocessor.properties">src/main/resources/achprocessor.properties</span></td><td><span class="position">Line 4, Col 0</span></td></tr>
+            <tr><td><span class="file-path" title="bin/main/achprocessor.properties">bin/main/achprocessor.properties</span></td><td><span class="position">Line 4, Col 0</span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p><strong>EU Cyber Resilience Act (Annex I, Part I, Section 2(b))</strong> requires a <strong>secure by default configuration</strong>. The use of default, well-known, or trivial passwords violates the secure-by-default principle.</p><p>ETSI EN 303 645 (referenced standard for CRA compliance) explicitly prohibits universal default passwords in Provision 5.1-1.</p><p><strong>Recommended actions:</strong></p><ul><li>Remove all default/well-known passwords from code and configuration.</li><li>Require unique, strong passwords during initial setup.</li><li>Use generated secrets that are unique per deployment.</li><li>Implement password complexity requirements.</li></ul></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="mandatory" data-targets='{"azure-aks":{"effort":3,"severity":"mandatory"},"azure-appservice":{"effort":3,"severity":"mandatory"},"azure-container-apps":{"effort":3,"severity":"mandatory"}}' data-default-effort="3" data-default-severity="mandatory" data-rule="localhost-http-00001" onclick="toggleRow('row-cloudreadiness-2', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-cloudreadiness-2">&#x276F;</button> Local HTTP Calls</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-mandatory"></span>Mandatory</span></td>
+      <td class="sp-cell">3</td>
+    </tr>
+    <tr class="detail-row" id="row-cloudreadiness-2" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="src/main/java/com/zavabank/achprocessor/Main.java">src/main/java/com/zavabank/achprocessor/Main.java</span></td><td><span class="position">Line 168, Col 0</span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>The app is trying to access local resource by HTTP, please try to migrate the resource to cloud</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="optional" data-targets='{"azure-aks":{"effort":3,"severity":"optional"},"azure-appservice":{"effort":3,"severity":"optional"},"azure-container-apps":{"effort":3,"severity":"optional"}}' data-default-effort="3" data-default-severity="optional" data-rule="localhost-00004" onclick="toggleRow('row-cloudreadiness-3', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-cloudreadiness-3">&#x276F;</button> Localhost Usage</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-optional"></span>Optional</span></td>
+      <td class="sp-cell">3</td>
+    </tr>
+    <tr class="detail-row" id="row-cloudreadiness-3" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="src/main/resources/achprocessor.properties">src/main/resources/achprocessor.properties</span></td><td><span class="position">Line 1, Col 0</span></td></tr>
+            <tr><td><span class="file-path" title="src/main/java/com/zavabank/achprocessor/Main.java">src/main/java/com/zavabank/achprocessor/Main.java</span></td><td><span class="position">Line 256, Col 0</span></td></tr>
+            <tr><td><span class="file-path" title="bin/main/achprocessor.properties">bin/main/achprocessor.properties</span></td><td><span class="position">Line 1, Col 0</span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>The app is trying to use localhost, please try to migrate the resource to cloud</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="optional" data-targets='{"azure-aks":{"effort":3,"severity":"optional"},"azure-appservice":{"effort":3,"severity":"optional"},"azure-container-apps":{"effort":3,"severity":"optional"}}' data-default-effort="3" data-default-severity="optional" data-rule="hardcoded-urls-00001" onclick="toggleRow('row-cloudreadiness-4', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-cloudreadiness-4">&#x276F;</button> Avoid using hardcoded URLs (HTTP protocol) in source code</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-optional"></span>Optional</span></td>
+      <td class="sp-cell">3</td>
+    </tr>
+    <tr class="detail-row" id="row-cloudreadiness-4" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="src/main/resources/achprocessor.properties">src/main/resources/achprocessor.properties</span></td><td><span class="position">Line 16, Col 0</span></td></tr>
+            <tr><td><span class="file-path" title="bin/main/achprocessor.properties">bin/main/achprocessor.properties</span></td><td><span class="position">Line 16, Col 0</span></td></tr>
+            <tr><td><span class="file-path" title="src/main/java/com/zavabank/achprocessor/Main.java">src/main/java/com/zavabank/achprocessor/Main.java</span></td><td><span class="position">Line 168, Col 0</span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>This patterns verifies in source code and configuration files the presence of hardcoded URLs using the HTTP protocol (HTTP/HTTPS). This URL would need to be replaced by the new resource&#39;s URL during the Cloud migration, if any change occured.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+</div>
+<div class="issue-section" data-domain="java-upgrade">
+  <h2>Java Upgrade</h2>
+  <table class="issue-table">
+    <colgroup><col class="col-issue"/><col class="col-criticality"/><col class="col-storypoint"/></colgroup>
+    <thead><tr><th>Issue Category</th><th>Criticality</th><th>Story Point</th></tr></thead>
+    <tbody>
+    <tr class="issue-row" data-criticality="mandatory" data-targets='{"azure-aks":{"effort":8,"severity":"mandatory"},"azure-appservice":{"effort":8,"severity":"mandatory"},"azure-container-apps":{"effort":8,"severity":"mandatory"}}' data-default-effort="8" data-default-severity="mandatory" data-rule="azure-java-version-01000" onclick="toggleRow('row-javaupgrade-0', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-javaupgrade-0">&#x276F;</button> Java Version Has Reached the End of Support</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-mandatory"></span>Mandatory</span></td>
+      <td class="sp-cell">8</td>
+    </tr>
+    <tr class="detail-row" id="row-javaupgrade-0" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="build.gradle">build.gradle</span></td><td><span class="position">Line 17, Col 0</span></td></tr>
+            <tr><td><span class="file-path" title="build.gradle">build.gradle</span></td><td><span class="position">Line 18, Col 0</span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>The application is using a Java version that has reached the end of support. It is strongly recommended to plan and execute a migration strategy to upgrade your application to a supported Java version.<br/>Supported Java versions receive long-term support (LTS) from the Java community, including bug fixes and updates. Migrating to a supported version provides you with a stable and well-maintained platform for your application.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+</div>
+</div><!-- #tab-issues -->
+<div id="tab-arch" class="tab-panel">
+  <div class="fact-content"><h1 id="architecture-diagram">Architecture Diagram</h1>
+<p>ZavaACHProcessor is a standalone Java 8 service that polls a shared file directory for incoming NACHA-formatted ACH files, parses and posts each transaction to an HTTP Ledger API, and publishes processing events to RabbitMQ.</p>
+<h2 id="application-architecture">Application Architecture</h2>
+<div class="mermaid">
+flowchart TD
+    subgraph FileSystem["Shared File System"]
+        IncomingDir["/shared/ach-incoming (NACHA files)"]
+        ProcessedDir["/shared/ach-incoming/processed"]
+        ErrorDir["/shared/ach-incoming/error"]
+    end
+
+    subgraph App["Application Layer - Java 8 (Plain JAR)"]
+        Poller["File Poller (poll every 5s)"]
+        Parser["NACHA Parser"]
+        LedgerClient["HTTP Ledger Client"]
+        EventPublisher["RabbitMQ Event Publisher"]
+        ConfigLoader["Config Loader (properties + env)"]
+    end
+
+    subgraph External["External Services"]
+        LedgerAPI["Ledger HTTP API (zavaledger:8080)"]
+        RabbitMQ["RabbitMQ Broker"]
+        Exchange1["zava.events (topic exchange)"]
+        Exchange2["zava.dlx (dead-letter exchange)"]
+    end
+
+    IncomingDir -->|"NACHA file detected"| Poller
+    Poller -->|"reads file"| Parser
+    Parser -->|"AchBatch + AchEntry"| LedgerClient
+    LedgerClient -->|"POST /api/ledger/ach (JSON)"| LedgerAPI
+    LedgerClient -->|"success"| EventPublisher
+    LedgerClient -->|"failure"| EventPublisher
+    EventPublisher -->|"ach.processed routing key"| Exchange1
+    EventPublisher -->|"ach.failed routing key"| Exchange2
+    Exchange1 --> RabbitMQ
+    Exchange2 --> RabbitMQ
+    Parser -->|"parsed OK"| ProcessedDir
+    Parser -->|"parse error"| ErrorDir
+    LedgerClient -->|"all posted"| ProcessedDir
+    LedgerClient -->|"any failure"| ErrorDir
+    ConfigLoader -.->|"runtime config"| Poller
+</div>
+<h3 id="technology-stack-summary">Technology Stack Summary</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Layer</th><th>Technology</th><th>Version</th><th>Purpose</th></tr></thead><tbody>
+<tr><td>Runtime</td><td>Java SE (Plain JAR)</td><td>8</td><td>Application runtime</td></tr>
+<tr><td>Build</td><td>Gradle + Shadow plugin</td><td>7.6 / 7.1.2</td><td>Build and fat-JAR packaging</td></tr>
+<tr><td>Messaging</td><td>RabbitMQ amqp-client</td><td>5.21.0</td><td>Publish ACH processing events</td></tr>
+<tr><td>Database Driver</td><td>mssql-jdbc</td><td>12.6.1.jre8</td><td>SQL Server JDBC (dependency present)</td></tr>
+<tr><td>HTTP</td><td>java.net.HttpURLConnection</td><td>Java 8 built-in</td><td>HTTP POST to Ledger API</td></tr>
+<tr><td>Containerisation</td><td>Docker (multi-stage)</td><td>gradle:7.6-jdk8 / eclipse-temurin:8-jre</td><td>Build and runtime images</td></tr>
+<tr><td>Configuration</td><td>Java Properties + env vars</td><td>—</td><td>Application configuration</td></tr>
+</tbody></table></div>
+<h3 id="data-storage-external-services">Data Storage &amp; External Services</h3>
+<p>The application does not manage its own persistent data store. ACH file state is tracked through file-system directories (<code>/shared/ach-incoming</code>, <code>/shared/ach-incoming/processed</code>, <code>/shared/ach-incoming/error</code>). Transaction data is forwarded via HTTP POST to an external Ledger API (<code>http://zavaledger:8080/api/ledger/ach</code>). Processing outcome events are published to a RabbitMQ broker: success events go to the <code>zava.events</code> topic exchange with routing key <code>ach.processed</code>, and failure events go to the <code>zava.dlx</code> dead-letter exchange with routing key <code>ach.failed</code>. The <code>mssql-jdbc</code> driver is included as a dependency but is not directly invoked in the current codebase.</p>
+<h3 id="key-architectural-decisions">Key Architectural Decisions</h3>
+<ul>
+<li><strong>File-based ingestion with polling</strong>: The service continuously polls a shared directory for new ACH files rather than consuming from a queue, providing simple integration with file-drop-based upstream systems.</li>
+<li><strong>Properties + environment variable configuration</strong>: All connection parameters (RabbitMQ, Ledger URL, file paths) are loaded from a classpath properties file and overridable via environment variables, enabling container-friendly configuration management.</li>
+<li><strong>Synchronous HTTP + fire-and-forget RabbitMQ</strong>: Each transaction entry is posted synchronously to the Ledger API before the corresponding event is published to RabbitMQ, ensuring events are only emitted after a successful (or failed) ledger post.</li>
+</ul>
+<h2 id="component-relationships">Component Relationships</h2>
+<div class="mermaid">
+flowchart LR
+    subgraph Orchestration["Orchestration"]
+        Main["Main (entry point + shutdown hook)"]
+        Poller["processIncomingFiles()"]
+    end
+
+    subgraph Processing["File Processing"]
+        FileSingle["processSingleFile()"]
+        Parser["parseNachaFile()"]
+    end
+
+    subgraph Integration["External Integration"]
+        LedgerPost["postTransactionToLedger()"]
+        RabbitPub["publishRabbitEvent()"]
+        ProcessedEvent["publishProcessedEvent()"]
+        FailureEvent["publishFailureEvent()"]
+    end
+
+    subgraph Support["Support / Infrastructure"]
+        ConfigLoader["loadConfig() + applyEnvOverride()"]
+        FileMover["moveFile()"]
+        Logger["log()"]
+    end
+
+    subgraph Models["Data Models"]
+        AchBatch["AchBatch (inner class)"]
+        AchEntry["AchEntry (inner class)"]
+    end
+
+    Main -->|"starts loop"| Poller
+    Poller -->|"per file"| FileSingle
+    FileSingle -->|"parses"| Parser
+    Parser -->|"produces"| AchBatch
+    AchBatch -->|"contains"| AchEntry
+    FileSingle -->|"per entry"| LedgerPost
+    FileSingle -->|"on success"| ProcessedEvent
+    FileSingle -->|"on failure"| FailureEvent
+    FileSingle -->|"moves"| FileMover
+    ProcessedEvent -->|"delegates"| RabbitPub
+    FailureEvent -->|"delegates"| RabbitPub
+    Main -->|"loads"| ConfigLoader
+    ConfigLoader -.->|"config props"| Poller
+    Logger -.->|"stdout"| Main
+    Logger -.->|"stdout"| FileSingle
+    Logger -.->|"stdout"| LedgerPost
+    Logger -.->|"stdout"| RabbitPub
+</div>
+<h3 id="component-inventory">Component Inventory</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Component</th><th>Layer</th><th>Type</th><th>Responsibility</th></tr></thead><tbody>
+<tr><td>Main</td><td>Orchestration</td><td>Entry Point</td><td>Bootstraps the service, registers shutdown hook, drives the main polling loop</td></tr>
+<tr><td>processIncomingFiles()</td><td>Orchestration</td><td>Coordinator</td><td>Scans the incoming directory and dispatches each file for processing</td></tr>
+<tr><td>processSingleFile()</td><td>File Processing</td><td>Processor</td><td>Orchestrates parse → ledger post → event publish → file move for one ACH file</td></tr>
+<tr><td>parseNachaFile()</td><td>File Processing</td><td>Parser</td><td>Reads a NACHA-formatted file and maps records to <code>AchBatch</code> / <code>AchEntry</code> objects</td></tr>
+<tr><td>postTransactionToLedger()</td><td>External Integration</td><td>HTTP Client</td><td>POSTs a JSON transaction payload to the Ledger HTTP API</td></tr>
+<tr><td>publishProcessedEvent()</td><td>External Integration</td><td>Event Builder</td><td>Builds the <code>ach.processed</code> event payload and delegates to <code>publishRabbitEvent()</code></td></tr>
+<tr><td>publishFailureEvent()</td><td>External Integration</td><td>Event Builder</td><td>Builds the <code>ach.failed</code> event payload and delegates to <code>publishRabbitEvent()</code></td></tr>
+<tr><td>publishRabbitEvent()</td><td>External Integration</td><td>Message Publisher</td><td>Opens a RabbitMQ connection, declares the exchange, and publishes a message</td></tr>
+<tr><td>loadConfig() + applyEnvOverride()</td><td>Support</td><td>Configuration</td><td>Loads properties from classpath and applies environment-variable overrides</td></tr>
+<tr><td>moveFile()</td><td>Support</td><td>File Utility</td><td>Moves a file from one path to another (processed or error directory)</td></tr>
+<tr><td>log()</td><td>Support</td><td>Logging</td><td>Writes timestamped messages to stdout</td></tr>
+<tr><td>AchBatch</td><td>Data Models</td><td>Inner Class</td><td>Holds batch-level ACH metadata (batch number, company, debit/credit totals)</td></tr>
+<tr><td>AchEntry</td><td>Data Models</td><td>Inner Class</td><td>Holds entry-level ACH data (routing/account numbers, amount, trace number)</td></tr>
+</tbody></table></div>
+</div>
+</div>
+<div id="tab-api" class="tab-panel">
+  <div class="fact-content"><h1 id="api-service-communication-contracts">API &amp; Service Communication Contracts</h1>
+<p>ZavaACHProcessor exposes no inbound HTTP endpoints; it is a purely outbound service that communicates synchronously with a Ledger HTTP API and publishes events asynchronously to a RabbitMQ message broker.</p>
+<h2 id="service-catalog">Service Catalog</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Port</th><th>Category</th><th>Purpose</th></tr></thead><tbody>
+<tr><td>ZavaACHProcessor</td><td>— (no inbound port)</td><td>Business</td><td>Polls shared filesystem for NACHA ACH files, posts transactions to Ledger, publishes outcome events</td></tr>
+<tr><td>Ledger API (external)</td><td>8080</td><td>Business</td><td>Receives ACH transaction records via HTTP POST; owned by a separate service (<code>zavaledger</code>)</td></tr>
+<tr><td>RabbitMQ (external)</td><td>5672</td><td>Infrastructure</td><td>Message broker receiving ACH processing outcome events</td></tr>
+</tbody></table></div>
+<h2 id="api-endpoints-inventory">API Endpoints Inventory</h2>
+<p>ZavaACHProcessor does not declare or expose any inbound HTTP endpoints. It is a headless background processor with no REST controllers, servlets, or web framework.</p>
+<p>&gt; Note: The only HTTP interaction is an outbound call to the external Ledger API. See the Communication Patterns section for details.</p>
+<p><strong>Outbound HTTP calls (client-side only):</strong></p>
+<div class="table-wrap"><table><thead><tr>
+<th>Caller</th><th>Method</th><th>Path</th><th>Request Payload</th><th>Response</th></tr></thead><tbody>
+<tr><td>ZavaACHProcessor</td><td>POST</td><td><code>{ledger.url}{ledger.ach.endpoint}</code> (default: <code>http://zavaledger:8080/api/ledger/ach</code>)</td><td>JSON transaction object (see DTOs section)</td><td>HTTP 2xx = success; non-2xx = failure logged</td></tr>
+</tbody></table></div>
+<h2 id="management-observability-endpoints">Management &amp; Observability Endpoints</h2>
+<p>No management or observability endpoints are present. The application does not integrate Spring Boot Actuator, a custom health endpoint, Prometheus metrics, or any equivalent mechanism.</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Endpoint</th><th>Notes</th></tr></thead><tbody>
+<tr><td>ZavaACHProcessor</td><td>—</td><td>No health, readiness, or metrics endpoints exposed</td></tr>
+</tbody></table></div>
+<h2 id="dtos-contracts">DTOs &amp; Contracts</h2>
+<p>The application does not define formal DTO or request/response model classes. All JSON payloads are constructed inline as string literals using manual concatenation.</p>
+<p><strong>Outbound transaction payload</strong> (sent to Ledger API via HTTP POST):</p>
+<pre><code>
+{
+  &quot;source&quot;: &quot;ach&quot;,
+  &quot;fileName&quot;: &quot;&lt;file name&gt;&quot;,
+  &quot;batchNumber&quot;: &quot;&lt;batch number&gt;&quot;,
+  &quot;routingNumber&quot;: &quot;&lt;routing number&gt;&quot;,
+  &quot;accountNumber&quot;: &quot;&lt;account number&gt;&quot;,
+  &quot;amountCents&quot;: &quot;&lt;amount in cents&gt;&quot;,
+  &quot;traceNumber&quot;: &quot;&lt;trace number&gt;&quot;
+}
+</code></pre>
+<p><strong>Outbound event payload — <code>ach.processed</code></strong> (published to <code>zava.events</code> exchange):</p>
+<pre><code>
+{
+  &quot;eventType&quot;: &quot;ach.processed&quot;,
+  &quot;fileName&quot;: &quot;&lt;file name&gt;&quot;,
+  &quot;batchNumber&quot;: &quot;&lt;batch number&gt;&quot;,
+  &quot;traceNumber&quot;: &quot;&lt;trace number&gt;&quot;,
+  &quot;amountCents&quot;: &quot;&lt;amount in cents&gt;&quot;,
+  &quot;processedAt&quot;: &quot;&lt;ISO-8601 timestamp&gt;&quot;
+}
+</code></pre>
+<p><strong>Outbound event payload — <code>ach.failed</code></strong> (published to <code>zava.dlx</code> dead-letter exchange):</p>
+<pre><code>
+{
+  &quot;eventType&quot;: &quot;ach.failed&quot;,
+  &quot;fileName&quot;: &quot;&lt;file name&gt;&quot;,
+  &quot;reason&quot;: &quot;&lt;parse_error | transaction_post_failed&gt;&quot;,
+  &quot;failedAt&quot;: &quot;&lt;ISO-8601 timestamp&gt;&quot;
+}
+</code></pre>
+<p>There are no OpenAPI/Swagger, Protobuf, or GraphQL schema definitions. Serialization is fully manual — no Jackson, Gson, or other serialization library is used.</p>
+<h2 id="communication-patterns">Communication Patterns</h2>
+<p><strong>Synchronous — HTTP POST to Ledger API:</strong>  </p>
+<p>The application calls the Ledger API using the Java built-in <code>java.net.HttpURLConnection</code>. A single HTTP POST is made per ACH entry within a file. Connect and read timeouts are configurable via <code>http.timeout.ms</code> (default 15 000 ms). There is no retry logic, circuit breaker, or fallback: a non-2xx response or connection exception marks the entry as failed and the entire file is moved to the error directory.</p>
+<p><strong>Asynchronous — RabbitMQ events:</strong>  </p>
+<p>Events are published to RabbitMQ using the <code>amqp-client</code> library. A new TCP connection and channel are opened for every publish call and closed immediately after — there is no connection pooling or channel reuse. The exchange is declared as <code>topic</code> and <code>durable</code>. Publish is fire-and-forget: exceptions are caught and logged but not retried. Two exchanges are used: <code>zava.events</code> (routing key <code>ach.processed</code>) for successes and <code>zava.dlx</code> (routing key <code>ach.failed</code>) for failures.</p>
+<p><strong>Service discovery:</strong>  </p>
+<p>No service discovery mechanism is present. The Ledger API URL and RabbitMQ host are hardcoded in <code>achprocessor.properties</code> and overridable via environment variables (<code>LEDGER_URL</code>, <code>RABBITMQ_HOST</code>, etc.).</p>
+<p><strong>Resilience:</strong>  </p>
+<p>No circuit breaker, retry policy, bulkhead, or timeout escalation is implemented beyond the single fixed HTTP connect/read timeout (15 s). A single transactional post failure causes the entire ACH file to be routed to the error directory.</p>
+<p><strong>Security posture:</strong>  </p>
+<p>No authentication, TLS, or authorization is configured for either the outbound Ledger API calls or the RabbitMQ connection. The Ledger API is called over plain HTTP. RabbitMQ credentials (<code>guest</code>/<code>guest</code> by default) are stored in the properties file; environment-variable overrides are supported but no secret management integration is present. No inbound API surface exists to secure.</p>
+<h2 id="service-technology-matrix">Service Technology Matrix</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Web Framework</th><th>Data Access</th><th>Discovery</th><th>Gateway</th><th>Health Check</th><th>Cache</th><th>Metrics</th></tr></thead><tbody>
+<tr><td>ZavaACHProcessor</td><td>None</td><td>File I/O + HttpURLConnection</td><td>None (env vars)</td><td>None</td><td>None</td><td>None</td><td>None</td></tr>
+<tr><td>Ledger API (external)</td><td>Unknown</td><td>Unknown</td><td>N/A</td><td>N/A</td><td>Unknown</td><td>Unknown</td><td>Unknown</td></tr>
+<tr><td>RabbitMQ (external)</td><td>N/A</td><td>N/A</td><td>N/A</td><td>N/A</td><td>N/A</td><td>N/A</td><td>N/A</td></tr>
+</tbody></table></div>
+<h2 id="service-communication-sequence">Service Communication Sequence</h2>
+<div class="mermaid">
+sequenceDiagram
+    participant FS as "Shared File System"
+    participant Proc as "ZavaACHProcessor"
+    participant Ledger as "Ledger API (zavaledger:8080)"
+    participant RMQ as "RabbitMQ Broker"
+
+    loop Poll every 5 seconds
+        Proc->>FS: List /shared/ach-incoming
+        FS-->>Proc: ACH file(s)
+    end
+
+    Proc->>Proc: parseNachaFile() - parse NACHA records
+
+    alt Parse failure
+        Proc->>FS: Move file to /error
+        Proc-->>RMQ: Publish ach.failed (zava.dlx)
+    else Parse success
+        loop For each AchEntry
+            Proc->>Ledger: POST /api/ledger/ach (JSON transaction)
+            alt HTTP 2xx
+                Ledger-->>Proc: 200 OK
+                Proc-->>RMQ: Publish ach.processed (zava.events)
+            else HTTP error or timeout
+                Ledger-->>Proc: Non-2xx or exception
+                Proc->>Proc: Increment fail count
+            end
+        end
+
+        alt All entries posted successfully
+            Proc->>FS: Move file to /processed
+        else Any entry failed
+            Proc->>FS: Move file to /error
+            Proc-->>RMQ: Publish ach.failed (zava.dlx)
+        end
+    end
+</div>
+</div>
+</div>
+<div id="tab-config" class="tab-panel">
+  <div class="fact-content"><h1 id="configuration-externalized-settings-inventory">Configuration &amp; Externalized Settings Inventory</h1>
+<p>ZavaACHProcessor uses a single classpath properties file (<code>achprocessor.properties</code>) as its only configuration source, with full override capability via environment variables; there are no runtime profiles, feature flags, or external secret stores.</p>
+<h2 id="configuration-sources">Configuration Sources</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Source</th><th>Type</th><th>Path / Location</th><th>Notes</th></tr></thead><tbody>
+<tr><td><code>achprocessor.properties</code></td><td>Java classpath properties file</td><td><code>src/main/resources/achprocessor.properties</code></td><td>Loaded at startup via <code>Main.class.getClassLoader().getResourceAsStream()</code></td></tr>
+<tr><td>Environment variables</td><td>OS/container environment</td><td>Set at container or host level</td><td>Override any property via named env var (e.g., <code>RABBITMQ_HOST</code> overrides <code>rabbitmq.host</code>)</td></tr>
+<tr><td><code>Dockerfile</code></td><td>Container build definition</td><td><code>Dockerfile</code> (root)</td><td>Defines build and runtime images; no additional config injection</td></tr>
+</tbody></table></div>
+<p>No external config server (Spring Cloud Config, Azure App Configuration, Consul), no secret manager integration (HashiCorp Vault, Azure Key Vault, AWS Secrets Manager), and no Kubernetes ConfigMap or Secret references exist.</p>
+<h2 id="build-profiles">Build Profiles</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Profile</th><th>Activation</th><th>Purpose</th><th>Key Dependencies / Plugins</th></tr></thead><tbody>
+<tr><td>Default (single)</td><td>Always active</td><td>Compiles Java 8 source, packages shadow fat-JAR</td><td>Gradle Shadow plugin 7.1.2 (<code>com.github.johnrengelman.shadow</code>); <code>amqp-client</code>, <code>mssql-jdbc</code> dependencies</td></tr>
+</tbody></table></div>
+<p>No multi-profile Gradle build configuration (no <code>buildTypes</code>, no environment-specific source sets) exists. The project has a single build configuration that always produces the shadow JAR.</p>
+<h2 id="runtime-profiles">Runtime Profiles</h2>
+<p>No runtime profiles are present. The application is a plain Java application with no profile-switching mechanism (no Spring <code>@Profile</code>, no environment-based config file selection). All runtime differences are controlled exclusively via environment variable overrides at container/host start time.</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Profile</th><th>Activation Method</th><th>Config Files</th><th>Key Overrides</th></tr></thead><tbody>
+<tr><td>N/A (single runtime configuration)</td><td>—</td><td><code>achprocessor.properties</code> (classpath)</td><td>All values overridable via env vars</td></tr>
+</tbody></table></div>
+<h2 id="properties-inventory">Properties Inventory</h2>
+<h3 id="zavaachprocessor">ZavaACHProcessor</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Property Key</th><th>Default Value</th><th>Env Var Override</th><th>Notes</th></tr></thead><tbody>
+<tr><td><code>rabbitmq.host</code></td><td><code>localhost</code></td><td><code>RABBITMQ_HOST</code></td><td>Hostname of the RabbitMQ broker</td></tr>
+<tr><td><code>rabbitmq.port</code></td><td><code>5672</code></td><td><code>RABBITMQ_PORT</code></td><td>AMQP port</td></tr>
+<tr><td><code>rabbitmq.username</code></td><td><code>guest</code></td><td><code>RABBITMQ_USERNAME</code></td><td>RabbitMQ login username</td></tr>
+<tr><td><code>rabbitmq.password</code></td><td><code>guest</code></td><td><code>RABBITMQ_PASSWORD</code></td><td>RabbitMQ login password (sensitive)</td></tr>
+<tr><td><code>rabbitmq.vhost</code></td><td><code>/zavabank</code></td><td><code>RABBITMQ_VHOST</code></td><td>RabbitMQ virtual host</td></tr>
+<tr><td><code>rabbitmq.events.exchange</code></td><td><code>zava.events</code></td><td>—</td><td>Topic exchange for processed events</td></tr>
+<tr><td><code>rabbitmq.deadletter.exchange</code></td><td><code>zava.dlx</code></td><td>—</td><td>Dead-letter exchange for failure events</td></tr>
+<tr><td><code>rabbitmq.ach.routingKey</code></td><td><code>ach.processed</code></td><td>—</td><td>Routing key for successful ACH events</td></tr>
+<tr><td><code>rabbitmq.ach.failure.routingKey</code></td><td><code>ach.failed</code></td><td>—</td><td>Routing key for failure events</td></tr>
+<tr><td><code>ach.incoming.path</code></td><td><code>/shared/ach-incoming</code></td><td><code>ACH_INCOMING_PATH</code></td><td>Directory polled for incoming NACHA files</td></tr>
+<tr><td><code>ach.processed.path</code></td><td><code>/shared/ach-incoming/processed</code></td><td><code>ACH_PROCESSED_PATH</code></td><td>Destination directory for successfully processed files</td></tr>
+<tr><td><code>ach.error.path</code></td><td><code>/shared/ach-incoming/error</code></td><td><code>ACH_ERROR_PATH</code></td><td>Destination directory for failed/errored files</td></tr>
+<tr><td><code>ach.poll.interval.ms</code></td><td><code>5000</code></td><td><code>ACH_POLL_INTERVAL_MS</code></td><td>Polling frequency in milliseconds</td></tr>
+<tr><td><code>ledger.url</code></td><td><code>http://zavaledger:8080</code></td><td><code>LEDGER_URL</code></td><td>Base URL of the Ledger HTTP API</td></tr>
+<tr><td><code>ledger.ach.endpoint</code></td><td><code>/api/ledger/ach</code></td><td><code>LEDGER_ACH_ENDPOINT</code></td><td>Path appended to ledger.url for transaction posts</td></tr>
+<tr><td><code>http.timeout.ms</code></td><td><code>15000</code></td><td>—</td><td>Connect and read timeout for HTTP calls to Ledger API</td></tr>
+</tbody></table></div>
+<p>Total: 16 properties, all with string or integer values.</p>
+<h2 id="startup-parameters-resource-requirements">Startup Parameters &amp; Resource Requirements</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>JVM / Runtime Options</th><th>Memory</th><th>Instance Count</th></tr></thead><tbody>
+<tr><td>ZavaACHProcessor</td><td>None specified; default JVM settings applied</td><td>Not specified (no Docker <code>mem_limit</code> or K8s <code>resources</code>)</td><td>1 (no scaling configuration)</td></tr>
+</tbody></table></div>
+<p>The <code>Dockerfile</code> defines no <code>JAVA_OPTS</code>, <code>-Xms</code>, <code>-Xmx</code>, <code>-D</code> system properties, or <code>ENV</code> variable declarations. The container is started with a bare <code>java -jar app.jar</code> command. Runtime heap and GC settings are left to JVM defaults.</p>
+<h2 id="startup-dependency-chain">Startup Dependency Chain</h2>
+<p>No formal startup dependency mechanism is implemented. The application starts immediately and will silently fail per-operation if dependencies are unavailable:</p>
+<ol>
+<li><strong>ZavaACHProcessor</strong> starts, loads <code>achprocessor.properties</code>, and begins the polling loop.</li>
+<li>If the incoming directory (<code>ach.incoming.path</code>) does not exist, each poll cycle logs a warning and waits.</li>
+<li>If RabbitMQ is unreachable, event publish failures are caught and logged; the application continues running.</li>
+<li>If the Ledger API is unreachable, HTTP failures are caught and logged per entry; the file moves to the error directory.</li>
+</ol>
+<p>No <code>dockerize</code> wait-for-TCP, Kubernetes readiness probes, Docker Compose <code>depends_on</code> health checks, or Spring Retry back-off mechanisms are configured. Operational readiness depends entirely on the infrastructure layer ensuring RabbitMQ and the Ledger API are available before ACH files are placed in the incoming directory.</p>
+<h2 id="secrets-sensitive-configuration">Secrets &amp; Sensitive Configuration</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Secret Reference</th><th>Type</th><th>Stored In</th></tr></thead><tbody>
+<tr><td><code>rabbitmq.password</code> (default: <code>guest</code>)</td><td>Credential</td><td><code>achprocessor.properties</code> (plaintext) — overridable via <code>RABBITMQ_PASSWORD</code> env var</td></tr>
+<tr><td><code>rabbitmq.username</code> (default: <code>guest</code>)</td><td>Credential</td><td><code>achprocessor.properties</code> (plaintext) — overridable via <code>RABBITMQ_USERNAME</code> env var</td></tr>
+<tr><td><code>ledger.url</code></td><td>Service URL</td><td><code>achprocessor.properties</code> — may include credentials if basic-auth URL used</td></tr>
+</tbody></table></div>
+<p>No encryption (Jasypt, sealed secrets), secret management integration, or environment-variable injection from a secrets store is implemented. Credentials are stored in plaintext in the properties file bundled into the fat-JAR.</p>
+<h3 id="secrets-provisioning-workflow">Secrets Provisioning Workflow</h3>
+<p>There is no automated secrets provisioning workflow. The current model is:</p>
+<ol>
+<li>Secrets are hardcoded as defaults in <code>achprocessor.properties</code> (committed to the repository).</li>
+<li>Operators override sensitive values at container startup by setting <code>RABBITMQ_USERNAME</code>, <code>RABBITMQ_PASSWORD</code>, and <code>LEDGER_URL</code> as environment variables.</li>
+<li>No secret rotation, audit logging, or dynamic secret retrieval is in place.</li>
+</ol>
+<p>For Azure migration, secrets should be migrated to <strong>Azure Key Vault</strong> and injected via a managed identity or Key Vault references in Azure Container Apps / AKS pod annotations, replacing the current plaintext-in-properties approach.</p>
+<h2 id="feature-flags">Feature Flags</h2>
+<p>No feature flags or conditional configuration mechanism is present. There are no <code>@ConditionalOnProperty</code> annotations (the application does not use Spring), no LaunchDarkly or Unleash integration, and no custom toggle implementation in the source code.</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Flag Name</th><th>Default</th><th>Controlled By</th></tr></thead><tbody>
+<tr><td>N/A</td><td>—</td><td>—</td></tr>
+</tbody></table></div>
+<h2 id="framework-runtime-versions">Framework &amp; Runtime Versions</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Component</th><th>Version</th><th>Source</th></tr></thead><tbody>
+<tr><td>Java language target</td><td>8 (1.8)</td><td><code>build.gradle</code> (<code>sourceCompatibility</code>, <code>targetCompatibility</code>)</td></tr>
+<tr><td>Gradle</td><td>7.6</td><td><code>Dockerfile</code> (build stage base image <code>gradle:7.6-jdk8</code>)</td></tr>
+<tr><td>Gradle Shadow plugin</td><td>7.1.2</td><td><code>build.gradle</code></td></tr>
+<tr><td>RabbitMQ amqp-client</td><td>5.21.0</td><td><code>build.gradle</code></td></tr>
+<tr><td>mssql-jdbc</td><td>12.6.1.jre8</td><td><code>build.gradle</code></td></tr>
+<tr><td>Docker build image</td><td><code>gradle:7.6-jdk8</code></td><td><code>Dockerfile</code></td></tr>
+<tr><td>Docker runtime image</td><td><code>eclipse-temurin:8-jre</code></td><td><code>Dockerfile</code></td></tr>
+<tr><td>No web framework</td><td>—</td><td>—</td></tr>
+<tr><td>No test framework</td><td>—</td><td>—</td></tr>
+</tbody></table></div>
+</div>
+</div>
+<div id="tab-workflows" class="tab-panel">
+  <div class="fact-content"><h1 id="core-business-workflows">Core Business Workflows</h1>
+<p>ZavaACHProcessor automates the ingestion and posting of ACH (Automated Clearing House) batch payment files in NACHA format, bridging a file-drop integration point with a banking Ledger system and notifying downstream consumers of processing outcomes via events.</p>
+<h2 id="domain-entities">Domain Entities</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Entity</th><th>Service / Bounded Context</th><th>Description</th><th>Key Relationships</th></tr></thead><tbody>
+<tr><td>AchBatch</td><td>ACH Processing</td><td>A single NACHA batch header representing a group of ACH transactions from a named company, effective on a given date</td><td>Contains one or more AchEntry records</td></tr>
+<tr><td>AchEntry</td><td>ACH Processing</td><td>An individual ACH transaction entry within a batch, identifying the originating and receiving parties, amount, and trace number</td><td>Belongs to exactly one AchBatch</td></tr>
+<tr><td>ACH File</td><td>ACH Processing</td><td>A NACHA-formatted flat file on the file system representing one or more batches; lifecycle managed by directory state</td><td>Processed into AchBatch / AchEntry objects</td></tr>
+<tr><td>Ledger Transaction (external)</td><td>Ledger (external bounded context)</td><td>A committed transaction record held by the Ledger API service after a successful ACH entry post</td><td>Created by a successful POST from ZavaACHProcessor</td></tr>
+<tr><td>ProcessingEvent</td><td>Event Bus</td><td>An event record published to RabbitMQ describing a processing outcome (success or failure) per file or entry</td><td>Produced by ZavaACHProcessor, consumed by downstream subscribers</td></tr>
+</tbody></table></div>
+<h2 id="service-to-domain-mapping">Service-to-Domain Mapping</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Domain Context</th><th>Owned Entities</th><th>External Dependencies</th></tr></thead><tbody>
+<tr><td>ZavaACHProcessor</td><td>ACH File Ingestion</td><td>AchBatch, AchEntry, ACH File (filesystem lifecycle)</td><td>Ledger API (write-only), RabbitMQ (event publish)</td></tr>
+<tr><td>Ledger API (external)</td><td>Transaction Ledger</td><td>Ledger Transaction</td><td>Receives data from ZavaACHProcessor</td></tr>
+<tr><td>RabbitMQ (external)</td><td>Event Bus</td><td>ProcessingEvent (as messages)</td><td>Consumed by unknown downstream subscribers</td></tr>
+</tbody></table></div>
+<h2 id="primary-workflows">Primary Workflows</h2>
+<h3 id="workflow-1-ach-file-batch-processing">Workflow 1: ACH File Batch Processing</h3>
+<p>This is the core and only business workflow. The service continuously polls a shared directory and, upon finding a NACHA file, executes the following end-to-end processing sequence:</p>
+<p><strong>Steps:</strong></p>
+<ol>
+<li><strong>Discover</strong>: Poll <code>/shared/ach-incoming</code> every 5 seconds (configurable via <code>ach.poll.interval.ms</code>). Skip sub-directories named <code>processed</code> or <code>error</code>.</li>
+<li><strong>Parse</strong>: Read the NACHA flat file line by line. Extract:</li>
+</ol>
+<ul>
+<ul>
+<li>Batch header (record type <code>5</code>): batch number, company name, effective date.</li>
+<li>Entry detail records (record type <code>6</code>): transaction code, routing number, account number, amount in cents, individual ID, name, trace number.</li>
+<li>Batch control (record type <code>8</code>): entry count, total debit, total credit.</li>
+<li>If no entry detail records are found, the file is considered invalid.</li>
+</ul>
+</ul>
+<ol>
+<li><strong>Post to Ledger</strong> (per entry): Send an HTTP POST to the Ledger API with a JSON payload containing: source, file name, batch number, routing number, account number, amount in cents, and trace number. A 2xx HTTP response indicates success; any other status code or connection exception marks the entry as failed.</li>
+<li><strong>Publish processing event</strong> (per entry):</li>
+</ol>
+<ul>
+<ul>
+<li>On successful Ledger post → publish <code>ach.processed</code> event to the <code>zava.events</code> exchange.</li>
+<li>(Failure events are published at file-level, not entry-level.)</li>
+</ul>
+</ul>
+<ol>
+<li><strong>Resolve file outcome</strong>:</li>
+</ol>
+<ul>
+<ul>
+<li>If all entries posted successfully → move file to <code>/shared/ach-incoming/processed</code> (no failure event published).</li>
+<li>If any entry failed → move file to <code>/shared/ach-incoming/error</code> and publish a single <code>ach.failed</code> event to the <code>zava.dlx</code> dead-letter exchange.</li>
+</ul>
+</ul>
+<ol>
+<li><strong>Handle parse failure</strong>:</li>
+</ol>
+<ul>
+<ul>
+<li>If the file cannot be parsed → move file to <code>/shared/ach-incoming/error</code> and publish <code>ach.failed</code> with reason <code>parse_error</code>.</li>
+</ul>
+</ul>
+<p><strong>Business Rules Involved:</strong> See Business Rules &amp; Decision Logic section.</p>
+<p><strong>Cross-Service Interactions:</strong></p>
+<ul>
+<li>Calls Ledger API synchronously per entry.</li>
+<li>Publishes to RabbitMQ asynchronously after each entry or on file-level failure.</li>
+</ul>
+<h2 id="cross-service-data-flows">Cross-Service Data Flows</h2>
+<p>ZavaACHProcessor is a one-directional data pipeline with no upstream data retrieval:</p>
+<ul>
+<li><strong>ZavaACHProcessor → Ledger API</strong>: Each <code>AchEntry</code> is serialised to a JSON payload and HTTP-posted to the Ledger. The Ledger API is the authoritative destination for committed ACH data. ZavaACHProcessor receives only an HTTP status code in response; no data is read back and stored.</li>
+<li><strong>ZavaACHProcessor → RabbitMQ</strong>: On each successful Ledger post, an <code>ach.processed</code> event containing file name, batch number, trace number, amount, and timestamp is published to <code>zava.events</code>. On any file-level failure, a single <code>ach.failed</code> event with the failure reason is published to <code>zava.dlx</code>. Downstream consumers of these events are unknown to this service; no response is awaited.</li>
+</ul>
+<p>There is no gateway aggregation, no data fetched from other services, and no circuit breaker pattern. The only fallback is logging the failure and classifying the file or entry as errored.</p>
+<h2 id="business-workflow-sequence">Business Workflow Sequence</h2>
+<div class="mermaid">
+sequenceDiagram
+    participant FS as "Shared File System"
+    participant Proc as "ZavaACHProcessor"
+    participant Ledger as "Ledger API"
+    participant RMQ as "RabbitMQ"
+
+    loop Every 5 seconds
+        Proc->>FS: Scan incoming directory
+        FS-->>Proc: List of ACH files
+    end
+
+    Proc->>Proc: Parse NACHA file (batch header + entries)
+
+    alt Parse failure (no entries or IO error)
+        Proc->>FS: Move file to /error
+        Proc->>RMQ: Publish ach.failed (reason: parse_error) to zava.dlx
+    else Parse success
+        loop For each AchEntry in batch
+            Proc->>Ledger: POST transaction (routingNo, accountNo, amountCents, traceNo)
+            alt Ledger returns 2xx
+                Ledger-->>Proc: 200 OK
+                Proc->>RMQ: Publish ach.processed event to zava.events
+            else Ledger error or timeout
+                Ledger-->>Proc: Non-2xx or connection error
+                Note over Proc: Increment fail counter; continue to next entry
+            end
+        end
+
+        alt All entries posted successfully
+            Proc->>FS: Move file to /processed
+        else One or more entries failed
+            Proc->>FS: Move file to /error
+            Proc->>RMQ: Publish ach.failed (reason: transaction_post_failed) to zava.dlx
+        end
+    end
+</div>
+<h2 id="business-rules-decision-logic">Business Rules &amp; Decision Logic</h2>
+<h3 id="validation-rules">Validation Rules</h3>
+<ul>
+<li><strong>Non-empty entry set</strong>: A NACHA file must contain at least one record type <code>6</code> (Entry Detail) line. Files with no entries are treated as invalid and moved to the error directory.</li>
+<li><strong>Fixed-width field slicing</strong>: All NACHA record fields are extracted by character position per the NACHA specification (e.g., transaction code at positions 1–3, routing number at 3–11, account number at 12–29, amount in cents at 29–39, individual name at 54–76, trace number at 79–94). No length validation beyond safe-slice bounds checking is applied.</li>
+<li><strong>Directory filter</strong>: Only files directly in the incoming directory are processed. Sub-directories (including <code>processed</code> and <code>error</code>) are skipped by name comparison.</li>
+<li><strong>File type filter</strong>: Any file that is not a directory and whose name is not <code>processed</code> or <code>error</code> is eligible for processing — there is no file extension filter.</li>
+</ul>
+<h3 id="decision-logic">Decision Logic</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Decision Point</th><th>Condition</th><th>Outcome</th></tr></thead><tbody>
+<tr><td>File eligibility</td><td>Entry is a file (not directory) and name not in {<code>processed</code>, <code>error</code>}</td><td>Process file</td></tr>
+<tr><td>Parse validity</td><td>At least one Entry Detail record (type <code>6</code>) found</td><td>Continue to Ledger posting</td></tr>
+<tr><td>Parse failure</td><td>IOException or no entry records</td><td>Move to /error; publish <code>ach.failed</code> (parse_error)</td></tr>
+<tr><td>Ledger post result</td><td>HTTP 2xx</td><td>Increment success count; publish <code>ach.processed</code></td></tr>
+<tr><td>Ledger post result</td><td>HTTP non-2xx or exception</td><td>Increment fail count</td></tr>
+<tr><td>File final disposition</td><td>failCount == 0</td><td>Move to /processed (no failure event)</td></tr>
+<tr><td>File final disposition</td><td>failCount &gt; 0</td><td>Move to /error; publish <code>ach.failed</code> (transaction_post_failed)</td></tr>
+</tbody></table></div>
+<h3 id="state-transitions">State Transitions</h3>
+<p><strong>ACH File Lifecycle:</strong></p>
+<pre><code>
+[In /shared/ach-incoming]
+       |
+       v
+  [Parsing]
+       |
+   +---+---+
+   |       |
+[Parsed OK] [Parse Failed]
+   |            |
+   v            v
+[Posting    [/error] → ach.failed (parse_error)
+ to Ledger]
+   |
+   +-----+-----+
+   |           |
+[All OK]    [Any Fail]
+   |            |
+   v            v
+[/processed]  [/error] → ach.failed (transaction_post_failed)
+</code></pre>
+<h3 id="error-handling">Error Handling</h3>
+<ul>
+<li><strong>Parse errors</strong>: Caught via try/catch; file moved to error directory; <code>ach.failed</code> event published with reason <code>parse_error</code>.</li>
+<li><strong>Ledger HTTP failures</strong>: Per-entry failure increments a counter; processing continues for remaining entries. At file-level, any non-zero fail count triggers error disposition.</li>
+<li><strong>RabbitMQ publish failures</strong>: Caught and logged; no retry or compensating action. Events may be silently lost if the broker is unavailable.</li>
+<li><strong>File move failures</strong>: Logged; the file remains in the incoming directory and may be reprocessed on the next poll cycle, risking duplicate processing.</li>
+</ul>
+<h3 id="cross-cutting-concerns">Cross-Cutting Concerns</h3>
+<ul>
+<li><strong>No transaction management</strong>: There is no distributed transaction, saga, or two-phase commit coordinating the Ledger API call and the RabbitMQ publish. It is possible for a transaction to be posted to the Ledger but the corresponding <code>ach.processed</code> event to fail to publish (or vice versa on error).</li>
+<li><strong>No idempotency guard</strong>: If a file move fails after a successful Ledger post, the file will be reprocessed on the next poll, potentially causing duplicate Ledger entries.</li>
+<li><strong>Audit / logging</strong>: All significant state transitions are logged to stdout with the prefix <code>[ZavaACHProcessor]</code>. No structured audit trail, change tracking, or correlation IDs are used.</li>
+<li><strong>Authorization</strong>: No authentication or authorization is applied. Any process with filesystem access to the incoming directory can trigger processing.</li>
+</ul>
+</div>
+</div>
+<div id="tab-deps" class="tab-panel">
+  <div class="fact-content"><h1 id="dependency-map">Dependency Map</h1>
+<p>ZavaACHProcessor is a Java 8 application with 2 declared external runtime dependencies managed via Gradle (Shadow plugin for fat-JAR packaging).</p>
+<h2 id="dependencies">Dependencies</h2>
+<div class="mermaid">
+flowchart LR
+    App["ZavaACHProcessor (Java 8)"]
+
+    subgraph Messaging["Messaging"]
+        RabbitMQ["amqp-client v5.21.0"]
+    end
+
+    subgraph DB["Database / ORM"]
+        MSSQL["mssql-jdbc v12.6.1.jre8"]
+    end
+
+    App -->|"messaging"| Messaging
+    App -->|"database driver"| DB
+</div>
+<h3 id="dependency-summary">Dependency Summary</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Category</th><th>Count</th><th>Key Libraries</th><th>Notes</th></tr></thead><tbody>
+<tr><td>Messaging</td><td>1</td><td>com.rabbitmq:amqp-client 5.21.0</td><td>Used for publishing ACH processing events to RabbitMQ</td></tr>
+<tr><td>Database / ORM</td><td>1</td><td>com.microsoft.sqlserver:mssql-jdbc 12.6.1.jre8</td><td>JDBC driver included but not directly used in current source</td></tr>
+</tbody></table></div>
+<h3 id="version-compatibility-risks">Version &amp; Compatibility Risks</h3>
+<p>The <code>amqp-client</code> 5.21.0 is a recent release of the RabbitMQ Java client and is compatible with Java 8 through Java 21; however, migrating to Azure requires replacing RabbitMQ with Azure Service Bus or Azure Event Hubs, which would entail adopting the Azure SDK for Java. The <code>mssql-jdbc</code> 12.6.1 is a current release and supports Java 8, but its presence in the dependency list without any usage in the source code suggests it may be an orphaned or placeholder dependency. The application uses Java 8, which reached end of active support in 2019 (OpenJDK) and limits access to modern language features; upgrading to Java 17 or 21 LTS is strongly recommended for Azure deployments.</p>
+<h3 id="notable-observations">Notable Observations</h3>
+<ul>
+<li><strong>No web framework</strong>: The service exposes no HTTP endpoints; it is a pure background processor. The <code>java.net.HttpURLConnection</code> used to call the Ledger API is the built-in JDK HTTP client with no external library dependency, which is verbose and limited compared to modern HTTP clients (Apache HttpClient, OkHttp, or Java 11&#39;s <code>java.net.http.HttpClient</code>).</li>
+<li><strong>Orphaned SQL Server driver</strong>: <code>mssql-jdbc</code> is declared as a dependency but is not imported or used anywhere in <code>Main.java</code>. This may indicate a removed feature or future planned capability; it should be removed if not needed to reduce image size and attack surface.</li>
+<li><strong>No logging framework</strong>: The application uses plain <code>System.out.println</code> for all log output rather than a structured logging library (SLF4J + Logback/Log4j2). This prevents log-level control, structured JSON logging, and integration with Azure Monitor / Application Insights.</li>
+<li><strong>No observability dependencies</strong>: There is no Micrometer, OpenTelemetry, or Application Insights SDK dependency. Metrics, traces, and distributed correlation are unavailable, which will be a gap when deploying to Azure Container Apps or AKS.</li>
+</ul>
+<h2 id="test-dependencies">Test Dependencies</h2>
+<p>No test-scoped dependencies detected in <code>build.gradle</code>.</p>
+<p>Total test-scope dependencies: 0</p>
+<p>No test framework (JUnit, Mockito, etc.) is declared in the build file. This means the project currently has no automated unit or integration tests, which poses a risk during any migration or modernisation effort. Adding a test framework (e.g., JUnit 5 + Mockito) is strongly recommended before undertaking cloud migration.</p>
+</div>
+</div>
+<div id="tab-data" class="tab-panel">
+  <div class="fact-content"><h1 id="data-architecture-persistence-layer">Data Architecture &amp; Persistence Layer</h1>
+<p>ZavaACHProcessor has no ORM layer or managed relational database; its data model consists of two in-memory inner classes used to represent parsed NACHA records during processing, with the file system acting as the durable store and a remote Ledger HTTP API as the system of record for committed transactions.</p>
+<h2 id="database-configuration">Database Configuration</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service / Module</th><th>DB Type</th><th>Profile</th><th>Driver</th><th>Connection</th><th>Migration Tool</th></tr></thead><tbody>
+<tr><td>ZavaACHProcessor</td><td>None (file system only)</td><td>all</td><td>—</td><td>Shared directory mount (<code>/shared/ach-incoming</code>)</td><td>None</td></tr>
+<tr><td>ZavaACHProcessor (declared)</td><td>Microsoft SQL Server</td><td>—</td><td>mssql-jdbc 12.6.1.jre8</td><td>Not configured; driver on classpath only</td><td>None</td></tr>
+</tbody></table></div>
+<p>&gt; Note: The <code>mssql-jdbc</code> driver is declared in <code>build.gradle</code> but no JDBC URL, credentials, or data-source configuration exists anywhere in the codebase or properties file. No database connection is made at runtime.</p>
+<h2 id="data-ownership-per-service">Data Ownership per Service</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Tables / Files Owned</th><th>ORM Framework</th><th>Caching</th><th>Notes</th></tr></thead><tbody>
+<tr><td>ZavaACHProcessor</td><td><code>/shared/ach-incoming</code> (in), <code>/shared/ach-incoming/processed</code> (out), <code>/shared/ach-incoming/error</code> (out)</td><td>None</td><td>None</td><td>Files are the primary durable artefact; lifecycle managed by directory moves</td></tr>
+<tr><td>Ledger API (external)</td><td>ACH transactions (ownership unknown)</td><td>Unknown</td><td>Unknown</td><td>Receives transaction data via HTTP POST; authoritative store for committed entries</td></tr>
+</tbody></table></div>
+<h2 id="entity-model">Entity Model</h2>
+<p>The application does not use a relational database or ORM. The two in-memory model classes represent parsed records from NACHA-formatted flat files:</p>
+<div class="mermaid">
+erDiagram
+    AchBatch ||--o{ AchEntry : "contains"
+
+    AchBatch {
+        string batchNumber
+        string companyName
+        string effectiveDate
+        string entryCount
+        string totalDebit
+        string totalCredit
+    }
+
+    AchEntry {
+        string transactionCode
+        string routingNumber
+        string accountNumber
+        string amountCents
+        string individualId
+        string individualName
+        string traceNumber
+    }
+</div>
+<p>Both classes are private static inner classes within <code>Main.java</code>. All fields are raw <code>String</code> types regardless of the underlying NACHA field semantics (numeric amounts, dates, codes). There is no JPA, Hibernate, MyBatis, or any other ORM mapping. No <code>@Entity</code>, <code>@Table</code>, <code>@Id</code>, or persistence annotations exist.</p>
+<h2 id="key-repository-methods">Key Repository Methods</h2>
+<p>No repository interfaces or data-access objects (DAOs) exist in the codebase. Data access is entirely via file system I/O (<code>java.io.File</code>, <code>java.nio.file.Files</code>) and outbound HTTP:</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Operation</th><th>Mechanism</th><th>Source</th><th>Notes</th></tr></thead><tbody>
+<tr><td>Read incoming file</td><td><code>java.io.FileInputStream</code> + <code>BufferedReader</code></td><td><code>parseNachaFile()</code> in <code>Main.java</code></td><td>Line-by-line character slicing against NACHA fixed-width format</td></tr>
+<tr><td>Move to processed</td><td><code>java.nio.file.Files.move()</code></td><td><code>moveFile()</code> in <code>Main.java</code></td><td>Atomic rename within the same volume</td></tr>
+<tr><td>Move to error</td><td><code>java.nio.file.Files.move()</code></td><td><code>moveFile()</code> in <code>Main.java</code></td><td>Atomic rename within the same volume</td></tr>
+<tr><td>Write transaction to Ledger</td><td><code>java.net.HttpURLConnection</code> POST</td><td><code>postTransactionToLedger()</code> in <code>Main.java</code></td><td>Remote write; no local persistence</td></tr>
+</tbody></table></div>
+<h2 id="caching-strategy">Caching Strategy</h2>
+<p>No caching layer is present. The application processes each file end-to-end in a single synchronous pass with no in-memory result caching, query caching, or second-level cache. ACH batch and entry objects are created, used, and garbage-collected within the processing of a single file.</p>
+<h2 id="data-ownership-boundaries">Data Ownership Boundaries</h2>
+<p>The service has a single-node, file-system-based data boundary. There is no shared or replicated database. The only durable state transitions are:</p>
+<ul>
+<li>Incoming ACH files move from <code>/shared/ach-incoming</code> → <code>/shared/ach-incoming/processed</code> or <code>/shared/ach-incoming/error</code>.</li>
+<li>Committed transaction records are written exclusively to the external Ledger API&#39;s data store; this service holds no local copy.</li>
+<li>RabbitMQ events are fire-and-forget; no local event store or outbox pattern is used.</li>
+</ul>
+<p>Cross-service data access is one-directional: ZavaACHProcessor writes to the Ledger API via HTTP POST and reads nothing back beyond the HTTP response status code.</p>
+<h3 id="data-classification-sensitivity">Data Classification &amp; Sensitivity</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>In-memory Class</th><th>Sensitive Fields</th><th>Classification</th><th>Controls in Place</th></tr></thead><tbody>
+<tr><td>AchEntry</td><td><code>accountNumber</code>, <code>routingNumber</code>, <code>individualName</code>, <code>individualId</code>, <code>amountCents</code></td><td>PCI / PII</td><td>None</td></tr>
+<tr><td>AchBatch</td><td><code>companyName</code></td><td>PII (business name)</td><td>None</td></tr>
+</tbody></table></div>
+<p>The <code>accountNumber</code> and <code>routingNumber</code> fields constitute PCI-DSS sensitive payment data. The <code>individualName</code> and <code>individualId</code> fields are PII. No encryption-at-rest, field-level masking, or access control is applied to these values while they are held in memory or logged. Additionally, the log statement in <code>postTransactionToLedger()</code> may write <code>traceNumber</code> values to stdout; structured redaction is absent. The JSON payloads sent to the Ledger API and RabbitMQ contain account and routing numbers in plain text over unencrypted HTTP and AMQP connections.</p>
+</div>
+</div>
+<p class="footer">Your feedback is invaluable &mdash; <a href="https://aka.ms/ghcp-appmod/feedback">Share feedback</a></p>
+<script>
+function toggleRow(rowId, triggerRow) {
+  var detail = document.getElementById(rowId);
+  var btn = document.getElementById('btn-' + rowId);
+  if (!detail) return;
+  var visible = detail.style.display !== 'none';
+  detail.style.display = visible ? 'none' : 'table-row';
+  if (btn) btn.classList.toggle('open', !visible);
+}
+(function() {
+  var nav = document.querySelector('.tab-nav');
+  if (!nav) return;
+  nav.addEventListener('click', function(e) {
+    var btn = e.target.closest('.tab-btn');
+    if (!btn) return;
+    var targetId = btn.getAttribute('data-tab');
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+    btn.classList.add('active');
+    var panel = document.getElementById(targetId);
+    if (panel) {
+      panel.classList.add('active');
+      // Render any mermaid diagrams in this panel that haven't been processed yet
+      if (window.__mermaidReady) { window.__renderMermaidIn(panel); }
+    }
+  });
+})();
+
+// ── Diagram lightbox ────────────────────────────────────────
+(function() {
+  var lightbox = document.getElementById('diagram-lightbox');
+  var inner = document.getElementById('diagram-lightbox-inner');
+  var closeBtn = document.getElementById('diagram-lightbox-close');
+  if (!lightbox || !inner || !closeBtn) return;
+
+  var scale = 1;
+  var translateX = 0;
+  var translateY = 0;
+  var isDragging = false;
+  var dragStartX = 0;
+  var dragStartY = 0;
+
+  function applyTransform() {
+    var svg = inner.querySelector('svg');
+    if (svg) {
+      svg.style.transform = 'translate(' + translateX + 'px, ' + translateY + 'px) scale(' + scale + ')';
+      svg.style.transformOrigin = 'center center';
+      svg.style.transition = 'none';
+    }
+  }
+
+  function resetTransform() {
+    scale = 1; translateX = 0; translateY = 0;
+    applyTransform();
+  }
+
+  function openLightbox(svgEl) {
+    inner.innerHTML = svgEl.outerHTML;
+    var injected = inner.querySelector('svg');
+    if (injected) {
+      injected.removeAttribute('width');
+      injected.removeAttribute('height');
+      injected.style.cursor = 'grab';
+    }
+    resetTransform();
+    lightbox.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLightbox() {
+    lightbox.classList.remove('open');
+    inner.innerHTML = '';
+    document.body.style.overflow = '';
+    resetTransform();
+  }
+
+  inner.addEventListener('wheel', function(e) {
+    e.preventDefault();
+    var delta = e.deltaY > 0 ? 0.9 : 1.1;
+    scale = Math.min(Math.max(scale * delta, 0.3), 8);
+    applyTransform();
+  }, { passive: false });
+
+  inner.addEventListener('mousedown', function(e) {
+    if (e.button !== 0) return;
+    isDragging = true;
+    dragStartX = e.clientX - translateX;
+    dragStartY = e.clientY - translateY;
+    var svg = inner.querySelector('svg');
+    if (svg) { svg.style.cursor = 'grabbing'; }
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', function(e) {
+    if (!isDragging) return;
+    translateX = e.clientX - dragStartX;
+    translateY = e.clientY - dragStartY;
+    applyTransform();
+  });
+
+  document.addEventListener('mouseup', function() {
+    if (!isDragging) return;
+    isDragging = false;
+    var svg = inner.querySelector('svg');
+    if (svg) { svg.style.cursor = 'grab'; }
+  });
+
+  inner.addEventListener('dblclick', function() { resetTransform(); });
+
+  document.addEventListener('click', function(e) {
+    var card = e.target.closest('.mermaid');
+    if (!card) return;
+    if (e.target.closest('.diagram-lightbox-close')) return;
+    var svg = card.querySelector('svg');
+    if (svg) { openLightbox(svg); }
+  });
+
+  closeBtn.addEventListener('click', closeLightbox);
+
+  lightbox.addEventListener('click', function(e) {
+    if (e.target === lightbox) { closeLightbox(); }
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') { closeLightbox(); }
+  });
+})();
+
+var _currentTarget = '';
+
+function toggleMultiSelect(id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  // Close others
+  document.querySelectorAll('.multi-select.open').forEach(function(ms) { if (ms.id !== id) ms.classList.remove('open'); });
+  el.classList.toggle('open');
+}
+
+// Close dropdowns on outside click
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.multi-select')) {
+    document.querySelectorAll('.multi-select.open').forEach(function(ms) { ms.classList.remove('open'); });
+  }
+});
+
+function getMultiSelectValues(msId) {
+  var el = document.getElementById(msId);
+  if (!el) return [];
+  var checked = el.querySelectorAll('input[type=checkbox]:checked');
+  var vals = [];
+  for (var i = 0; i < checked.length; i++) vals.push(checked[i].value);
+  return vals;
+}
+
+function onMultiSelectChange(msId, label) {
+  var el = document.getElementById(msId);
+  if (!el) return;
+  var vals = getMultiSelectValues(msId);
+  var total = el.querySelectorAll('input[type=checkbox]').length;
+  var btn = el.querySelector('.multi-select-btn');
+  if (btn) {
+    btn.textContent = vals.length > 0 && vals.length < total ? label + ' (' + vals.length + ')' : label;
+  }
+  applyFilters();
+}
+
+function applyFilters() {
+  var selectedDomains = getMultiSelectValues('domain-ms');
+  var selectedCrits = getMultiSelectValues('criticality-ms');
+
+  // Domain filter: show/hide entire sections (empty = show all)
+  var sections = document.querySelectorAll('.issue-section');
+  for (var i = 0; i < sections.length; i++) {
+    var domain = sections[i].getAttribute('data-domain');
+    sections[i].style.display = (selectedDomains.length === 0 || selectedDomains.indexOf(domain) >= 0) ? '' : 'none';
+  }
+
+  // Row-level filtering: respect target + criticality
+  var rows = document.querySelectorAll('.issue-row');
+  for (var i = 0; i < rows.length; i++) {
+    var row = rows[i];
+    var section = row.closest('.issue-section');
+    if (section && section.style.display === 'none') {
+      row.style.display = 'none';
+      var next = row.nextElementSibling;
+      if (next && next.classList.contains('detail-row')) next.style.display = 'none';
+      continue;
+    }
+
+    // Check target filter
+    var show = true;
+    if (_currentTarget && row.hasAttribute('data-targets')) {
+      var targetsStr = row.getAttribute('data-targets');
+      if (targetsStr && targetsStr !== '{}') {
+        try {
+          var targets = JSON.parse(targetsStr);
+          if (Object.keys(targets).length > 0 && !targets[_currentTarget]) {
+            show = false;
+          }
+        } catch(e) {}
+      }
+    }
+
+    // Check criticality filter
+    if (show && selectedCrits.length > 0) {
+      var crit = row.getAttribute('data-criticality');
+      if (selectedCrits.indexOf(crit) < 0) show = false;
+    }
+
+    row.style.display = show ? '' : 'none';
+    var nextRow = row.nextElementSibling;
+    if (nextRow && nextRow.classList.contains('detail-row')) {
+      if (!show) nextRow.style.display = 'none';
+    }
+  }
+}
+
+function clearAllFilters() {
+  document.querySelectorAll('.multi-select input[type=checkbox]').forEach(function(cb) { cb.checked = false; });
+  var domainBtn = document.querySelector('#domain-ms .multi-select-btn');
+  if (domainBtn) domainBtn.textContent = 'Domain';
+  var critBtn = document.querySelector('#criticality-ms .multi-select-btn');
+  if (critBtn) critBtn.textContent = 'Criticality';
+  applyFilters();
+}
+
+function onTargetChange(targetId) {
+  _currentTarget = targetId;
+  var rows = document.querySelectorAll('.issue-row[data-targets]');
+  var totalEffort = 0;
+  var domainCrits = {}; // domain -> {mandatory:0, potential:0, optional:0}
+
+  for (var i = 0; i < rows.length; i++) {
+    var row = rows[i];
+    var targets = JSON.parse(row.getAttribute('data-targets'));
+    var section = row.closest('.issue-section');
+    var domain = section ? section.getAttribute('data-domain') : '';
+
+    if (!targets || Object.keys(targets).length === 0) {
+      // No target data (e.g. security) — always show
+      var sp = parseFloat(row.querySelector('.sp-cell').textContent) || 0;
+      totalEffort += sp;
+      if (!domainCrits[domain]) domainCrits[domain] = {mandatory:0,potential:0,optional:0};
+      var crit = row.getAttribute('data-criticality') || 'optional';
+      domainCrits[domain][crit] = (domainCrits[domain][crit] || 0) + 1;
+      continue;
+    }
+
+    var override = targets[targetId];
+    if (!override) {
+      // Issue doesn't apply to this target
+      continue;
+    }
+
+    // Apply severity override
+    var newSeverity = (override.severity || row.getAttribute('data-default-severity') || '').toLowerCase();
+    row.setAttribute('data-criticality', newSeverity);
+    var critCell = row.querySelector('.crit-cell');
+    if (critCell) {
+      var critText = newSeverity === 'mandatory' ? 'Mandatory' : newSeverity === 'potential' ? 'Potential' : 'Optional';
+      var cssClass = newSeverity === 'mandatory' ? 'crit-square-mandatory' : newSeverity === 'potential' ? 'crit-square-potential' : 'crit-square-optional';
+      critCell.innerHTML = '<span class="crit-label"><span class="crit-square ' + cssClass + '"></span>' + critText + '</span>';
+    }
+
+    // Apply effort override
+    var newEffort = override.effort !== undefined ? override.effort : parseFloat(row.getAttribute('data-default-effort')) || 0;
+    var spCell = row.querySelector('.sp-cell');
+    if (spCell) spCell.textContent = newEffort;
+    totalEffort += newEffort;
+
+    if (!domainCrits[domain]) domainCrits[domain] = {mandatory:0,potential:0,optional:0};
+    domainCrits[domain][newSeverity] = (domainCrits[domain][newSeverity] || 0) + 1;
+  }
+
+  // Also add security findings effort (they don't have per-target data)
+  var secSection = document.querySelector('.issue-section[data-domain="security"]');
+  if (secSection) {
+    var secRows = secSection.querySelectorAll('.issue-row');
+    for (var j = 0; j < secRows.length; j++) {
+      if (!secRows[j].hasAttribute('data-targets') || secRows[j].getAttribute('data-targets') === '') {
+        var sp = parseFloat(secRows[j].querySelector('.sp-cell').textContent) || 0;
+        totalEffort += sp;
+        if (!domainCrits['security']) domainCrits['security'] = {mandatory:0,potential:0,optional:0};
+        var sc = secRows[j].getAttribute('data-criticality') || 'optional';
+        domainCrits['security'][sc] = (domainCrits['security'][sc] || 0) + 1;
+      }
+    }
+  }
+
+  // Update effort display
+  var label = totalEffort < 20 ? 'S' : totalEffort < 50 ? 'M' : totalEffort < 100 ? 'L' : 'XL';
+  var effortEl = document.getElementById('effort-display');
+  if (effortEl) effortEl.textContent = label + ' (total story points: ' + totalEffort + ')';
+
+  // Update donut charts
+  updateDonuts(domainCrits);
+
+  // Re-apply domain/criticality filters
+  applyFilters();
+}
+
+function updateDonuts(domainCrits) {
+  var container = document.getElementById('donut-container');
+  if (!container) return;
+  container.innerHTML = '';
+  var domainNames = {'cloud-readiness':'Cloud Readiness','java-upgrade':'Java Upgrade','dotnet-upgrade':'DotNET Upgrade','security':'Security'};
+  var domainOrder = ['cloud-readiness','java-upgrade','dotnet-upgrade','security'];
+  for (var d = 0; d < domainOrder.length; d++) {
+    var key = domainOrder[d];
+    var c = domainCrits[key];
+    if (!c || (c.mandatory + c.potential + c.optional) === 0) continue;
+    var total = c.mandatory + c.potential + c.optional;
+    var div = document.createElement('div');
+    div.className = 'domain-summary-item';
+    div.innerHTML = buildDonutSvg(c.mandatory, c.potential, c.optional) +
+      '<h3>' + domainNames[key] + '</h3>' +
+      '<div class="count">' + total + ' issue' + (total !== 1 ? 's' : '') + '</div>';
+    container.appendChild(div);
+  }
+}
+
+function buildDonutSvg(m, p, o) {
+  var total = m + p + o;
+  if (total === 0) return '<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;"><circle cx="50" cy="50" r="35" fill="none" stroke="#d0d7de" stroke-width="15" opacity="0.5"/></svg>';
+  var r = 35, circ = 2 * Math.PI * r, offset = 0;
+  var svg = '<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;transform:rotate(-90deg);">';
+  var segs = [{c:m,color:'var(--color-mandatory)'},{c:p,color:'var(--color-potential)'},{c:o,color:'var(--color-optional)'}];
+  for (var i = 0; i < segs.length; i++) {
+    if (segs[i].c === 0) continue;
+    var segLen = (segs[i].c / total) * circ;
+    var gap = total > segs[i].c ? 1.5 : 0;
+    var drawLen = Math.max(segLen - gap, 0.5);
+    svg += '<circle cx="50" cy="50" r="' + r + '" fill="none" stroke="' + segs[i].color + '" stroke-width="15" stroke-dasharray="' + drawLen.toFixed(2) + ' ' + circ.toFixed(2) + '" stroke-dashoffset="' + (-offset).toFixed(2) + '"/>';
+    offset += segLen;
+  }
+  svg += '</svg>';
+  return svg;
+}
+</script>
+<script>document.addEventListener('DOMContentLoaded', function() { onTargetChange('azure-aks'); });</script>
+</div></body></html>

@@ -1,0 +1,1362 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Assessment - ZavaComplianceReporter</title>
+<style>
+:root {
+  --bg-primary: #ffffff;
+  --bg-card: #f8f9fa;
+  --bg-page: #f0f1f3;
+  --text-primary: #24292f;
+  --text-secondary: #57606a;
+  --text-muted: #6b7280;
+  --border-color: #d0d7de;
+  --border-light: #e1e4e8;
+  --link-color: #2563eb;
+  --color-mandatory: #E3008C;
+  --color-potential: #637CEF;
+  --color-optional: #A19F9D;
+  --font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  --font-mono: 'Cascadia Code', 'Consolas', 'Courier New', monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-family); font-size: 13px; color: var(--text-primary); background: var(--bg-primary); line-height: 1.5; margin: 0; padding: 0; }
+a { color: var(--link-color); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Page layout ───────────────────────────────────────────── */
+.main { margin: 0; padding: 24px 32px; background: var(--bg-primary); }
+.back-link { color: var(--text-muted); font-size: 13px; margin-bottom: 16px; display: block; }
+h1 { font-weight: 600; font-size: 20px; color: var(--text-primary); margin-bottom: 20px; }
+
+/* ── Report cards (matches VS Code .vscode-report-card) ──── */
+.report-card { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 4px; padding: 12px; margin-bottom: 20px; }
+.report-card h2 { font-size: 14px; font-weight: 600; margin: 0; color: var(--text-primary); }
+.report-card-body { margin-top: 16px; }
+
+/* ── Application Information (two-column) ────────────────── */
+.app-info-container { display: flex; gap: 8px; flex-wrap: wrap; }
+.app-info-column { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 8px; }
+.app-info-row { display: flex; align-items: baseline; }
+.app-info-label { width: 136px; flex-shrink: 0; font-weight: 600; color: var(--text-primary); }
+.app-info-value { flex: 1; color: var(--text-primary); }
+
+/* ── Issue Summary (pie charts + legend) ─────────────────── */
+.cards-container { display: flex; align-items: stretch; gap: 20px; flex-wrap: wrap; }
+.issue-summary-card { flex: 2; }
+.domain-summary-container { display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-around; }
+.domain-summary-item { flex: 1; min-width: 120px; text-align: center; padding: 0 16px; border-right: 1px solid var(--border-light); }
+.domain-summary-item:last-child { border-right: none; }
+.domain-summary-item h3 { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-top: 8px; }
+.domain-summary-item .count { font-size: 12px; color: var(--text-secondary); }
+.criticality-legend { display: flex; flex-wrap: wrap; gap: 15px; padding-top: 12px; justify-content: center; }
+.criticality-legend .legend-item { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-secondary); }
+.legend-swatch { display: inline-block; width: 1em; height: 1em; border-radius: 2px; }
+
+/* ── Issue list tables ───────────────────────────────────── */
+.issue-section { margin-top: 20px; }
+.issue-section h2 { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+.issue-table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 600px; }
+.issue-table th { text-align: left; text-transform: uppercase; font-weight: 600; font-size: calc(13px * 0.875); padding: 6px 8px; background: var(--bg-card); border-bottom: 1px solid var(--border-color); color: var(--text-secondary); position: sticky; top: 0; z-index: 1; }
+.issue-table td { padding: 12px 8px; border-bottom: 1px solid var(--border-light); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
+.col-issue { width: 55%; }
+.col-criticality { width: 25%; }
+.col-storypoint { width: 20%; }
+
+/* ── Target dropdown ─────────────────────────────────────── */
+.target-select-container { margin: 4px 0 16px 0; display: flex; align-items: center; gap: 8px; }
+.target-select-container label { font-weight: 600; color: var(--text-primary); font-size: 14px; }
+.target-select-container select { font-family: var(--font-family); font-size: 13px; padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer; }
+
+/* ── Filter bar ──────────────────────────────────────────── */
+.filter-bar { display: flex; flex-wrap: wrap; gap: 16px; margin: 16px 0 8px 0; align-items: center; }
+.multi-select { position: relative; display: inline-block; min-width: 140px; }
+.multi-select-btn { font-family: var(--font-family); font-size: 13px; padding: 4px 24px 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer; width: 100%; text-align: left; position: relative; white-space: nowrap; }
+.multi-select-btn::after { content: '\25BE'; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--text-secondary); }
+.multi-select-dropdown { display: none; position: absolute; top: 100%; left: 0; min-width: 100%; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 100; margin-top: 2px; }
+.multi-select.open .multi-select-dropdown { display: block; }
+.multi-select-option { display: flex; align-items: center; gap: 6px; padding: 5px 10px; cursor: pointer; font-size: 13px; white-space: nowrap; }
+.multi-select-option:hover { background: var(--bg-secondary); }
+.multi-select-option input[type=checkbox] { margin: 0; cursor: pointer; }
+.clear-filters { font-size: 12px; color: var(--link-color); cursor: pointer; margin-left: 4px; }
+
+/* ── Criticality labels (colored square + text) ──────────── */
+.crit-label { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; white-space: nowrap; }
+.crit-square { display: inline-block; width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+.crit-square-mandatory { background: var(--color-mandatory); }
+.crit-square-potential { background: var(--color-potential); }
+.crit-square-optional { background: var(--color-optional); }
+
+/* ── Expandable rows ─────────────────────────────────────── */
+.expand-btn { background: none; border: none; cursor: pointer; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 11px; transition: transform 0.15s; padding: 0; vertical-align: middle; flex-shrink: 0; }
+.expand-btn.open { transform: rotate(90deg); }
+.issue-title-cell { display: flex; align-items: center; gap: 4px; }
+.detail-row td { padding: 0; border-bottom: 1px solid var(--border-light); white-space: normal; overflow: visible; text-overflow: clip; }
+.detail-content { display: flex; gap: 0; padding: 8px 8px 8px 32px; min-width: 0; }
+.file-list { flex: 0 0 50%; min-width: 0; overflow: hidden; }
+.file-list table { width: 100%; border-collapse: collapse; }
+.file-list th { font-size: calc(13px * 0.875); text-transform: uppercase; font-weight: 600; color: var(--text-secondary); padding: 6px 8px; border-bottom: 1px solid var(--border-color); text-align: left; height: 32px; }
+.file-list td { font-size: 13px; padding: 6px 8px; border-bottom: 1px solid var(--border-light); color: var(--text-primary); }
+.file-list .file-path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 300px; display: block; }
+.file-list .position { font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary); }
+.explanation-panel { flex: 1; padding-left: 16px; min-width: 0; overflow-wrap: break-word; word-wrap: break-word; }
+.explanation-panel h4 { font-size: calc(13px * 0.875); text-transform: uppercase; font-weight: 600; color: var(--text-secondary); padding: 6px 0; border-bottom: 1px solid var(--border-color); height: 32px; margin: 0; }
+.explanation-panel p { font-size: 13px; padding: 8px 0; color: var(--text-primary); line-height: 1.6; white-space: normal; word-break: break-word; }
+
+/* ── Experimental badge ──────────────────────────────────── */
+.badge-experimental { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; background: #fef9c3; color: #854d0e; vertical-align: middle; margin-left: 8px; cursor: default; }
+
+/* ── Footer ──────────────────────────────────────────────── */
+.footer { text-align: center; margin-top: 24px; color: var(--text-muted); font-size: 13px; }
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 800px) {
+  .main { padding: 16px; }
+  .app-info-container { flex-direction: column; }
+  .domain-summary-container { flex-direction: column; }
+  .domain-summary-item { border-right: none; border-bottom: 1px solid var(--border-light); padding-bottom: 12px; }
+  .detail-content { flex-direction: column; }
+  .file-list { flex: none; width: 100%; }
+  .explanation-panel { padding-left: 0; padding-top: 8px; }
+}
+/* ── Tab navigation ──────────────────────────────────────── */
+.tab-nav { display: flex; gap: 0; border-bottom: 1px solid var(--border-color); margin-bottom: 28px; flex-wrap: wrap; }
+.tab-btn { background: none; border: none; border-bottom: 2px solid transparent; padding: 10px 18px; font-size: 13px; font-family: var(--font-family); color: var(--text-secondary); cursor: pointer; margin-bottom: -1px; white-space: nowrap; position: relative; }
+.tab-btn:hover { color: var(--text-primary); }
+.tab-btn.active { color: var(--link-color); border-bottom-color: var(--link-color); font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ── Tooltip on tab ──────────────────────────────────────── */
+.tab-btn[data-tooltip]::after { content: attr(data-tooltip); position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); background: #24292f; color: #ffffff; font-size: 12px; font-weight: 400; padding: 6px 10px; border-radius: 4px; white-space: normal; width: max-content; max-width: 260px; text-align: center; pointer-events: none; opacity: 0; transition: opacity 0.15s; z-index: 100; }
+.tab-btn[data-tooltip]:hover::after { opacity: 1; }
+
+/* ── Fact content — prose column ─────────────────────────── */
+.fact-content { max-width: 860px; margin: 0 auto; line-height: 1.75; color: var(--text-primary); font-size: 14px; }
+.fact-content h1 { font-size: 22px; font-weight: 700; margin: 0 0 6px 0; color: var(--text-primary); letter-spacing: -0.01em; }
+.fact-content h1 + p { margin-top: 6px; color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
+.fact-content h2 { font-size: 17px; font-weight: 700; margin: 36px 0 12px 0; padding-bottom: 6px; border-bottom: 1px solid var(--border-color); color: var(--text-primary); letter-spacing: -0.01em; }
+.fact-content h3 { font-size: 14px; font-weight: 700; margin: 24px 0 8px 0; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.04em; font-size: 12px; color: var(--text-secondary); }
+.fact-content p { margin: 10px 0; color: var(--text-primary); }
+.fact-content ul, .fact-content ol { margin: 10px 0 10px 22px; }
+.fact-content li { margin: 5px 0; }
+.fact-content a { color: var(--link-color); }
+.fact-content a:hover { text-decoration: underline; }
+
+/* ── Fact tables ─────────────────────────────────────────── */
+.table-wrap { overflow-x: auto; margin: 16px 0; }
+.fact-content table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 13px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); }
+.fact-content thead { background: var(--bg-card); }
+.fact-content th { text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; padding: 8px 14px; border-bottom: 1px solid var(--border-color); color: var(--text-secondary); }
+.fact-content td { padding: 9px 14px; border-bottom: 1px solid var(--border-light); vertical-align: top; color: var(--text-primary); }
+.fact-content tr:last-child td { border-bottom: none; }
+.fact-content tbody tr:hover { background: #f6f8fa; }
+
+/* ── Fact code ───────────────────────────────────────────── */
+.fact-content code { font-family: var(--font-mono); font-size: 12px; background: #f0f1f3; padding: 2px 6px; border-radius: 4px; color: #c7254e; }
+.fact-content pre { background: #f6f8fa; border: 1px solid var(--border-light); border-radius: 6px; padding: 14px 16px; overflow-x: auto; margin: 14px 0; }
+.fact-content pre code { background: none; color: var(--text-primary); padding: 0; border-radius: 0; }
+.fact-content hr { border: none; border-top: 1px solid var(--border-light); margin: 28px 0; }
+.fact-content strong { font-weight: 600; }
+.fact-content em { font-style: italic; }
+.fact-content blockquote { border-left: 3px solid var(--border-color); margin: 12px 0; padding: 4px 16px; color: var(--text-secondary); }
+.fact-unavailable { padding: 32px 0; }
+.fact-unavailable h3 { font-size: 16px; font-weight: 600; color: var(--text-primary); text-transform: none; letter-spacing: 0; margin: 0 0 12px 0; }
+.fact-unavailable p { margin: 0 0 8px 0; color: var(--text-secondary); }
+.fact-unavailable ol, .fact-unavailable ul { margin: 0 0 0 22px; color: var(--text-primary); }
+.fact-unavailable li { margin: 6px 0; }
+
+/* ── Mermaid diagram card ─────────────────────────────────── */
+.mermaid { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 8px; padding: 24px 16px; margin: 20px 0; overflow-x: auto; text-align: center; cursor: pointer; position: relative; }
+.mermaid:hover { border-color: var(--border-color); }
+.mermaid svg { max-width: 100%; height: auto !important; display: inline-block; }
+.mermaid-zoom-hint { position: absolute; top: 8px; right: 10px; font-size: 11px; color: var(--text-muted); opacity: 0; transition: opacity 0.15s; pointer-events: none; }
+.mermaid:hover .mermaid-zoom-hint { opacity: 1; }
+
+/* ── Diagram lightbox ────────────────────────────────────── */
+.diagram-lightbox { display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.7); backdrop-filter: blur(2px); align-items: center; justify-content: center; cursor: zoom-out; padding: 48px 32px; }
+.diagram-lightbox.open { display: flex; }
+.diagram-lightbox-inner { background: #ffffff; border-radius: 10px; padding: 32px; width: 88vw; max-height: 88vh; overflow: hidden; cursor: default; box-shadow: 0 24px 64px rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; }
+.diagram-lightbox-inner svg { width: 100% !important; height: auto !important; max-height: 76vh; display: block; }
+.diagram-lightbox-close { position: fixed; top: 20px; right: 24px; background: #ffffff; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-primary); box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 1001; }
+.diagram-lightbox-close:hover { background: var(--bg-card); }
+.diagram-lightbox-hint { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.55); color: #ffffff; font-size: 12px; padding: 6px 14px; border-radius: 20px; pointer-events: none; white-space: nowrap; z-index: 1001; }
+</style>
+<script>
+window.__mermaidPending = [];
+window.__mermaidReady = false;
+window.__renderMermaidIn = function(container) {
+  // Until the real implementation overrides this (after the ES module import
+  // resolves), just queue the container so we can render it later.
+  if (container) { window.__mermaidPending.push(container); }
+};
+</script>
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+mermaid.initialize({ startOnLoad: false, theme: 'default', flowchart: { useMaxWidth: true }, sequence: { useMaxWidth: true } });
+
+// Real implementation: actually run mermaid on the unprocessed diagrams in the
+// given container (only ones not already rendered). Adds a "Click to expand"
+// hint span after each successful render so the lightbox affordance is
+// discoverable.
+window.__renderMermaidIn = function(container) {
+  var nodes = container ? container.querySelectorAll('.mermaid:not([data-processed])') : [];
+  if (nodes.length > 0) {
+    mermaid.run({ nodes: Array.from(nodes) }).then(function() {
+      nodes.forEach(function(node) {
+        if (!node.querySelector('.mermaid-zoom-hint')) {
+          var hint = document.createElement('span');
+          hint.className = 'mermaid-zoom-hint';
+          hint.textContent = 'Click to expand';
+          node.appendChild(hint);
+        }
+      });
+    });
+  }
+};
+
+// Drain any containers that were queued by the shim while mermaid was loading.
+// Use a Set to dedupe in case a container was both queued and is also the
+// initial-active panel below.
+var drained = new Set();
+(window.__mermaidPending || []).forEach(function(c) {
+  if (!drained.has(c)) { drained.add(c); window.__renderMermaidIn(c); }
+});
+window.__mermaidPending = [];
+window.__mermaidReady = true;
+
+// Render diagrams visible on initial load (the active tab panel(s) may not have
+// been queued by anyone — DOMContentLoaded handlers run before this if the
+// module is cached, after this if it's not, so handle both cases here).
+function renderActivePanels() {
+  document.querySelectorAll('.tab-panel.active').forEach(function(p) {
+    if (!drained.has(p)) { drained.add(p); window.__renderMermaidIn(p); }
+  });
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', renderActivePanels);
+} else {
+  renderActivePanels();
+}
+</script>
+</head><body>
+<div id="diagram-lightbox" class="diagram-lightbox" role="dialog" aria-modal="true">
+  <button class="diagram-lightbox-close" id="diagram-lightbox-close" aria-label="Close">&#x2715;</button>
+  <div class="diagram-lightbox-hint">Scroll to zoom &nbsp;·&nbsp; Drag to pan &nbsp;·&nbsp; Double-click to reset</div>
+  <div class="diagram-lightbox-inner" id="diagram-lightbox-inner"></div>
+</div>
+<div class="main">
+<a class="back-link" href="../../index.html">&#8592; Back to aggregate dashboard</a>
+<h1>ZavaComplianceReporter</h1>
+<div class="report-card">
+  <h2>Application Information</h2>
+  <div class="report-card-body">
+    <div class="app-info-container">
+      <div class="app-info-column">
+        <div class="app-info-row"><span class="app-info-label">Application Name</span><span class="app-info-value">ZavaComplianceReporter</span></div>
+        <div class="app-info-row"><span class="app-info-label">Java Version</span><span class="app-info-value">Unknown</span></div>
+        <div class="app-info-row"><span class="app-info-label">Effort</span><span class="app-info-value" id="effort-display">S (total story points: 14)</span></div>
+      </div>
+      <div class="app-info-column">
+        <div class="app-info-row"><span class="app-info-label">Build Tools</span><span class="app-info-value">Gradle</span></div>
+        <div class="app-info-row"><span class="app-info-label">Frameworks</span><span class="app-info-value">N/A</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+<nav class="tab-nav">
+  <button class="tab-btn active" data-tab="tab-issues" data-tooltip="Issues detected in the source code">Issues</button>
+  <button class="tab-btn" data-tab="tab-arch" data-tooltip="How the app&#39;s layers connect — from UI to data.">Architecture</button>
+  <button class="tab-btn" data-tab="tab-api" data-tooltip="Endpoints exposed by this app and how services communicate.">API Contracts</button>
+  <button class="tab-btn" data-tab="tab-config" data-tooltip="Environment settings, runtime profiles, and deployment manifests.">Configuration</button>
+  <button class="tab-btn" data-tab="tab-workflows" data-tooltip="Domain entities and the core flows users move through.">Business Workflows</button>
+  <button class="tab-btn" data-tab="tab-deps" data-tooltip="Libraries and frameworks this app depends on, grouped by category.">Dependencies</button>
+  <button class="tab-btn" data-tab="tab-data" data-tooltip="Database schema, entity relationships, and persistence behavior.">Data Model</button>
+</nav>
+<div id="tab-issues" class="tab-panel active">
+<div class="target-select-container">
+  <label for="target-select">Target Compute Service:</label>
+  <select id="target-select" onchange="onTargetChange(this.value)">
+    <option value="azure-aks">Azure Kubernetes Service</option>
+    <option value="azure-appservice">Azure App Service</option>
+    <option value="azure-container-apps">Azure Container Apps</option>
+  </select>
+</div>
+<div class="report-card">
+  <h2>Issue Summary</h2>
+  <div class="report-card-body">
+    <div class="domain-summary-container" id="donut-container">
+      <div class="domain-summary-item">
+<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;transform:rotate(-90deg);">
+  <circle cx="50" cy="50" r="35" fill="none" stroke="var(--color-mandatory)" stroke-width="15" stroke-dasharray="108.46 219.91" stroke-dashoffset="-0.00"/>
+  <circle cx="50" cy="50" r="35" fill="none" stroke="var(--color-optional)" stroke-width="15" stroke-dasharray="108.46 219.91" stroke-dashoffset="-109.96"/>
+</svg>
+
+        <h3>Cloud Readiness</h3>
+        <div class="count">2 issues</div>
+      </div>
+      <div class="domain-summary-item">
+<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;transform:rotate(-90deg);">
+  <circle cx="50" cy="50" r="35" fill="none" stroke="var(--color-mandatory)" stroke-width="15" stroke-dasharray="219.91 219.91" stroke-dashoffset="-0.00"/>
+</svg>
+
+        <h3>Java Upgrade</h3>
+        <div class="count">1 issue</div>
+      </div>
+    </div>
+    <div class="criticality-legend">
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--color-mandatory)"></span>Mandatory</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--color-potential)"></span>Potential</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--color-optional)"></span>Optional</div>
+    </div>
+  </div>
+</div>
+<div class="filter-bar" id="filter-bar">
+  <div class="multi-select" id="domain-ms">
+    <button class="multi-select-btn" onclick="toggleMultiSelect('domain-ms')">Domain</button>
+    <div class="multi-select-dropdown">
+      <label class="multi-select-option"><input type="checkbox" value="cloud-readiness" onchange="onMultiSelectChange('domain-ms','Domain')"/> Cloud Readiness</label>
+      <label class="multi-select-option"><input type="checkbox" value="java-upgrade" onchange="onMultiSelectChange('domain-ms','Domain')"/> Java Upgrade</label>
+    </div>
+  </div>
+  <div class="multi-select" id="criticality-ms">
+    <button class="multi-select-btn" onclick="toggleMultiSelect('criticality-ms')">Criticality</button>
+    <div class="multi-select-dropdown">
+      <label class="multi-select-option"><input type="checkbox" value="mandatory" onchange="onMultiSelectChange('criticality-ms','Criticality')"/> Mandatory</label>
+      <label class="multi-select-option"><input type="checkbox" value="optional" onchange="onMultiSelectChange('criticality-ms','Criticality')"/> Optional</label>
+    </div>
+  </div>
+  <a class="clear-filters" href="javascript:void(0)" onclick="clearAllFilters()">Clear all</a>
+</div>
+<div class="issue-section" data-domain="cloud-readiness">
+  <h2>Cloud Readiness</h2>
+  <table class="issue-table">
+    <colgroup><col class="col-issue"/><col class="col-criticality"/><col class="col-storypoint"/></colgroup>
+    <thead><tr><th>Issue Category</th><th>Criticality</th><th>Story Point</th></tr></thead>
+    <tbody>
+    <tr class="issue-row" data-criticality="mandatory" data-targets='{"azure-aks":{"effort":3,"severity":"mandatory"},"azure-appservice":{"effort":3,"severity":"mandatory"},"azure-container-apps":{"effort":3,"severity":"mandatory"}}' data-default-effort="3" data-default-severity="mandatory" data-rule="unsecure-network-protocol-00000" onclick="toggleRow('row-cloudreadiness-0', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-cloudreadiness-0">&#x276F;</button> Use of unsecured network protocols or URI libraries</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-mandatory"></span>Mandatory</span></td>
+      <td class="sp-cell">3</td>
+    </tr>
+    <tr class="detail-row" id="row-cloudreadiness-0" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="src/main/resources/compliance.properties">src/main/resources/compliance.properties</span></td><td><span class="position">Line 7, Col 0</span></td></tr>
+            <tr><td><span class="file-path" title="bin/main/compliance.properties">bin/main/compliance.properties</span></td><td><span class="position">Line 7, Col 0</span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>Using secured protocols such as HTTPS and SFTP (over HTTP and FTP) should now be the norm as applications are more and more exposed and interconnected. <br/>This CloudReady patterns looks for unescured URI in the source code or deprecated URI libraries. <br/>Ideally, URLs should be replaced in your source code by secured protocols HTTPS and SFTP (and ensure the infrastructure implements these protocols for the resources your application calls, uses or references).</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="optional" data-targets='{"azure-aks":{"effort":3,"severity":"optional"},"azure-appservice":{"effort":3,"severity":"optional"},"azure-container-apps":{"effort":3,"severity":"optional"}}' data-default-effort="3" data-default-severity="optional" data-rule="hardcoded-urls-00001" onclick="toggleRow('row-cloudreadiness-1', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-cloudreadiness-1">&#x276F;</button> Avoid using hardcoded URLs (HTTP protocol) in source code</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-optional"></span>Optional</span></td>
+      <td class="sp-cell">3</td>
+    </tr>
+    <tr class="detail-row" id="row-cloudreadiness-1" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="src/main/resources/compliance.properties">src/main/resources/compliance.properties</span></td><td><span class="position">Line 7, Col 0</span></td></tr>
+            <tr><td><span class="file-path" title="bin/main/compliance.properties">bin/main/compliance.properties</span></td><td><span class="position">Line 7, Col 0</span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>This patterns verifies in source code and configuration files the presence of hardcoded URLs using the HTTP protocol (HTTP/HTTPS). This URL would need to be replaced by the new resource&#39;s URL during the Cloud migration, if any change occured.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+</div>
+<div class="issue-section" data-domain="java-upgrade">
+  <h2>Java Upgrade</h2>
+  <table class="issue-table">
+    <colgroup><col class="col-issue"/><col class="col-criticality"/><col class="col-storypoint"/></colgroup>
+    <thead><tr><th>Issue Category</th><th>Criticality</th><th>Story Point</th></tr></thead>
+    <tbody>
+    <tr class="issue-row" data-criticality="mandatory" data-targets='{"azure-aks":{"effort":8,"severity":"mandatory"},"azure-appservice":{"effort":8,"severity":"mandatory"},"azure-container-apps":{"effort":8,"severity":"mandatory"}}' data-default-effort="8" data-default-severity="mandatory" data-rule="azure-java-version-01000" onclick="toggleRow('row-javaupgrade-0', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-javaupgrade-0">&#x276F;</button> Java Version Has Reached the End of Support</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-mandatory"></span>Mandatory</span></td>
+      <td class="sp-cell">8</td>
+    </tr>
+    <tr class="detail-row" id="row-javaupgrade-0" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="build.gradle">build.gradle</span></td><td><span class="position">Line 9, Col 0</span></td></tr>
+            <tr><td><span class="file-path" title="build.gradle">build.gradle</span></td><td><span class="position">Line 10, Col 0</span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>The application is using a Java version that has reached the end of support. It is strongly recommended to plan and execute a migration strategy to upgrade your application to a supported Java version.<br/>Supported Java versions receive long-term support (LTS) from the Java community, including bug fixes and updates. Migrating to a supported version provides you with a stable and well-maintained platform for your application.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+</div>
+</div><!-- #tab-issues -->
+<div id="tab-arch" class="tab-panel">
+  <div class="fact-content"><h1 id="architecture-diagram">Architecture Diagram</h1>
+<p>ZavaComplianceReporter is a Java EE web application that generates regulatory compliance reports (CTR and SAR) for the Zava Bank platform. It is deployed as a WAR file on Apache Tomcat and integrates with a shared Microsoft SQL Server database and an external SSO auth gateway.</p>
+<h2 id="application-architecture">Application Architecture</h2>
+<div class="mermaid">
+flowchart TD
+    subgraph Client["Client Layer"]
+        Browser["Web Browser"]
+    end
+
+    subgraph App["Application Layer - Java EE / Servlet 3.1 on Tomcat 9"]
+        AuthFilter["AuthFilter (Servlet Filter)"]
+        LoginServlet["LoginServlet"]
+        ReportsServlet["ReportsServlet"]
+        GenerateReportServlet["GenerateReportServlet"]
+        DownloadReportServlet["DownloadReportServlet"]
+        HealthServlet["HealthServlet"]
+        SsoSessionService["SsoSessionService"]
+    end
+
+    subgraph JSP["View Layer - JSP / JSTL"]
+        LoginPage["login.jsp"]
+        ReportsPage["reports.jsp"]
+        IndexPage["index.jsp"]
+    end
+
+    subgraph DataAccess["Data Access Layer"]
+        ConnFactory["ComplianceConnectionFactory (JDBC)"]
+        Config["ComplianceConfig"]
+    end
+
+    subgraph Data["Data Layer"]
+        MSSQL[("SQL Server - ZavaBankDB")]
+    end
+
+    subgraph External["External Services"]
+        AuthGateway["Auth Gateway - WhoAmI.ashx (.NET)"]
+    end
+
+    Browser -->|"HTTP requests"| AuthFilter
+    AuthFilter -->|"unauthenticated"| LoginServlet
+    AuthFilter -->|"authenticated"| ReportsServlet
+    AuthFilter -->|"authenticated"| GenerateReportServlet
+    AuthFilter -->|"authenticated"| DownloadReportServlet
+    AuthFilter -->|"SSO check"| SsoSessionService
+    LoginServlet -->|"renders"| LoginPage
+    LoginServlet -->|"SSO token resolve"| SsoSessionService
+    ReportsServlet -->|"renders"| ReportsPage
+    SsoSessionService -->|"token lookup"| ConnFactory
+    SsoSessionService -->|"cookie auth"| AuthGateway
+    ReportsServlet -->|"load reports"| ConnFactory
+    GenerateReportServlet -->|"query transactions/alerts"| ConnFactory
+    GenerateReportServlet -->|"save report"| ConnFactory
+    DownloadReportServlet -->|"fetch report data"| ConnFactory
+    ConnFactory -->|"JDBC / mssql-jdbc 12.8"| MSSQL
+    Config -->|"env vars / properties"| ConnFactory
+</div>
+<h3 id="technology-stack-summary">Technology Stack Summary</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Layer</th><th>Technology</th><th>Version</th><th>Purpose</th></tr></thead><tbody>
+<tr><td>Presentation</td><td>JSP + JSTL</td><td>Servlet 3.1 / JSTL 1.2</td><td>Server-side HTML rendering for login and report pages</td></tr>
+<tr><td>Application</td><td>Java EE Servlets</td><td>Java 8</td><td>Request handling, business logic, report generation</td></tr>
+<tr><td>Security</td><td>Servlet Filter (AuthFilter)</td><td>—</td><td>SSO-based authentication gating for all /reports endpoints</td></tr>
+<tr><td>Data Access</td><td>JDBC (Microsoft SQL Server driver)</td><td>mssql-jdbc 12.8.1.jre8</td><td>Direct SQL queries; no ORM layer</td></tr>
+<tr><td>Build/Deploy</td><td>Gradle + WAR</td><td>Gradle 7.6, WAR plugin</td><td>Builds ROOT.war for Tomcat deployment</td></tr>
+<tr><td>Runtime</td><td>Apache Tomcat</td><td>Tomcat 9 (jdk8 image)</td><td>Servlet container</td></tr>
+<tr><td>Containerization</td><td>Docker</td><td>Multi-stage Dockerfile</td><td>Builds and runs the WAR inside a Tomcat container</td></tr>
+</tbody></table></div>
+<h3 id="data-storage-external-services">Data Storage &amp; External Services</h3>
+<p>The application uses a single <strong>Microsoft SQL Server</strong> instance (<code>ZavaBankDB</code>, port 1433) as its only data store. It reads from and writes to several tables: <code>ComplianceReports</code> (regulatory report records), <code>Transactions</code> and <code>Accounts</code> (transaction data for CTR generation), <code>FraudAlerts</code> (alert data for SAR generation), and <code>SessionTokens</code> + <code>Users</code> (SSO session validation). All database access is performed using plain JDBC via a shared <code>ComplianceConnectionFactory</code>.</p>
+<p>An external <strong>Auth Gateway</strong> (a .NET service exposing <code>WhoAmI.ashx</code>) handles decryption of the <code>.ZAVAAUTH</code> FormsAuth cookie. When a request carries this cookie, <code>SsoSessionService</code> calls the gateway over HTTP to retrieve a session token, which is then validated against the SQL Server <code>SessionTokens</code> table.</p>
+<h3 id="key-architectural-decisions">Key Architectural Decisions</h3>
+<ul>
+<li><strong>No ORM or connection pooling</strong>: All data access uses raw JDBC with manual <code>try-with-resources</code> connection management; no Hibernate, JPA, or connection pool is configured.</li>
+<li><strong>SSO integration via shared SQL token table</strong>: Session authentication is dual-path — direct token lookup in SQL Server, or cookie-based delegation to the .NET auth gateway — avoiding any native Java decryption of .NET FormsAuth tickets.</li>
+<li><strong>Classic servlet/filter architecture</strong>: The application uses a pre-Spring, standard Java EE model with <code>web.xml</code> configuration, Servlet filters for cross-cutting security, and JSP views — no dependency injection framework is present.</li>
+</ul>
+<h2 id="component-relationships">Component Relationships</h2>
+<div class="mermaid">
+flowchart LR
+    subgraph Presentation["Presentation"]
+        LoginServlet["LoginServlet"]
+        ReportsServlet["ReportsServlet"]
+        GenerateReportServlet["GenerateReportServlet"]
+        DownloadReportServlet["DownloadReportServlet"]
+        HealthServlet["HealthServlet"]
+    end
+
+    subgraph Security["Security / Cross-Cutting"]
+        AuthFilter["AuthFilter"]
+    end
+
+    subgraph BusinessLogic["Business Logic"]
+        SsoSessionService["SsoSessionService"]
+    end
+
+    subgraph DataAccess["Data Access"]
+        ConnFactory["ComplianceConnectionFactory"]
+        Config["ComplianceConfig"]
+    end
+
+    subgraph Models["Models"]
+        SessionUser["SessionUser"]
+        ReportRecord["ReportRecord"]
+    end
+
+    AuthFilter -->|"delegates to"| SsoSessionService
+    AuthFilter -.->|"intercepts"| ReportsServlet
+    AuthFilter -.->|"intercepts"| GenerateReportServlet
+    AuthFilter -.->|"intercepts"| DownloadReportServlet
+    LoginServlet -->|"delegates to"| SsoSessionService
+    SsoSessionService -->|"opens connection"| ConnFactory
+    SsoSessionService -->|"creates"| SessionUser
+    ReportsServlet -->|"opens connection"| ConnFactory
+    ReportsServlet -->|"creates"| ReportRecord
+    GenerateReportServlet -->|"opens connection"| ConnFactory
+    DownloadReportServlet -->|"opens connection"| ConnFactory
+    ConnFactory -->|"reads config"| Config
+</div>
+<h3 id="component-inventory">Component Inventory</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Component</th><th>Layer</th><th>Type</th><th>Responsibility</th></tr></thead><tbody>
+<tr><td>AuthFilter</td><td>Security</td><td>Servlet Filter</td><td>Intercepts all <code>/reports</code> requests; validates session or redirects to login</td></tr>
+<tr><td>LoginServlet</td><td>Presentation</td><td>HttpServlet</td><td>Renders login page (GET); processes SSO token submission (POST)</td></tr>
+<tr><td>ReportsServlet</td><td>Presentation</td><td>HttpServlet</td><td>Lists compliance reports from DB; renders reports.jsp</td></tr>
+<tr><td>GenerateReportServlet</td><td>Presentation</td><td>HttpServlet</td><td>Generates CTR or SAR report text from DB data and saves it</td></tr>
+<tr><td>DownloadReportServlet</td><td>Presentation</td><td>HttpServlet</td><td>Streams a stored compliance report as a text file download</td></tr>
+<tr><td>HealthServlet</td><td>Presentation</td><td>HttpServlet</td><td>Returns a simple HTML health-check response at <code>/health</code></td></tr>
+<tr><td>SsoSessionService</td><td>Business Logic</td><td>Service class</td><td>Resolves authenticated user from session token (DB or auth gateway cookie)</td></tr>
+<tr><td>ComplianceConnectionFactory</td><td>Data Access</td><td>Factory class</td><td>Opens JDBC connections to SQL Server using configured credentials</td></tr>
+<tr><td>ComplianceConfig</td><td>Data Access</td><td>Configuration class</td><td>Reads DB and SSO configuration from environment variables or properties file</td></tr>
+<tr><td>SessionUser</td><td>Models</td><td>Value object</td><td>Holds authenticated user identity (userId, username)</td></tr>
+<tr><td>ReportRecord</td><td>Models</td><td>Value object</td><td>Holds a single compliance report row (id, type, date, status, filedBy)</td></tr>
+</tbody></table></div>
+</div>
+</div>
+<div id="tab-api" class="tab-panel">
+  <div class="fact-content"><h1 id="api-service-communication-contracts">API &amp; Service Communication Contracts</h1>
+<p>ZavaComplianceReporter exposes 6 HTTP endpoints via classic Java EE Servlets and integrates synchronously with one external service (the Zava Bank Auth Gateway) for SSO cookie resolution.</p>
+<h2 id="service-catalog">Service Catalog</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Port</th><th>Category</th><th>Purpose</th></tr></thead><tbody>
+<tr><td>ZavaComplianceReporter</td><td>8080</td><td>Business</td><td>Regulatory compliance reporting web application; generates and serves CTR and SAR reports</td></tr>
+<tr><td>Auth Gateway (external, .NET)</td><td>8080</td><td>Infrastructure</td><td>Resolves <code>.ZAVAAUTH</code> FormsAuth cookie to a session token via <code>WhoAmI.ashx</code>; owned by a separate service</td></tr>
+</tbody></table></div>
+<h2 id="api-endpoints-inventory">API Endpoints Inventory</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Method</th><th>Path</th><th>Request Type</th><th>Response Type</th></tr></thead><tbody>
+<tr><td>HealthServlet</td><td>GET</td><td><code>/health</code></td><td>—</td><td>HTML (inline status page)</td></tr>
+<tr><td>LoginServlet</td><td>GET</td><td><code>/login</code></td><td>—</td><td>HTML (login.jsp view)</td></tr>
+<tr><td>LoginServlet</td><td>POST</td><td><code>/login</code></td><td>Form params: <code>sessionToken</code></td><td>Redirect to <code>/reports</code> (302) or re-render login.jsp with error</td></tr>
+<tr><td>ReportsServlet</td><td>GET</td><td><code>/reports</code></td><td>Session (authenticated)</td><td>HTML (reports.jsp view listing ComplianceReport rows)</td></tr>
+<tr><td>GenerateReportServlet</td><td>POST</td><td><code>/reports/generate</code></td><td>Form params: <code>reportType</code> (CTR\</td><td>SAR), <code>thresholdAmount</code></td><td>Redirect to <code>/reports</code> (302)</td></tr>
+<tr><td>DownloadReportServlet</td><td>GET</td><td><code>/reports/download</code></td><td>Query param: <code>reportId</code> (integer)</td><td><code>text/plain</code> file download attachment</td></tr>
+</tbody></table></div>
+<h2 id="management-observability-endpoints">Management &amp; Observability Endpoints</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Endpoint</th><th>Notes</th></tr></thead><tbody>
+<tr><td>ZavaComplianceReporter</td><td>GET <code>/health</code></td><td>Custom hand-written HTML health check; returns <code>&quot;ZavaComplianceReporter - Online&quot;</code>. No structured JSON, no DB probe, no metrics exposure.</td></tr>
+</tbody></table></div>
+<p>No Spring Boot Actuator, Micrometer, Prometheus scrape endpoint, or custom metric registration is present.</p>
+<h2 id="dtos-contracts">DTOs &amp; Contracts</h2>
+<p>Two internal value objects act as the application&#39;s data contracts:</p>
+<ul>
+<li><strong><code>SessionUser</code></strong> — immutable (final fields, no setters); represents an authenticated principal carrying <code>userId</code> (int) and <code>username</code> (String). Created by <code>SsoSessionService</code> and stored in the HTTP session. Not serialized to JSON; lives only in server-side session memory.</li>
+<li><strong><code>ReportRecord</code></strong> — mutable POJO (conventional getters/setters); represents a single row from the <code>ComplianceReports</code> table. Used as the response model passed to <code>reports.jsp</code> via request attributes. Not serialized to JSON; bound to the JSP view layer only.</li>
+</ul>
+<p>No OpenAPI/Swagger specification, protobuf schemas, GraphQL schemas, or JSON serialization configuration (Jackson, Gson, etc.) are present. There is no formal API contract document — the application is a server-rendered web app, not a REST API.</p>
+<p>For field-level details and persistence mappings, see <code>data-architecture.md</code>.</p>
+<h2 id="communication-patterns">Communication Patterns</h2>
+<p><strong>Synchronous — Outbound HTTP (auth resolution):</strong></p>
+<p><code>SsoSessionService</code> makes a synchronous HTTP GET call to the external Auth Gateway (<code>WhoAmI.ashx</code>) when a <code>.ZAVAAUTH</code> cookie is present. The call uses <code>java.net.HttpURLConnection</code> with a hardcoded 3-second connect timeout and 3-second read timeout. There is no retry policy, circuit breaker (Resilience4j, Hystrix, etc.), or fallback — if the gateway is unreachable, the method returns an empty token and the user is redirected to the login page.</p>
+<p><strong>Synchronous — JDBC (database access):</strong></p>
+<p>All SQL Server communication is synchronous and blocking JDBC, opened per-request with no connection pool. If the database is unavailable, exceptions are silently swallowed and the affected servlet returns an empty result or redirects.</p>
+<p><strong>Service Discovery:</strong></p>
+<p>No service discovery mechanism is in place. The Auth Gateway URL is hardcoded in <code>compliance.properties</code> (<code>auth.gateway.whoami.url=http://zava-auth-gateway:8080/WhoAmI.ashx</code>) and resolved via Docker DNS within the compose network.</p>
+<p><strong>Asynchronous / Messaging:</strong></p>
+<p>No message broker (Kafka, RabbitMQ, Azure Service Bus) or event-driven pattern is used. All communication is synchronous request/response.</p>
+<p><strong>Security Posture:</strong></p>
+<p>All <code>/reports</code> and <code>/reports/*</code> URL patterns are protected by <code>AuthFilter</code>, which enforces SSO session validation before request processing. The filter checks for a valid <code>SessionUser</code> in the HTTP session; if absent, it attempts to resolve one from the request (token parameter, <code>X-Session-Token</code> header, <code>Authorization: Bearer</code> header, or <code>.ZAVAAUTH</code> cookie via the Auth Gateway). Unauthenticated requests are redirected to <code>/login</code>.</p>
+<p>No HTTPS/TLS is configured at the application level — TLS termination is expected to happen at the infrastructure layer (load balancer, reverse proxy). No CSRF protection, no content-security-policy headers, and no role-based authorization (RBAC) beyond the blanket authentication check are implemented. The <code>/health</code> endpoint is publicly accessible with no authentication.</p>
+<h2 id="service-technology-matrix">Service Technology Matrix</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Capability</th><th>ZavaComplianceReporter</th></tr></thead><tbody>
+<tr><td>Web Framework</td><td>Servlet 3.1 / JSTL 1.2 (web.xml, JSP views)</td></tr>
+<tr><td>Data Access</td><td>Raw JDBC via <code>ComplianceConnectionFactory</code> (no ORM)</td></tr>
+<tr><td>Service Discovery</td><td>None (hardcoded URL via properties file)</td></tr>
+<tr><td>API Gateway</td><td>None</td></tr>
+<tr><td>Health / Actuator</td><td>Custom <code>/health</code> servlet (HTML only)</td></tr>
+<tr><td>Caching</td><td>None</td></tr>
+<tr><td>Metrics Export</td><td>None</td></tr>
+</tbody></table></div>
+<h2 id="service-communication-sequence">Service Communication Sequence</h2>
+<div class="mermaid">
+sequenceDiagram
+    participant Client as "Browser / Client"
+    participant Filter as "AuthFilter"
+    participant SsoSvc as "SsoSessionService"
+    participant AuthGW as "Auth Gateway (WhoAmI.ashx)"
+    participant DB as "SQL Server (ZavaBankDB)"
+    participant Servlet as "Target Servlet"
+
+    Client->>Filter: GET /reports (with .ZAVAAUTH cookie)
+    Filter->>Filter: Check HTTP session for SessionUser
+
+    alt Session has valid SessionUser
+        Filter->>Servlet: forward request
+        Servlet->>DB: JDBC query (ComplianceReports)
+        DB-->>Servlet: ResultSet rows
+        Servlet-->>Client: 200 HTML (reports.jsp)
+    else No valid session
+        Filter->>SsoSvc: resolveSessionUser(request, "")
+        SsoSvc->>AuthGW: GET WhoAmI.ashx (Cookie: .ZAVAAUTH=value)\n[3s connect / 3s read timeout]
+        alt Gateway responds 200
+            AuthGW-->>SsoSvc: JSON {sessionToken: "abc..."}
+            SsoSvc->>DB: SELECT UserID, Username FROM SessionTokens JOIN Users WHERE Token=? AND IsActive=1 AND ExpiresAt>NOW()
+            DB-->>SsoSvc: UserID, Username
+            SsoSvc-->>Filter: SessionUser(userId, username)
+            Filter->>Filter: Store SessionUser in HTTP session
+            Filter->>Servlet: forward request
+            Servlet->>DB: JDBC query
+            DB-->>Servlet: ResultSet
+            Servlet-->>Client: 200 HTML
+        else Gateway unavailable or token invalid
+            AuthGW-->>SsoSvc: error / empty
+            SsoSvc-->>Filter: null
+            Filter-->>Client: 302 Redirect to /login
+        end
+    end
+</div>
+</div>
+</div>
+<div id="tab-config" class="tab-panel">
+  <div class="fact-content"><h1 id="configuration-externalized-settings-inventory">Configuration &amp; Externalized Settings Inventory</h1>
+<p>ZavaComplianceReporter uses two configuration sources — a single properties file and environment variables — with no runtime profiles, no feature flags, and no external config server or secret store integration.</p>
+<h2 id="configuration-sources">Configuration Sources</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Source</th><th>Type</th><th>Path / Location</th><th>Notes</th></tr></thead><tbody>
+<tr><td><code>compliance.properties</code></td><td>Java properties file</td><td><code>src/main/resources/compliance.properties</code></td><td>Packaged into the WAR as a classpath resource; provides defaults for all settings</td></tr>
+<tr><td>Environment variables</td><td>OS / container env</td><td>Runtime container environment</td><td>Take precedence over <code>compliance.properties</code> values when set; see Properties Inventory</td></tr>
+<tr><td><code>web.xml</code></td><td>Servlet descriptor</td><td><code>src/main/webapp/WEB-INF/web.xml</code></td><td>Declares servlets, filters, and URL mappings; not externalized</td></tr>
+<tr><td><code>Dockerfile</code></td><td>Container definition</td><td><code>Dockerfile</code></td><td>Multi-stage build; no env var defaults declared at the Docker image level</td></tr>
+</tbody></table></div>
+<p>No Spring Cloud Config Server, Azure App Configuration, AWS AppConfig, Consul KV, HashiCorp Vault, Azure KeyVault, or AWS Secrets Manager integration is present.</p>
+<h2 id="build-profiles">Build Profiles</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Profile</th><th>Activation</th><th>Purpose</th><th>Key Dependencies / Plugins</th></tr></thead><tbody>
+<tr><td>(default)</td><td>Automatic — only build configuration</td><td>Single WAR artifact targeting Java 8; no alternate profiles</td><td><code>java</code>, <code>war</code> plugins; <code>javax.servlet-api:3.1.0</code> (compileOnly), <code>jstl:1.2</code>, <code>mssql-jdbc:12.8.1.jre8</code></td></tr>
+</tbody></table></div>
+<p>No Maven/Gradle build profiles are defined. The project has a single, unconditional build configuration in <code>build.gradle</code>.</p>
+<h2 id="runtime-profiles">Runtime Profiles</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Profile</th><th>Activation Method</th><th>Config Files</th><th>Key Overrides</th></tr></thead><tbody>
+<tr><td>(none)</td><td>—</td><td><code>compliance.properties</code> (classpath)</td><td>Environment variables override any property at runtime; no profile-based configuration exists</td></tr>
+</tbody></table></div>
+<p>No Spring profiles (<code>@Profile</code>, <code>application-dev.yml</code>, <code>application-prod.yml</code>), no <code>ASPNETCORE_ENVIRONMENT</code>, and no <code>.env</code> files are present. The application has a single runtime configuration mode, controlled entirely through environment variables or the packaged properties file.</p>
+<h2 id="properties-inventory">Properties Inventory</h2>
+<h3 id="zavacompliancereporter">ZavaComplianceReporter</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Property Key</th><th>Default Value</th><th>Env Variable Override</th><th>Source</th></tr></thead><tbody>
+<tr><td><code>db.host</code></td><td><code>sqlserver</code></td><td><code>DB_HOST</code></td><td><code>compliance.properties</code></td></tr>
+<tr><td><code>db.port</code></td><td><code>1433</code></td><td><code>DB_PORT</code></td><td><code>compliance.properties</code></td></tr>
+<tr><td><code>db.name</code></td><td><code>ZavaBankDB</code></td><td><code>DB_NAME</code></td><td><code>compliance.properties</code></td></tr>
+<tr><td><code>db.user</code></td><td><code>sa</code></td><td><code>DB_USER</code></td><td><code>compliance.properties</code></td></tr>
+<tr><td><code>db.password</code></td><td><code>Zava123!</code> ⚠️</td><td><code>DB_PASSWORD</code></td><td><code>compliance.properties</code> — plaintext credential, see Secrets section</td></tr>
+<tr><td><code>sso.cookie.name</code></td><td><code>.ZAVAAUTH</code></td><td><code>SSO_COOKIE_NAME</code></td><td><code>compliance.properties</code></td></tr>
+<tr><td><code>auth.gateway.whoami.url</code></td><td><code>http://zava-auth-gateway:8080/WhoAmI.ashx</code></td><td><code>AUTH_GATEWAY_WHOAMI_URL</code></td><td><code>compliance.properties</code></td></tr>
+</tbody></table></div>
+<p>The resolution strategy (implemented in <code>ComplianceConfig</code>): environment variable is checked first; if absent or blank, the properties file value is used as the default.</p>
+<h2 id="startup-parameters-resource-requirements">Startup Parameters &amp; Resource Requirements</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>JVM / Runtime Options</th><th>Memory / CPU</th><th>Instance Count</th></tr></thead><tbody>
+<tr><td>ZavaComplianceReporter</td><td>No JVM options configured; runs with Tomcat defaults inside the <code>tomcat:9-jdk8</code> Docker image</td><td>Not specified — no <code>mem_limit</code>, no Kubernetes resource requests/limits declared</td><td>1 (no scaling configuration)</td></tr>
+</tbody></table></div>
+<p>No <code>-Xms</code> / <code>-Xmx</code> heap settings, <code>-D</code> system properties, or container resource constraints are defined. The application runs with the default JVM heap sizing provided by the <code>tomcat:9-jdk8</code> base image.</p>
+<h2 id="startup-dependency-chain">Startup Dependency Chain</h2>
+<p>The application has two implicit startup dependencies with no wait/readiness mechanism configured:</p>
+<ol>
+<li><strong>SQL Server (<code>ZavaBankDB</code>)</strong> must be reachable before the application can serve authenticated requests or load report data. No <code>dockerize</code>, <code>wait-for-it</code>, Kubernetes readiness probe, or <code>depends_on</code> health check is in place. If SQL Server is unavailable at startup, the application starts successfully but all data-fetching requests fail silently (exceptions swallowed).</li>
+<li><strong>Auth Gateway (<code>zava-auth-gateway:8080</code>)</strong> must be reachable for SSO cookie-based authentication to function. If the gateway is unreachable, cookie-based login silently fails (3-second timeout); users with a direct session token or <code>X-Session-Token</code> header are unaffected.</li>
+</ol>
+<p>No Spring Boot Actuator readiness/liveness probes, no Kubernetes health check configuration, and no explicit startup ordering mechanism are present.</p>
+<h2 id="secrets-sensitive-configuration">Secrets &amp; Sensitive Configuration</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Secret Reference</th><th>Type</th><th>Stored As</th></tr></thead><tbody>
+<tr><td><code>db.password</code> / <code>DB_PASSWORD</code></td><td>Database password (SQL Server SA account)</td><td>⚠️ Plaintext in <code>compliance.properties</code> (<code>Zava123!</code>); overridable via env var</td></tr>
+<tr><td><code>db.user</code> / <code>DB_USER</code></td><td>Database username</td><td>Plaintext in <code>compliance.properties</code> (<code>sa</code>); SA (System Administrator) account used</td></tr>
+</tbody></table></div>
+<h3 id="secrets-provisioning-workflow">Secrets Provisioning Workflow</h3>
+<p>There is <strong>no secrets management workflow</strong> in place. The database password is stored in plaintext inside <code>compliance.properties</code>, which is packaged directly into the WAR artifact. This means the credential is embedded in every built artifact and visible to anyone with access to the JAR/WAR file or the source repository.</p>
+<p>The only path to override the password at runtime is to set the <code>DB_PASSWORD</code> environment variable on the container/host. No HashiCorp Vault, Azure KeyVault, AWS Secrets Manager, Kubernetes Secrets binding, Jasypt encryption, or any other secret store is referenced.</p>
+<p><strong>Recommended remediation</strong>: Remove credentials from <code>compliance.properties</code>, inject them via container environment variables sourced from a managed secret store (e.g., Azure KeyVault with a managed identity, or Kubernetes Secrets mounted as env vars), and rotate the SA account to a least-privilege application account.</p>
+<h2 id="feature-flags">Feature Flags</h2>
+<p>No feature flags are present. There is no LaunchDarkly, Unleash, Spring Feature Flags, <code>@ConditionalOnProperty</code>, or any custom toggle mechanism in the codebase.</p>
+<h2 id="framework-runtime-versions">Framework &amp; Runtime Versions</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Component</th><th>Version</th><th>Source</th></tr></thead><tbody>
+<tr><td>Java (compile target)</td><td>Java 8 (1.8)</td><td><code>build.gradle</code> — <code>sourceCompatibility = JavaVersion.VERSION_1_8</code></td></tr>
+<tr><td>Gradle</td><td>7.6</td><td><code>Dockerfile</code> — <code>FROM gradle:7.6-jdk8 AS build</code></td></tr>
+<tr><td>Servlet API</td><td>3.1.0</td><td><code>build.gradle</code> — <code>javax.servlet:javax.servlet-api:3.1.0</code></td></tr>
+<tr><td>JSTL</td><td>1.2</td><td><code>build.gradle</code> — <code>javax.servlet:jstl:1.2</code></td></tr>
+<tr><td>Microsoft SQL Server JDBC</td><td>12.8.1.jre8</td><td><code>build.gradle</code> — <code>com.microsoft.sqlserver:mssql-jdbc:12.8.1.jre8</code></td></tr>
+<tr><td>Apache Tomcat (runtime)</td><td>9 (jdk8 variant)</td><td><code>Dockerfile</code> — <code>FROM tomcat:9-jdk8</code></td></tr>
+<tr><td>Docker build base image</td><td><code>gradle:7.6-jdk8</code></td><td><code>Dockerfile</code></td></tr>
+<tr><td>Docker runtime base image</td><td><code>tomcat:9-jdk8</code></td><td><code>Dockerfile</code></td></tr>
+</tbody></table></div>
+</div>
+</div>
+<div id="tab-workflows" class="tab-panel">
+  <div class="fact-content"><h1 id="core-business-workflows">Core Business Workflows</h1>
+<p>ZavaComplianceReporter enables bank compliance officers to generate, review, and download regulatory reports — specifically Currency Transaction Reports (CTR) and Suspicious Activity Reports (SAR) — filed with FinCEN as part of the Zava Bank platform&#39;s regulatory obligations.</p>
+<h2 id="domain-entities">Domain Entities</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Entity</th><th>Service / Bounded Context</th><th>Description</th><th>Key Relationships</th></tr></thead><tbody>
+<tr><td>ComplianceReport</td><td>Compliance Reporting (owned by this service)</td><td>A regulatory filing (CTR or SAR) generated by a compliance officer, containing report text, filing metadata, and regulatory body reference</td><td>Created by a User (officer); references source Transactions or FraudAlerts via embedded report text</td></tr>
+<tr><td>Transaction</td><td>Banking / Ledger (external, read-only)</td><td>A financial transaction on a bank account, used as the data source for CTR generation</td><td>Belongs to an Account; may be referenced in a FraudAlert</td></tr>
+<tr><td>Account</td><td>Banking / Accounts (external, read-only)</td><td>A bank customer account, providing account numbers for CTR transaction details</td><td>Has many Transactions</td></tr>
+<tr><td>FraudAlert</td><td>Fraud Detection (external, read-only)</td><td>A risk-scored alert raised against a suspicious transaction, used as the data source for SAR generation</td><td>References a Transaction; carries severity and lifecycle status</td></tr>
+<tr><td>User</td><td>Identity / IAM (external, read-only)</td><td>A bank staff member who can authenticate and file compliance reports</td><td>Owns SessionTokens; files ComplianceReports</td></tr>
+<tr><td>SessionToken</td><td>Identity / IAM (external, read-only)</td><td>An SSO session credential that authenticates a User session</td><td>Belongs to a User; has expiry and active flag</td></tr>
+</tbody></table></div>
+<h2 id="service-to-domain-mapping">Service-to-Domain Mapping</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Domain Context</th><th>Owned Entities</th><th>External Dependencies</th></tr></thead><tbody>
+<tr><td>ZavaComplianceReporter</td><td>Compliance Reporting</td><td><code>ComplianceReport</code></td><td>Reads <code>Transaction</code>, <code>Account</code>, <code>FraudAlert</code>, <code>User</code>, <code>SessionToken</code> from shared <code>ZavaBankDB</code>; calls Auth Gateway for SSO cookie resolution</td></tr>
+<tr><td>Auth Gateway (external, .NET)</td><td>Identity / Authentication</td><td><code>SessionToken</code> resolution via cookie</td><td>Provides <code>WhoAmI.ashx</code> endpoint; decrypts <code>.ZAVAAUTH</code> FormsAuth cookie</td></tr>
+</tbody></table></div>
+<p>All cross-context data access is performed via direct SQL queries against the shared <code>ZavaBankDB</code> database. There are no REST API calls to other Zava Bank microservices for domain data — the shared database is the integration point.</p>
+<h2 id="primary-workflows">Primary Workflows</h2>
+<h3 id="workflow-1-user-authentication-via-sso">Workflow 1: User Authentication via SSO</h3>
+<p>A compliance officer accesses any protected <code>/reports</code> URL. <code>AuthFilter</code> intercepts the request and checks for a valid authenticated session. If no session exists, it attempts to resolve the user from available credentials in the request (explicit token parameter, <code>X-Session-Token</code> header, <code>Authorization: Bearer</code> header, or a <code>.ZAVAAUTH</code> FormsAuth cookie forwarded to the Auth Gateway). On success, the resolved <code>SessionUser</code> is stored in the HTTP session for the duration of the browser session. On failure, the user is redirected to <code>/login</code>.</p>
+<p><strong>Steps:</strong></p>
+<ol>
+<li>Request arrives at <code>/reports/*</code></li>
+<li><code>AuthFilter</code> checks HTTP session for <code>SessionUser</code></li>
+<li>If absent: <code>SsoSessionService.resolveSessionUser()</code> is invoked</li>
+</ol>
+<ul>
+<ul>
+<li>Checks request parameter <code>sessionToken</code>, then <code>X-Session-Token</code> header, then <code>Authorization: Bearer</code> header</li>
+<li>If <code>.ZAVAAUTH</code> cookie is present: calls Auth Gateway <code>WhoAmI.ashx</code> (3-second timeout) to resolve the token</li>
+</ul>
+</ul>
+<ol>
+<li>Resolved token is validated against <code>SessionTokens</code> + <code>Users</code> tables in SQL Server</li>
+<li>On valid token: <code>SessionUser</code> stored in HTTP session; request forwarded to target servlet</li>
+<li>On invalid/missing token: redirect to <code>/login</code></li>
+</ol>
+<h3 id="workflow-2-generate-currency-transaction-report-ctr">Workflow 2: Generate Currency Transaction Report (CTR)</h3>
+<p>A compliance officer submits a form on the reports page requesting a CTR above a specified transaction threshold. The system queries large transactions from the database, formats a report, and saves it as a new <code>ComplianceReport</code> record.</p>
+<p><strong>Steps:</strong></p>
+<ol>
+<li>Officer submits <code>POST /reports/generate</code> with <code>reportType=CTR</code> and optional <code>thresholdAmount</code></li>
+<li><code>GenerateReportServlet</code> validates <code>reportType</code> — rejects non-CTR/SAR values with redirect</li>
+<li>Threshold is parsed; defaults to <code>10,000.00</code> if absent or invalid</li>
+<li>SQL query fetches top 200 transactions where <code>ABS(Amount) &gt;= threshold</code>, joined with Accounts for account numbers, ordered by date descending</li>
+<li>Report text is formatted as a plain-text CTR document with header and transaction lines</li>
+<li>Report is saved to <code>ComplianceReports</code> with <code>Status = &#39;Generated&#39;</code>, <code>RegulatoryBody = &#39;FinCEN&#39;</code>, <code>FiledBy = username</code></li>
+<li>Officer is redirected to <code>/reports</code> list</li>
+</ol>
+<h3 id="workflow-3-generate-suspicious-activity-report-sar">Workflow 3: Generate Suspicious Activity Report (SAR)</h3>
+<p>A compliance officer requests a SAR, which aggregates unresolved high-severity fraud alerts from the fraud detection system.</p>
+<p><strong>Steps:</strong></p>
+<ol>
+<li>Officer submits <code>POST /reports/generate</code> with <code>reportType=SAR</code></li>
+<li><code>GenerateReportServlet</code> validates <code>reportType</code></li>
+<li>SQL query fetches top 200 <code>FraudAlerts</code> where <code>Severity IN (&#39;High&#39;, &#39;Critical&#39;) OR Status IN (&#39;New&#39;, &#39;InReview&#39;)</code>, ordered by creation date descending</li>
+<li>Report text is formatted as a plain-text SAR document with header and alert lines</li>
+<li>Report is saved to <code>ComplianceReports</code> with <code>Status = &#39;Generated&#39;</code>, <code>RegulatoryBody = &#39;FinCEN&#39;</code></li>
+<li>Officer is redirected to <code>/reports</code> list</li>
+</ol>
+<h3 id="workflow-4-view-compliance-reports">Workflow 4: View Compliance Reports</h3>
+<p>An authenticated officer views the list of previously generated compliance reports.</p>
+<p><strong>Steps:</strong></p>
+<ol>
+<li>Officer requests <code>GET /reports</code></li>
+<li><code>AuthFilter</code> verifies authentication</li>
+<li><code>ReportsServlet</code> queries top 100 <code>ComplianceReports</code> ordered by <code>FilingDate DESC</code></li>
+<li>Report list (ID, type, date, status, filed-by) is passed to <code>reports.jsp</code> for rendering</li>
+</ol>
+<h3 id="workflow-5-download-compliance-report">Workflow 5: Download Compliance Report</h3>
+<p>An officer downloads the full text of a specific compliance report.</p>
+<p><strong>Steps:</strong></p>
+<ol>
+<li>Officer requests <code>GET /reports/download?reportId=N</code></li>
+<li><code>DownloadReportServlet</code> parses the <code>reportId</code> integer parameter; redirects on invalid input</li>
+<li>Fetches <code>ReportType</code> and <code>ReportData</code> for the given ID from <code>ComplianceReports</code></li>
+<li>Returns response as <code>text/plain</code> attachment with filename <code>{ReportType}-{reportId}.txt</code></li>
+</ol>
+<h2 id="cross-service-data-flows">Cross-Service Data Flows</h2>
+<p>ZavaComplianceReporter does not call other Zava Bank microservices for business data. All data flows are direct JDBC reads from the shared <code>ZavaBankDB</code> database:</p>
+<ul>
+<li><strong>CTR generation</strong>: reads <code>Transactions</code> (joined with <code>Accounts</code>) owned by the banking/ledger domain</li>
+<li><strong>SAR generation</strong>: reads <code>FraudAlerts</code> owned by the fraud detection domain</li>
+<li><strong>Authentication</strong>: reads <code>SessionTokens</code> and <code>Users</code> owned by the identity/IAM domain</li>
+</ul>
+<p>The only outbound service call is to the <strong>Auth Gateway</strong> (<code>WhoAmI.ashx</code>) for SSO cookie decryption. This call has a 3-second timeout and no retry. If the Auth Gateway is unavailable, cookie-based authentication silently fails and the user is redirected to <code>/login</code> — users with an explicit session token or header are not affected by gateway unavailability.</p>
+<p>There are no event-driven flows, message queues, or async callbacks. All cross-context data access is synchronous and tightly coupled to the shared database schema.</p>
+<h2 id="business-workflow-sequence">Business Workflow Sequence</h2>
+<div class="mermaid">
+sequenceDiagram
+    participant Officer as "Compliance Officer"
+    participant Filter as "AuthFilter"
+    participant SsoSvc as "SsoSessionService"
+    participant AuthGW as "Auth Gateway"
+    participant DB as "ZavaBankDB"
+    participant GenServlet as "GenerateReportServlet"
+
+    Officer->>Filter: POST /reports/generate (reportType=CTR, thresholdAmount=50000)
+    Filter->>Filter: Check HTTP session for SessionUser
+
+    alt Valid session exists
+        Filter->>GenServlet: Forward request
+    else No session
+        Filter->>SsoSvc: Resolve user from request credentials
+        SsoSvc->>AuthGW: GET WhoAmI.ashx with .ZAVAAUTH cookie (3s timeout)
+        alt Auth Gateway responds
+            AuthGW-->>SsoSvc: sessionToken
+            SsoSvc->>DB: Validate token in SessionTokens + Users
+            DB-->>SsoSvc: UserID, Username
+            SsoSvc-->>Filter: SessionUser
+            Filter->>GenServlet: Forward request
+        else Gateway unavailable or token expired
+            Filter-->>Officer: Redirect to /login
+        end
+    end
+
+    GenServlet->>GenServlet: Validate reportType (must be CTR or SAR)
+    GenServlet->>GenServlet: Parse threshold; default to 10000.00 if invalid
+
+    alt reportType = CTR
+        GenServlet->>DB: SELECT TOP 200 Transactions JOIN Accounts WHERE ABS(Amount) >= threshold
+        DB-->>GenServlet: Transaction rows with account numbers
+        GenServlet->>GenServlet: Format CTR report text
+    else reportType = SAR
+        GenServlet->>DB: SELECT TOP 200 FraudAlerts WHERE Severity IN High/Critical OR Status IN New/InReview
+        DB-->>GenServlet: Alert rows
+        GenServlet->>GenServlet: Format SAR report text
+    end
+
+    GenServlet->>DB: INSERT INTO ComplianceReports (type, date, Status=Generated, data, filedBy, RegulatoryBody=FinCEN)
+    DB-->>GenServlet: Row inserted
+    GenServlet-->>Officer: Redirect to /reports
+</div>
+<h2 id="business-rules-decision-logic">Business Rules &amp; Decision Logic</h2>
+<h3 id="validation-rules">Validation Rules</h3>
+<ul>
+<li><strong>Report type</strong>: <code>reportType</code> must be exactly <code>&quot;CTR&quot;</code> or <code>&quot;SAR&quot;</code> (case-insensitive); any other value causes an immediate redirect to <code>/reports</code> with no error message</li>
+<li><strong>CTR threshold</strong>: <code>thresholdAmount</code> must be a valid decimal number; if absent, blank, or non-numeric, it defaults to <code>10,000.00</code></li>
+<li><strong>Authentication</strong>: All <code>/reports</code> and <code>/reports/*</code> URLs require an active <code>SessionUser</code> in the HTTP session; unauthenticated requests redirect to <code>/login</code></li>
+<li><strong>Report ID</strong>: <code>reportId</code> parameter on download must be parseable as an integer; invalid values redirect to <code>/reports</code></li>
+</ul>
+<h3 id="business-decision-logic">Business Decision Logic</h3>
+<ul>
+<li><strong>CTR data selection</strong>: Transactions are included in the CTR if <code>ABS(Amount) &gt;= threshold</code> — both deposits and withdrawals above the threshold are captured; limited to <code>TOP 200</code> results per report generation</li>
+<li><strong>SAR data selection</strong>: FraudAlerts are included in the SAR if <code>Severity IN (&#39;High&#39;, &#39;Critical&#39;) OR Status IN (&#39;New&#39;, &#39;InReview&#39;)</code> — the union of high-risk severity AND unresolved status ensures neither dimension alone filters out relevant alerts; limited to <code>TOP 200</code> results</li>
+<li><strong>Regulatory body</strong>: All reports are automatically attributed to <code>FinCEN</code> (Financial Crimes Enforcement Network); this is hardcoded and not configurable</li>
+</ul>
+<h3 id="state-transitions">State Transitions</h3>
+<p><code>ComplianceReport</code> lifecycle is minimal — reports are created with <code>Status = &#39;Generated&#39;</code> and there are no transitions to subsequent states (e.g., &quot;Submitted&quot;, &quot;Acknowledged&quot;) within this service. Status progression to a submitted or filed state would require external intervention or a future workflow extension.</p>
+<h3 id="cross-cutting-concerns">Cross-Cutting Concerns</h3>
+<ul>
+<li><strong>Transactions</strong>: No <code>@Transactional</code> annotation or explicit transaction management. Each JDBC operation opens and closes its own connection. If the <code>INSERT INTO ComplianceReports</code> fails after the data has been read, no compensating action is taken and no error is surfaced to the user.</li>
+<li><strong>Error handling</strong>: All <code>SQLException</code> and data-access exceptions are silently swallowed. If report data cannot be retrieved, an empty or partial report text is saved (the report entry is created regardless). Download attempts for non-existent reports redirect silently to <code>/reports</code>.</li>
+<li><strong>Audit / logging</strong>: No structured audit log is written. The <code>FiledBy</code> column in <code>ComplianceReports</code> records which username generated the report, but no application-level audit trail, change log, or event log is maintained.</li>
+<li><strong>Authorization</strong>: Authentication is enforced (valid session required), but there is no role-based authorization — any authenticated user can generate or download any report, including reports filed by other users.</li>
+</ul>
+</div>
+</div>
+<div id="tab-deps" class="tab-panel">
+  <div class="fact-content"><h1 id="dependency-map">Dependency Map</h1>
+<p>ZavaComplianceReporter is a Java EE web application with a minimal dependency footprint — 3 declared external dependencies covering the servlet container API, view rendering, and database connectivity.</p>
+<h2 id="dependencies">Dependencies</h2>
+<div class="mermaid">
+flowchart LR
+    App["ZavaComplianceReporter\nGradle 7.6 / Java 8"]
+
+    subgraph Web["Web Frameworks"]
+        ServletAPI["Servlet API 3.1.0\n(compileOnly)"]
+        JSTL["JSTL 1.2"]
+    end
+
+    subgraph DB["Database / ORM"]
+        MSSQL["mssql-jdbc 12.8.1.jre8"]
+    end
+
+    App -->|"web"| Web
+    App -->|"persistence"| DB
+</div>
+<h3 id="dependency-summary">Dependency Summary</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Category</th><th>Count</th><th>Key Libraries</th><th>Notes</th></tr></thead><tbody>
+<tr><td>Web Frameworks</td><td>2</td><td>javax.servlet-api 3.1.0, JSTL 1.2</td><td>Servlet API is compile-only (provided by Tomcat at runtime); JSTL used in JSP views</td></tr>
+<tr><td>Database / ORM</td><td>1</td><td>com.microsoft.sqlserver:mssql-jdbc 12.8.1.jre8</td><td>Microsoft JDBC driver for SQL Server; no ORM layer (raw JDBC only)</td></tr>
+</tbody></table></div>
+<h3 id="version-compatibility-risks">Version &amp; Compatibility Risks</h3>
+<p>The project targets <strong>Java 8</strong> and <strong>Servlet 3.1</strong>, both of which are significantly outdated. Java 8 reached its Oracle public support end-of-life in March 2022 and is now in extended support only; migrating to Java 17 or Java 21 (current LTS releases) is strongly recommended for cloud deployments. The <code>javax.servlet-api 3.1.0</code> and <code>javax.servlet:jstl:1.2</code> packages use the legacy <code>javax.<em></code> namespace, which was superseded by Jakarta EE&#39;s <code>jakarta.</em></code> namespace starting with Jakarta EE 9 — any migration to a modern application server (e.g., Tomcat 10+, WildFly 27+) requires a namespace migration. The Microsoft SQL Server JDBC driver (<code>mssql-jdbc 12.8.1.jre8</code>) is current and up to date.</p>
+<h3 id="notable-observations">Notable Observations</h3>
+<ul>
+<li><strong>No ORM or connection-pool library declared</strong>: The application uses raw JDBC with no Hibernate, JPA, or HikariCP dependency. Every servlet opens its own <code>Connection</code> manually, which is a known scalability and reliability concern in cloud environments.</li>
+<li><strong>No logging framework declared</strong>: There is no SLF4J, Log4j2, or Logback dependency. All error handling silently swallows exceptions (<code>catch (Exception ignored)</code>), making observability and troubleshooting significantly harder.</li>
+<li><strong>No security library declared</strong>: Authentication is implemented from scratch using custom <code>AuthFilter</code> and a SQL-based session token lookup. No Spring Security, OWASP ESAPI, or any other security framework is used.</li>
+<li><strong>Extremely lean dependency tree</strong>: With only 3 declared dependencies, the application is easy to migrate in terms of library compatibility, but the absence of modern infrastructure libraries (connection pooling, logging, security) indicates that foundational cloud-readiness work will be needed before migration.</li>
+</ul>
+<h2 id="test-dependencies">Test Dependencies</h2>
+<p>No test-scoped dependencies are declared in <code>build.gradle</code>.</p>
+<p>Total test-scope dependencies: <strong>0</strong></p>
+<p>No test infrastructure is configured for this project — no JUnit, Mockito, Testcontainers, or any other testing framework is declared. This is a significant gap; introducing a test suite should be considered before any major refactoring or cloud migration work begins.</p>
+</div>
+</div>
+<div id="tab-data" class="tab-panel">
+  <div class="fact-content"><h1 id="data-architecture-persistence-layer">Data Architecture &amp; Persistence Layer</h1>
+<p>ZavaComplianceReporter accesses a single Microsoft SQL Server database (<code>ZavaBankDB</code>) through raw JDBC with no ORM framework, no connection pooling, and no database migration tooling.</p>
+<h2 id="database-configuration">Database Configuration</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service/Module</th><th>DB Type</th><th>Profile</th><th>Driver</th><th>Connection Notes</th><th>Migration Tool</th></tr></thead><tbody>
+<tr><td>ZavaComplianceReporter</td><td>Microsoft SQL Server</td><td>All (single profile)</td><td><code>com.microsoft.sqlserver:mssql-jdbc:12.8.1.jre8</code></td><td>Host/port/name read from env vars or <code>compliance.properties</code>; <code>encrypt=false</code>, <code>trustServerCertificate=true</code>; no connection pool</td><td>None</td></tr>
+</tbody></table></div>
+<p>No Flyway, Liquibase, or any schema versioning tool is present. Schema creation and seeding are managed externally (by the platform / DBA scripts). For raw property keys and values, see <code>configuration-inventory.md</code>.</p>
+<h2 id="data-ownership-per-service">Data Ownership per Service</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Tables Owned / Accessed</th><th>ORM Framework</th><th>Caching</th><th>Notes</th></tr></thead><tbody>
+<tr><td>ZavaComplianceReporter</td><td><code>ComplianceReports</code>, <code>Transactions</code>, <code>Accounts</code>, <code>FraudAlerts</code>, <code>SessionTokens</code>, <code>Users</code></td><td>None (raw JDBC)</td><td>None</td><td><code>Transactions</code>, <code>Accounts</code>, <code>FraudAlerts</code>, <code>SessionTokens</code>, and <code>Users</code> are logically owned by other Zava Bank services but accessed directly via the shared database</td></tr>
+</tbody></table></div>
+<h2 id="entity-model">Entity Model</h2>
+<p>&gt; Note: No JPA/Hibernate <code>@Entity</code> classes are present. The entity model is inferred from SQL queries in the servlet source code. Field types are inferred from JDBC result-set access patterns.</p>
+<div class="mermaid">
+erDiagram
+    ComplianceReports {
+        int ReportID PK
+        string ReportType
+        datetime FilingDate
+        string Status
+        string ReportData
+        string FiledBy
+        string RegulatoryBody
+        datetime CreatedDate
+    }
+    Transactions {
+        bigint TransactionID PK
+        int AccountID FK
+        decimal Amount
+        datetime TransactionDate
+        string Description
+    }
+    Accounts {
+        int AccountID PK
+        string AccountNumber
+    }
+    FraudAlerts {
+        int AlertID PK
+        bigint TransactionID FK
+        string Severity
+        string Status
+        string Description
+        datetime CreatedDate
+    }
+    SessionTokens {
+        int TokenID PK
+        int UserID FK
+        string Token
+        bit IsActive
+        datetime ExpiresAt
+    }
+    Users {
+        int UserID PK
+        string Username
+        bit IsActive
+    }
+
+    Accounts ||--o{ Transactions : "holds"
+    Transactions ||--o{ FraudAlerts : "flagged by"
+    Users ||--o{ SessionTokens : "owns"
+    Users ||--o{ ComplianceReports : "files"
+</div>
+<h2 id="key-repository-methods">Key Repository Methods</h2>
+<p>There are no formal repository interfaces or classes. All data access is performed inline within servlet methods using raw JDBC <code>PreparedStatement</code> and <code>ResultSet</code>. The table below documents the logical query operations by servlet:</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Servlet</th><th>Query Operation</th><th>SQL Pattern</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>ReportsServlet</code></td><td>List compliance reports</td><td><code>SELECT TOP 100 ReportID, ReportType, FilingDate, Status, FiledBy FROM ComplianceReports ORDER BY FilingDate DESC</code></td><td>Populate reports list for the reports view</td></tr>
+<tr><td><code>GenerateReportServlet</code></td><td>Query large transactions (CTR)</td><td><code>SELECT TOP 200 TransactionID, AccountNumber, Amount, TransactionDate, Description FROM Transactions JOIN Accounts WHERE ABS(Amount) &gt;= threshold ORDER BY TransactionDate DESC</code></td><td>Generate Currency Transaction Report data</td></tr>
+<tr><td><code>GenerateReportServlet</code></td><td>Query fraud alerts (SAR)</td><td><code>SELECT TOP 200 AlertID, TransactionID, Severity, Status, Description, CreatedDate FROM FraudAlerts WHERE Severity IN High/Critical OR Status IN New/InReview ORDER BY CreatedDate DESC</code></td><td>Generate Suspicious Activity Report data</td></tr>
+<tr><td><code>GenerateReportServlet</code></td><td>Save report</td><td><code>INSERT INTO ComplianceReports (ReportType, FilingDate, Status, ReportData, FiledBy, RegulatoryBody, CreatedDate) VALUES (...)</code></td><td>Persist generated compliance report</td></tr>
+<tr><td><code>DownloadReportServlet</code></td><td>Fetch report by ID</td><td><code>SELECT ReportType, ReportData FROM ComplianceReports WHERE ReportID = ?</code></td><td>Retrieve stored report text for download</td></tr>
+<tr><td><code>SsoSessionService</code></td><td>Validate session token</td><td><code>SELECT TOP 1 st.UserID, u.Username FROM SessionTokens JOIN Users WHERE Token=? AND IsActive=1 AND ExpiresAt&gt;GETDATE() AND u.IsActive=1 ORDER BY ExpiresAt DESC</code></td><td>Authenticate user via shared session token</td></tr>
+</tbody></table></div>
+<p>No <code>@Transactional</code> annotations, transaction management configuration, or stored procedure calls are present. Each JDBC connection is opened and closed per query in a <code>try-with-resources</code> block.</p>
+<h2 id="caching-strategy">Caching Strategy</h2>
+<p>No caching layer is configured. There is no Redis, EhCache, Caffeine, Hibernate second-level cache, or Spring <code>@Cacheable</code> annotation in the project. Every request that requires data results in a new JDBC connection and fresh SQL query against SQL Server. Reference data (e.g., users, account numbers) is re-queried on every request.</p>
+<h2 id="data-ownership-boundaries">Data Ownership Boundaries</h2>
+<p>The application uses a <strong>shared database model</strong> — all six tables (<code>ComplianceReports</code>, <code>Transactions</code>, <code>Accounts</code>, <code>FraudAlerts</code>, <code>SessionTokens</code>, <code>Users</code>) reside in a single SQL Server database (<code>ZavaBankDB</code>) that is shared across the entire Zava Bank platform. ZavaComplianceReporter is the logical owner only of <code>ComplianceReports</code>; the remaining tables (<code>Transactions</code>, <code>Accounts</code>, <code>FraudAlerts</code>, <code>SessionTokens</code>, <code>Users</code>) are owned by other Zava Bank services but accessed directly by this service via shared JDBC connections.</p>
+<p>Cross-service data access is performed through direct table reads rather than API calls, coupling this service tightly to the platform&#39;s shared schema. There is no CQRS separation: the same database is used for both report generation (read-heavy queries across <code>Transactions</code> and <code>FraudAlerts</code>) and report persistence (writes to <code>ComplianceReports</code>).</p>
+<h3 id="data-classification-sensitivity">Data Classification &amp; Sensitivity</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Entity / Table</th><th>Sensitive Fields</th><th>Classification</th><th>Controls in Place</th></tr></thead><tbody>
+<tr><td><code>Users</code></td><td><code>Username</code></td><td>PII</td><td>None — no encryption-at-rest, no masking, no field-level access control</td></tr>
+<tr><td><code>ComplianceReports</code></td><td><code>ReportData</code> (contains transaction details, account numbers, alert descriptions), <code>FiledBy</code></td><td>PCI-adjacent / Regulatory</td><td>None — report content stored as plain text in the database</td></tr>
+<tr><td><code>Transactions</code></td><td><code>Amount</code>, <code>TransactionDate</code>, <code>Description</code></td><td>PCI-adjacent / Financial</td><td>None</td></tr>
+<tr><td><code>Accounts</code></td><td><code>AccountNumber</code></td><td>PCI-adjacent / Financial</td><td>None — account numbers stored and queried in plain text</td></tr>
+<tr><td><code>FraudAlerts</code></td><td><code>Description</code>, <code>Severity</code></td><td>Financial / Regulatory</td><td>None</td></tr>
+<tr><td><code>SessionTokens</code></td><td><code>Token</code></td><td>Security-sensitive (auth token)</td><td>None — tokens stored in plain text; no hashing or encryption</td></tr>
+</tbody></table></div>
+<p>No encryption-at-rest, column-level masking, or field-level access controls are configured at the application level. Sensitive financial data (account numbers, transaction amounts) and authentication tokens are stored and queried as plain text. This represents a significant compliance and security risk for a regulatory reporting system handling CTR and SAR data.</p>
+</div>
+</div>
+<p class="footer">Your feedback is invaluable &mdash; <a href="https://aka.ms/ghcp-appmod/feedback">Share feedback</a></p>
+<script>
+function toggleRow(rowId, triggerRow) {
+  var detail = document.getElementById(rowId);
+  var btn = document.getElementById('btn-' + rowId);
+  if (!detail) return;
+  var visible = detail.style.display !== 'none';
+  detail.style.display = visible ? 'none' : 'table-row';
+  if (btn) btn.classList.toggle('open', !visible);
+}
+(function() {
+  var nav = document.querySelector('.tab-nav');
+  if (!nav) return;
+  nav.addEventListener('click', function(e) {
+    var btn = e.target.closest('.tab-btn');
+    if (!btn) return;
+    var targetId = btn.getAttribute('data-tab');
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+    btn.classList.add('active');
+    var panel = document.getElementById(targetId);
+    if (panel) {
+      panel.classList.add('active');
+      // Render any mermaid diagrams in this panel that haven't been processed yet
+      if (window.__mermaidReady) { window.__renderMermaidIn(panel); }
+    }
+  });
+})();
+
+// ── Diagram lightbox ────────────────────────────────────────
+(function() {
+  var lightbox = document.getElementById('diagram-lightbox');
+  var inner = document.getElementById('diagram-lightbox-inner');
+  var closeBtn = document.getElementById('diagram-lightbox-close');
+  if (!lightbox || !inner || !closeBtn) return;
+
+  var scale = 1;
+  var translateX = 0;
+  var translateY = 0;
+  var isDragging = false;
+  var dragStartX = 0;
+  var dragStartY = 0;
+
+  function applyTransform() {
+    var svg = inner.querySelector('svg');
+    if (svg) {
+      svg.style.transform = 'translate(' + translateX + 'px, ' + translateY + 'px) scale(' + scale + ')';
+      svg.style.transformOrigin = 'center center';
+      svg.style.transition = 'none';
+    }
+  }
+
+  function resetTransform() {
+    scale = 1; translateX = 0; translateY = 0;
+    applyTransform();
+  }
+
+  function openLightbox(svgEl) {
+    inner.innerHTML = svgEl.outerHTML;
+    var injected = inner.querySelector('svg');
+    if (injected) {
+      injected.removeAttribute('width');
+      injected.removeAttribute('height');
+      injected.style.cursor = 'grab';
+    }
+    resetTransform();
+    lightbox.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLightbox() {
+    lightbox.classList.remove('open');
+    inner.innerHTML = '';
+    document.body.style.overflow = '';
+    resetTransform();
+  }
+
+  inner.addEventListener('wheel', function(e) {
+    e.preventDefault();
+    var delta = e.deltaY > 0 ? 0.9 : 1.1;
+    scale = Math.min(Math.max(scale * delta, 0.3), 8);
+    applyTransform();
+  }, { passive: false });
+
+  inner.addEventListener('mousedown', function(e) {
+    if (e.button !== 0) return;
+    isDragging = true;
+    dragStartX = e.clientX - translateX;
+    dragStartY = e.clientY - translateY;
+    var svg = inner.querySelector('svg');
+    if (svg) { svg.style.cursor = 'grabbing'; }
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', function(e) {
+    if (!isDragging) return;
+    translateX = e.clientX - dragStartX;
+    translateY = e.clientY - dragStartY;
+    applyTransform();
+  });
+
+  document.addEventListener('mouseup', function() {
+    if (!isDragging) return;
+    isDragging = false;
+    var svg = inner.querySelector('svg');
+    if (svg) { svg.style.cursor = 'grab'; }
+  });
+
+  inner.addEventListener('dblclick', function() { resetTransform(); });
+
+  document.addEventListener('click', function(e) {
+    var card = e.target.closest('.mermaid');
+    if (!card) return;
+    if (e.target.closest('.diagram-lightbox-close')) return;
+    var svg = card.querySelector('svg');
+    if (svg) { openLightbox(svg); }
+  });
+
+  closeBtn.addEventListener('click', closeLightbox);
+
+  lightbox.addEventListener('click', function(e) {
+    if (e.target === lightbox) { closeLightbox(); }
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') { closeLightbox(); }
+  });
+})();
+
+var _currentTarget = '';
+
+function toggleMultiSelect(id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  // Close others
+  document.querySelectorAll('.multi-select.open').forEach(function(ms) { if (ms.id !== id) ms.classList.remove('open'); });
+  el.classList.toggle('open');
+}
+
+// Close dropdowns on outside click
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.multi-select')) {
+    document.querySelectorAll('.multi-select.open').forEach(function(ms) { ms.classList.remove('open'); });
+  }
+});
+
+function getMultiSelectValues(msId) {
+  var el = document.getElementById(msId);
+  if (!el) return [];
+  var checked = el.querySelectorAll('input[type=checkbox]:checked');
+  var vals = [];
+  for (var i = 0; i < checked.length; i++) vals.push(checked[i].value);
+  return vals;
+}
+
+function onMultiSelectChange(msId, label) {
+  var el = document.getElementById(msId);
+  if (!el) return;
+  var vals = getMultiSelectValues(msId);
+  var total = el.querySelectorAll('input[type=checkbox]').length;
+  var btn = el.querySelector('.multi-select-btn');
+  if (btn) {
+    btn.textContent = vals.length > 0 && vals.length < total ? label + ' (' + vals.length + ')' : label;
+  }
+  applyFilters();
+}
+
+function applyFilters() {
+  var selectedDomains = getMultiSelectValues('domain-ms');
+  var selectedCrits = getMultiSelectValues('criticality-ms');
+
+  // Domain filter: show/hide entire sections (empty = show all)
+  var sections = document.querySelectorAll('.issue-section');
+  for (var i = 0; i < sections.length; i++) {
+    var domain = sections[i].getAttribute('data-domain');
+    sections[i].style.display = (selectedDomains.length === 0 || selectedDomains.indexOf(domain) >= 0) ? '' : 'none';
+  }
+
+  // Row-level filtering: respect target + criticality
+  var rows = document.querySelectorAll('.issue-row');
+  for (var i = 0; i < rows.length; i++) {
+    var row = rows[i];
+    var section = row.closest('.issue-section');
+    if (section && section.style.display === 'none') {
+      row.style.display = 'none';
+      var next = row.nextElementSibling;
+      if (next && next.classList.contains('detail-row')) next.style.display = 'none';
+      continue;
+    }
+
+    // Check target filter
+    var show = true;
+    if (_currentTarget && row.hasAttribute('data-targets')) {
+      var targetsStr = row.getAttribute('data-targets');
+      if (targetsStr && targetsStr !== '{}') {
+        try {
+          var targets = JSON.parse(targetsStr);
+          if (Object.keys(targets).length > 0 && !targets[_currentTarget]) {
+            show = false;
+          }
+        } catch(e) {}
+      }
+    }
+
+    // Check criticality filter
+    if (show && selectedCrits.length > 0) {
+      var crit = row.getAttribute('data-criticality');
+      if (selectedCrits.indexOf(crit) < 0) show = false;
+    }
+
+    row.style.display = show ? '' : 'none';
+    var nextRow = row.nextElementSibling;
+    if (nextRow && nextRow.classList.contains('detail-row')) {
+      if (!show) nextRow.style.display = 'none';
+    }
+  }
+}
+
+function clearAllFilters() {
+  document.querySelectorAll('.multi-select input[type=checkbox]').forEach(function(cb) { cb.checked = false; });
+  var domainBtn = document.querySelector('#domain-ms .multi-select-btn');
+  if (domainBtn) domainBtn.textContent = 'Domain';
+  var critBtn = document.querySelector('#criticality-ms .multi-select-btn');
+  if (critBtn) critBtn.textContent = 'Criticality';
+  applyFilters();
+}
+
+function onTargetChange(targetId) {
+  _currentTarget = targetId;
+  var rows = document.querySelectorAll('.issue-row[data-targets]');
+  var totalEffort = 0;
+  var domainCrits = {}; // domain -> {mandatory:0, potential:0, optional:0}
+
+  for (var i = 0; i < rows.length; i++) {
+    var row = rows[i];
+    var targets = JSON.parse(row.getAttribute('data-targets'));
+    var section = row.closest('.issue-section');
+    var domain = section ? section.getAttribute('data-domain') : '';
+
+    if (!targets || Object.keys(targets).length === 0) {
+      // No target data (e.g. security) — always show
+      var sp = parseFloat(row.querySelector('.sp-cell').textContent) || 0;
+      totalEffort += sp;
+      if (!domainCrits[domain]) domainCrits[domain] = {mandatory:0,potential:0,optional:0};
+      var crit = row.getAttribute('data-criticality') || 'optional';
+      domainCrits[domain][crit] = (domainCrits[domain][crit] || 0) + 1;
+      continue;
+    }
+
+    var override = targets[targetId];
+    if (!override) {
+      // Issue doesn't apply to this target
+      continue;
+    }
+
+    // Apply severity override
+    var newSeverity = (override.severity || row.getAttribute('data-default-severity') || '').toLowerCase();
+    row.setAttribute('data-criticality', newSeverity);
+    var critCell = row.querySelector('.crit-cell');
+    if (critCell) {
+      var critText = newSeverity === 'mandatory' ? 'Mandatory' : newSeverity === 'potential' ? 'Potential' : 'Optional';
+      var cssClass = newSeverity === 'mandatory' ? 'crit-square-mandatory' : newSeverity === 'potential' ? 'crit-square-potential' : 'crit-square-optional';
+      critCell.innerHTML = '<span class="crit-label"><span class="crit-square ' + cssClass + '"></span>' + critText + '</span>';
+    }
+
+    // Apply effort override
+    var newEffort = override.effort !== undefined ? override.effort : parseFloat(row.getAttribute('data-default-effort')) || 0;
+    var spCell = row.querySelector('.sp-cell');
+    if (spCell) spCell.textContent = newEffort;
+    totalEffort += newEffort;
+
+    if (!domainCrits[domain]) domainCrits[domain] = {mandatory:0,potential:0,optional:0};
+    domainCrits[domain][newSeverity] = (domainCrits[domain][newSeverity] || 0) + 1;
+  }
+
+  // Also add security findings effort (they don't have per-target data)
+  var secSection = document.querySelector('.issue-section[data-domain="security"]');
+  if (secSection) {
+    var secRows = secSection.querySelectorAll('.issue-row');
+    for (var j = 0; j < secRows.length; j++) {
+      if (!secRows[j].hasAttribute('data-targets') || secRows[j].getAttribute('data-targets') === '') {
+        var sp = parseFloat(secRows[j].querySelector('.sp-cell').textContent) || 0;
+        totalEffort += sp;
+        if (!domainCrits['security']) domainCrits['security'] = {mandatory:0,potential:0,optional:0};
+        var sc = secRows[j].getAttribute('data-criticality') || 'optional';
+        domainCrits['security'][sc] = (domainCrits['security'][sc] || 0) + 1;
+      }
+    }
+  }
+
+  // Update effort display
+  var label = totalEffort < 20 ? 'S' : totalEffort < 50 ? 'M' : totalEffort < 100 ? 'L' : 'XL';
+  var effortEl = document.getElementById('effort-display');
+  if (effortEl) effortEl.textContent = label + ' (total story points: ' + totalEffort + ')';
+
+  // Update donut charts
+  updateDonuts(domainCrits);
+
+  // Re-apply domain/criticality filters
+  applyFilters();
+}
+
+function updateDonuts(domainCrits) {
+  var container = document.getElementById('donut-container');
+  if (!container) return;
+  container.innerHTML = '';
+  var domainNames = {'cloud-readiness':'Cloud Readiness','java-upgrade':'Java Upgrade','dotnet-upgrade':'DotNET Upgrade','security':'Security'};
+  var domainOrder = ['cloud-readiness','java-upgrade','dotnet-upgrade','security'];
+  for (var d = 0; d < domainOrder.length; d++) {
+    var key = domainOrder[d];
+    var c = domainCrits[key];
+    if (!c || (c.mandatory + c.potential + c.optional) === 0) continue;
+    var total = c.mandatory + c.potential + c.optional;
+    var div = document.createElement('div');
+    div.className = 'domain-summary-item';
+    div.innerHTML = buildDonutSvg(c.mandatory, c.potential, c.optional) +
+      '<h3>' + domainNames[key] + '</h3>' +
+      '<div class="count">' + total + ' issue' + (total !== 1 ? 's' : '') + '</div>';
+    container.appendChild(div);
+  }
+}
+
+function buildDonutSvg(m, p, o) {
+  var total = m + p + o;
+  if (total === 0) return '<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;"><circle cx="50" cy="50" r="35" fill="none" stroke="#d0d7de" stroke-width="15" opacity="0.5"/></svg>';
+  var r = 35, circ = 2 * Math.PI * r, offset = 0;
+  var svg = '<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;transform:rotate(-90deg);">';
+  var segs = [{c:m,color:'var(--color-mandatory)'},{c:p,color:'var(--color-potential)'},{c:o,color:'var(--color-optional)'}];
+  for (var i = 0; i < segs.length; i++) {
+    if (segs[i].c === 0) continue;
+    var segLen = (segs[i].c / total) * circ;
+    var gap = total > segs[i].c ? 1.5 : 0;
+    var drawLen = Math.max(segLen - gap, 0.5);
+    svg += '<circle cx="50" cy="50" r="' + r + '" fill="none" stroke="' + segs[i].color + '" stroke-width="15" stroke-dasharray="' + drawLen.toFixed(2) + ' ' + circ.toFixed(2) + '" stroke-dashoffset="' + (-offset).toFixed(2) + '"/>';
+    offset += segLen;
+  }
+  svg += '</svg>';
+  return svg;
+}
+</script>
+<script>document.addEventListener('DOMContentLoaded', function() { onTargetChange('azure-aks'); });</script>
+</div></body></html>
