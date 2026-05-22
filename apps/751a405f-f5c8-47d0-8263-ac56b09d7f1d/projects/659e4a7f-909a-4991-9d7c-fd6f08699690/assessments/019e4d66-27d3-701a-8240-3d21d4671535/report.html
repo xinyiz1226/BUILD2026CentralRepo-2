@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Assessment - ZavaLoanOriginationAPI</title>
+<style>
+:root {
+  --bg-primary: #ffffff;
+  --bg-card: #f8f9fa;
+  --bg-page: #f0f1f3;
+  --text-primary: #24292f;
+  --text-secondary: #57606a;
+  --text-muted: #6b7280;
+  --border-color: #d0d7de;
+  --border-light: #e1e4e8;
+  --link-color: #2563eb;
+  --color-mandatory: #E3008C;
+  --color-potential: #637CEF;
+  --color-optional: #A19F9D;
+  --font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  --font-mono: 'Cascadia Code', 'Consolas', 'Courier New', monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-family); font-size: 13px; color: var(--text-primary); background: var(--bg-primary); line-height: 1.5; margin: 0; padding: 0; }
+a { color: var(--link-color); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Page layout ───────────────────────────────────────────── */
+.main { margin: 0; padding: 24px 32px; background: var(--bg-primary); }
+.back-link { color: var(--text-muted); font-size: 13px; margin-bottom: 16px; display: block; }
+h1 { font-weight: 600; font-size: 20px; color: var(--text-primary); margin-bottom: 20px; }
+
+/* ── Report cards (matches VS Code .vscode-report-card) ──── */
+.report-card { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 4px; padding: 12px; margin-bottom: 20px; }
+.report-card h2 { font-size: 14px; font-weight: 600; margin: 0; color: var(--text-primary); }
+.report-card-body { margin-top: 16px; }
+
+/* ── Application Information (two-column) ────────────────── */
+.app-info-container { display: flex; gap: 8px; flex-wrap: wrap; }
+.app-info-column { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 8px; }
+.app-info-row { display: flex; align-items: baseline; }
+.app-info-label { width: 136px; flex-shrink: 0; font-weight: 600; color: var(--text-primary); }
+.app-info-value { flex: 1; color: var(--text-primary); }
+
+/* ── Issue Summary (pie charts + legend) ─────────────────── */
+.cards-container { display: flex; align-items: stretch; gap: 20px; flex-wrap: wrap; }
+.issue-summary-card { flex: 2; }
+.domain-summary-container { display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-around; }
+.domain-summary-item { flex: 1; min-width: 120px; text-align: center; padding: 0 16px; border-right: 1px solid var(--border-light); }
+.domain-summary-item:last-child { border-right: none; }
+.domain-summary-item h3 { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-top: 8px; }
+.domain-summary-item .count { font-size: 12px; color: var(--text-secondary); }
+.criticality-legend { display: flex; flex-wrap: wrap; gap: 15px; padding-top: 12px; justify-content: center; }
+.criticality-legend .legend-item { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-secondary); }
+.legend-swatch { display: inline-block; width: 1em; height: 1em; border-radius: 2px; }
+
+/* ── Issue list tables ───────────────────────────────────── */
+.issue-section { margin-top: 20px; }
+.issue-section h2 { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+.issue-table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 600px; }
+.issue-table th { text-align: left; text-transform: uppercase; font-weight: 600; font-size: calc(13px * 0.875); padding: 6px 8px; background: var(--bg-card); border-bottom: 1px solid var(--border-color); color: var(--text-secondary); position: sticky; top: 0; z-index: 1; }
+.issue-table td { padding: 12px 8px; border-bottom: 1px solid var(--border-light); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
+.col-issue { width: 55%; }
+.col-criticality { width: 25%; }
+.col-storypoint { width: 20%; }
+
+/* ── Target dropdown ─────────────────────────────────────── */
+.target-select-container { margin: 4px 0 16px 0; display: flex; align-items: center; gap: 8px; }
+.target-select-container label { font-weight: 600; color: var(--text-primary); font-size: 14px; }
+.target-select-container select { font-family: var(--font-family); font-size: 13px; padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer; }
+
+/* ── Filter bar ──────────────────────────────────────────── */
+.filter-bar { display: flex; flex-wrap: wrap; gap: 16px; margin: 16px 0 8px 0; align-items: center; }
+.multi-select { position: relative; display: inline-block; min-width: 140px; }
+.multi-select-btn { font-family: var(--font-family); font-size: 13px; padding: 4px 24px 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer; width: 100%; text-align: left; position: relative; white-space: nowrap; }
+.multi-select-btn::after { content: '\25BE'; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--text-secondary); }
+.multi-select-dropdown { display: none; position: absolute; top: 100%; left: 0; min-width: 100%; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 100; margin-top: 2px; }
+.multi-select.open .multi-select-dropdown { display: block; }
+.multi-select-option { display: flex; align-items: center; gap: 6px; padding: 5px 10px; cursor: pointer; font-size: 13px; white-space: nowrap; }
+.multi-select-option:hover { background: var(--bg-secondary); }
+.multi-select-option input[type=checkbox] { margin: 0; cursor: pointer; }
+.clear-filters { font-size: 12px; color: var(--link-color); cursor: pointer; margin-left: 4px; }
+
+/* ── Criticality labels (colored square + text) ──────────── */
+.crit-label { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; white-space: nowrap; }
+.crit-square { display: inline-block; width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+.crit-square-mandatory { background: var(--color-mandatory); }
+.crit-square-potential { background: var(--color-potential); }
+.crit-square-optional { background: var(--color-optional); }
+
+/* ── Expandable rows ─────────────────────────────────────── */
+.expand-btn { background: none; border: none; cursor: pointer; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 11px; transition: transform 0.15s; padding: 0; vertical-align: middle; flex-shrink: 0; }
+.expand-btn.open { transform: rotate(90deg); }
+.issue-title-cell { display: flex; align-items: center; gap: 4px; }
+.detail-row td { padding: 0; border-bottom: 1px solid var(--border-light); white-space: normal; overflow: visible; text-overflow: clip; }
+.detail-content { display: flex; gap: 0; padding: 8px 8px 8px 32px; min-width: 0; }
+.file-list { flex: 0 0 50%; min-width: 0; overflow: hidden; }
+.file-list table { width: 100%; border-collapse: collapse; }
+.file-list th { font-size: calc(13px * 0.875); text-transform: uppercase; font-weight: 600; color: var(--text-secondary); padding: 6px 8px; border-bottom: 1px solid var(--border-color); text-align: left; height: 32px; }
+.file-list td { font-size: 13px; padding: 6px 8px; border-bottom: 1px solid var(--border-light); color: var(--text-primary); }
+.file-list .file-path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 300px; display: block; }
+.file-list .position { font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary); }
+.explanation-panel { flex: 1; padding-left: 16px; min-width: 0; overflow-wrap: break-word; word-wrap: break-word; }
+.explanation-panel h4 { font-size: calc(13px * 0.875); text-transform: uppercase; font-weight: 600; color: var(--text-secondary); padding: 6px 0; border-bottom: 1px solid var(--border-color); height: 32px; margin: 0; }
+.explanation-panel p { font-size: 13px; padding: 8px 0; color: var(--text-primary); line-height: 1.6; white-space: normal; word-break: break-word; }
+
+/* ── Experimental badge ──────────────────────────────────── */
+.badge-experimental { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; background: #fef9c3; color: #854d0e; vertical-align: middle; margin-left: 8px; cursor: default; }
+
+/* ── Footer ──────────────────────────────────────────────── */
+.footer { text-align: center; margin-top: 24px; color: var(--text-muted); font-size: 13px; }
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 800px) {
+  .main { padding: 16px; }
+  .app-info-container { flex-direction: column; }
+  .domain-summary-container { flex-direction: column; }
+  .domain-summary-item { border-right: none; border-bottom: 1px solid var(--border-light); padding-bottom: 12px; }
+  .detail-content { flex-direction: column; }
+  .file-list { flex: none; width: 100%; }
+  .explanation-panel { padding-left: 0; padding-top: 8px; }
+}
+/* ── Tab navigation ──────────────────────────────────────── */
+.tab-nav { display: flex; gap: 0; border-bottom: 1px solid var(--border-color); margin-bottom: 28px; flex-wrap: wrap; }
+.tab-btn { background: none; border: none; border-bottom: 2px solid transparent; padding: 10px 18px; font-size: 13px; font-family: var(--font-family); color: var(--text-secondary); cursor: pointer; margin-bottom: -1px; white-space: nowrap; position: relative; }
+.tab-btn:hover { color: var(--text-primary); }
+.tab-btn.active { color: var(--link-color); border-bottom-color: var(--link-color); font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ── Tooltip on tab ──────────────────────────────────────── */
+.tab-btn[data-tooltip]::after { content: attr(data-tooltip); position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); background: #24292f; color: #ffffff; font-size: 12px; font-weight: 400; padding: 6px 10px; border-radius: 4px; white-space: normal; width: max-content; max-width: 260px; text-align: center; pointer-events: none; opacity: 0; transition: opacity 0.15s; z-index: 100; }
+.tab-btn[data-tooltip]:hover::after { opacity: 1; }
+
+/* ── Fact content — prose column ─────────────────────────── */
+.fact-content { max-width: 860px; margin: 0 auto; line-height: 1.75; color: var(--text-primary); font-size: 14px; }
+.fact-content h1 { font-size: 22px; font-weight: 700; margin: 0 0 6px 0; color: var(--text-primary); letter-spacing: -0.01em; }
+.fact-content h1 + p { margin-top: 6px; color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
+.fact-content h2 { font-size: 17px; font-weight: 700; margin: 36px 0 12px 0; padding-bottom: 6px; border-bottom: 1px solid var(--border-color); color: var(--text-primary); letter-spacing: -0.01em; }
+.fact-content h3 { font-size: 14px; font-weight: 700; margin: 24px 0 8px 0; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.04em; font-size: 12px; color: var(--text-secondary); }
+.fact-content p { margin: 10px 0; color: var(--text-primary); }
+.fact-content ul, .fact-content ol { margin: 10px 0 10px 22px; }
+.fact-content li { margin: 5px 0; }
+.fact-content a { color: var(--link-color); }
+.fact-content a:hover { text-decoration: underline; }
+
+/* ── Fact tables ─────────────────────────────────────────── */
+.table-wrap { overflow-x: auto; margin: 16px 0; }
+.fact-content table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 13px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); }
+.fact-content thead { background: var(--bg-card); }
+.fact-content th { text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; padding: 8px 14px; border-bottom: 1px solid var(--border-color); color: var(--text-secondary); }
+.fact-content td { padding: 9px 14px; border-bottom: 1px solid var(--border-light); vertical-align: top; color: var(--text-primary); }
+.fact-content tr:last-child td { border-bottom: none; }
+.fact-content tbody tr:hover { background: #f6f8fa; }
+
+/* ── Fact code ───────────────────────────────────────────── */
+.fact-content code { font-family: var(--font-mono); font-size: 12px; background: #f0f1f3; padding: 2px 6px; border-radius: 4px; color: #c7254e; }
+.fact-content pre { background: #f6f8fa; border: 1px solid var(--border-light); border-radius: 6px; padding: 14px 16px; overflow-x: auto; margin: 14px 0; }
+.fact-content pre code { background: none; color: var(--text-primary); padding: 0; border-radius: 0; }
+.fact-content hr { border: none; border-top: 1px solid var(--border-light); margin: 28px 0; }
+.fact-content strong { font-weight: 600; }
+.fact-content em { font-style: italic; }
+.fact-content blockquote { border-left: 3px solid var(--border-color); margin: 12px 0; padding: 4px 16px; color: var(--text-secondary); }
+.fact-unavailable { padding: 32px 0; }
+.fact-unavailable h3 { font-size: 16px; font-weight: 600; color: var(--text-primary); text-transform: none; letter-spacing: 0; margin: 0 0 12px 0; }
+.fact-unavailable p { margin: 0 0 8px 0; color: var(--text-secondary); }
+.fact-unavailable ol, .fact-unavailable ul { margin: 0 0 0 22px; color: var(--text-primary); }
+.fact-unavailable li { margin: 6px 0; }
+
+/* ── Mermaid diagram card ─────────────────────────────────── */
+.mermaid { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 8px; padding: 24px 16px; margin: 20px 0; overflow-x: auto; text-align: center; cursor: pointer; position: relative; }
+.mermaid:hover { border-color: var(--border-color); }
+.mermaid svg { max-width: 100%; height: auto !important; display: inline-block; }
+.mermaid-zoom-hint { position: absolute; top: 8px; right: 10px; font-size: 11px; color: var(--text-muted); opacity: 0; transition: opacity 0.15s; pointer-events: none; }
+.mermaid:hover .mermaid-zoom-hint { opacity: 1; }
+
+/* ── Diagram lightbox ────────────────────────────────────── */
+.diagram-lightbox { display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.7); backdrop-filter: blur(2px); align-items: center; justify-content: center; cursor: zoom-out; padding: 48px 32px; }
+.diagram-lightbox.open { display: flex; }
+.diagram-lightbox-inner { background: #ffffff; border-radius: 10px; padding: 32px; width: 88vw; max-height: 88vh; overflow: hidden; cursor: default; box-shadow: 0 24px 64px rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; }
+.diagram-lightbox-inner svg { width: 100% !important; height: auto !important; max-height: 76vh; display: block; }
+.diagram-lightbox-close { position: fixed; top: 20px; right: 24px; background: #ffffff; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-primary); box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 1001; }
+.diagram-lightbox-close:hover { background: var(--bg-card); }
+.diagram-lightbox-hint { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.55); color: #ffffff; font-size: 12px; padding: 6px 14px; border-radius: 20px; pointer-events: none; white-space: nowrap; z-index: 1001; }
+</style>
+<script>
+window.__mermaidPending = [];
+window.__mermaidReady = false;
+window.__renderMermaidIn = function(container) {
+  // Until the real implementation overrides this (after the ES module import
+  // resolves), just queue the container so we can render it later.
+  if (container) { window.__mermaidPending.push(container); }
+};
+</script>
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+mermaid.initialize({ startOnLoad: false, theme: 'default', flowchart: { useMaxWidth: true }, sequence: { useMaxWidth: true } });
+
+// Real implementation: actually run mermaid on the unprocessed diagrams in the
+// given container (only ones not already rendered). Adds a "Click to expand"
+// hint span after each successful render so the lightbox affordance is
+// discoverable.
+window.__renderMermaidIn = function(container) {
+  var nodes = container ? container.querySelectorAll('.mermaid:not([data-processed])') : [];
+  if (nodes.length > 0) {
+    mermaid.run({ nodes: Array.from(nodes) }).then(function() {
+      nodes.forEach(function(node) {
+        if (!node.querySelector('.mermaid-zoom-hint')) {
+          var hint = document.createElement('span');
+          hint.className = 'mermaid-zoom-hint';
+          hint.textContent = 'Click to expand';
+          node.appendChild(hint);
+        }
+      });
+    });
+  }
+};
+
+// Drain any containers that were queued by the shim while mermaid was loading.
+// Use a Set to dedupe in case a container was both queued and is also the
+// initial-active panel below.
+var drained = new Set();
+(window.__mermaidPending || []).forEach(function(c) {
+  if (!drained.has(c)) { drained.add(c); window.__renderMermaidIn(c); }
+});
+window.__mermaidPending = [];
+window.__mermaidReady = true;
+
+// Render diagrams visible on initial load (the active tab panel(s) may not have
+// been queued by anyone — DOMContentLoaded handlers run before this if the
+// module is cached, after this if it's not, so handle both cases here).
+function renderActivePanels() {
+  document.querySelectorAll('.tab-panel.active').forEach(function(p) {
+    if (!drained.has(p)) { drained.add(p); window.__renderMermaidIn(p); }
+  });
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', renderActivePanels);
+} else {
+  renderActivePanels();
+}
+</script>
+</head><body>
+<div id="diagram-lightbox" class="diagram-lightbox" role="dialog" aria-modal="true">
+  <button class="diagram-lightbox-close" id="diagram-lightbox-close" aria-label="Close">&#x2715;</button>
+  <div class="diagram-lightbox-hint">Scroll to zoom &nbsp;·&nbsp; Drag to pan &nbsp;·&nbsp; Double-click to reset</div>
+  <div class="diagram-lightbox-inner" id="diagram-lightbox-inner"></div>
+</div>
+<div class="main">
+<a class="back-link" href="../../index.html">&#8592; Back to aggregate dashboard</a>
+<h1>ZavaLoanOriginationAPI</h1>
+<div class="report-card">
+  <h2>Application Information</h2>
+  <div class="report-card-body">
+    <div class="app-info-container">
+      <div class="app-info-column">
+        <div class="app-info-row"><span class="app-info-label">Application Name</span><span class="app-info-value">ZavaLoanOriginationAPI</span></div>
+        <div class="app-info-row"><span class="app-info-label">Java Version</span><span class="app-info-value">Unknown</span></div>
+        <div class="app-info-row"><span class="app-info-label">Effort</span><span class="app-info-value" id="effort-display">S (total story points: 14)</span></div>
+      </div>
+      <div class="app-info-column">
+        <div class="app-info-row"><span class="app-info-label">Build Tools</span><span class="app-info-value">Gradle</span></div>
+        <div class="app-info-row"><span class="app-info-label">Frameworks</span><span class="app-info-value">N/A</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+<nav class="tab-nav">
+  <button class="tab-btn active" data-tab="tab-issues" data-tooltip="Issues detected in the source code">Issues</button>
+  <button class="tab-btn" data-tab="tab-arch" data-tooltip="How the app&#39;s layers connect — from UI to data.">Architecture</button>
+  <button class="tab-btn" data-tab="tab-api" data-tooltip="Endpoints exposed by this app and how services communicate.">API Contracts</button>
+  <button class="tab-btn" data-tab="tab-config" data-tooltip="Environment settings, runtime profiles, and deployment manifests.">Configuration</button>
+  <button class="tab-btn" data-tab="tab-workflows" data-tooltip="Domain entities and the core flows users move through.">Business Workflows</button>
+  <button class="tab-btn" data-tab="tab-deps" data-tooltip="Libraries and frameworks this app depends on, grouped by category.">Dependencies</button>
+  <button class="tab-btn" data-tab="tab-data" data-tooltip="Database schema, entity relationships, and persistence behavior.">Data Model</button>
+</nav>
+<div id="tab-issues" class="tab-panel active">
+<div class="target-select-container">
+  <label for="target-select">Target Compute Service:</label>
+  <select id="target-select" onchange="onTargetChange(this.value)">
+    <option value="azure-aks">Azure Kubernetes Service</option>
+    <option value="azure-appservice">Azure App Service</option>
+    <option value="azure-container-apps">Azure Container Apps</option>
+  </select>
+</div>
+<div class="report-card">
+  <h2>Issue Summary</h2>
+  <div class="report-card-body">
+    <div class="domain-summary-container" id="donut-container">
+      <div class="domain-summary-item">
+<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;transform:rotate(-90deg);">
+  <circle cx="50" cy="50" r="35" fill="none" stroke="var(--color-mandatory)" stroke-width="15" stroke-dasharray="108.46 219.91" stroke-dashoffset="-0.00"/>
+  <circle cx="50" cy="50" r="35" fill="none" stroke="var(--color-optional)" stroke-width="15" stroke-dasharray="108.46 219.91" stroke-dashoffset="-109.96"/>
+</svg>
+
+        <h3>Cloud Readiness</h3>
+        <div class="count">2 issues</div>
+      </div>
+      <div class="domain-summary-item">
+<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;transform:rotate(-90deg);">
+  <circle cx="50" cy="50" r="35" fill="none" stroke="var(--color-optional)" stroke-width="15" stroke-dasharray="219.91 219.91" stroke-dashoffset="-0.00"/>
+</svg>
+
+        <h3>Java Upgrade</h3>
+        <div class="count">1 issue</div>
+      </div>
+    </div>
+    <div class="criticality-legend">
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--color-mandatory)"></span>Mandatory</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--color-potential)"></span>Potential</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--color-optional)"></span>Optional</div>
+    </div>
+  </div>
+</div>
+<div class="filter-bar" id="filter-bar">
+  <div class="multi-select" id="domain-ms">
+    <button class="multi-select-btn" onclick="toggleMultiSelect('domain-ms')">Domain</button>
+    <div class="multi-select-dropdown">
+      <label class="multi-select-option"><input type="checkbox" value="cloud-readiness" onchange="onMultiSelectChange('domain-ms','Domain')"/> Cloud Readiness</label>
+      <label class="multi-select-option"><input type="checkbox" value="java-upgrade" onchange="onMultiSelectChange('domain-ms','Domain')"/> Java Upgrade</label>
+    </div>
+  </div>
+  <div class="multi-select" id="criticality-ms">
+    <button class="multi-select-btn" onclick="toggleMultiSelect('criticality-ms')">Criticality</button>
+    <div class="multi-select-dropdown">
+      <label class="multi-select-option"><input type="checkbox" value="mandatory" onchange="onMultiSelectChange('criticality-ms','Criticality')"/> Mandatory</label>
+      <label class="multi-select-option"><input type="checkbox" value="optional" onchange="onMultiSelectChange('criticality-ms','Criticality')"/> Optional</label>
+    </div>
+  </div>
+  <a class="clear-filters" href="javascript:void(0)" onclick="clearAllFilters()">Clear all</a>
+</div>
+<div class="issue-section" data-domain="cloud-readiness">
+  <h2>Cloud Readiness</h2>
+  <table class="issue-table">
+    <colgroup><col class="col-issue"/><col class="col-criticality"/><col class="col-storypoint"/></colgroup>
+    <thead><tr><th>Issue Category</th><th>Criticality</th><th>Story Point</th></tr></thead>
+    <tbody>
+    <tr class="issue-row" data-criticality="mandatory" data-targets='{"azure-aks":{"effort":3,"severity":"mandatory"},"azure-appservice":{"effort":3,"severity":"mandatory"},"azure-container-apps":{"effort":3,"severity":"mandatory"}}' data-default-effort="3" data-default-severity="mandatory" data-rule="unsecure-network-protocol-00000" onclick="toggleRow('row-cloudreadiness-0', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-cloudreadiness-0">&#x276F;</button> Use of unsecured network protocols or URI libraries</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-mandatory"></span>Mandatory</span></td>
+      <td class="sp-cell">3</td>
+    </tr>
+    <tr class="detail-row" id="row-cloudreadiness-0" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="src/main/resources/loan-origination.properties">src/main/resources/loan-origination.properties</span></td><td><span class="position">Line 6, Col 0</span></td></tr>
+            <tr><td><span class="file-path" title="src/main/resources/loan-origination.properties">src/main/resources/loan-origination.properties</span></td><td><span class="position">Line 7, Col 0</span></td></tr>
+            <tr><td><span class="file-path" title="src/main/resources/loan-origination.properties">src/main/resources/loan-origination.properties</span></td><td><span class="position">Line 8, Col 0</span></td></tr>
+            <tr><td><span class="file-path" title="bin/main/loan-origination.properties">bin/main/loan-origination.properties</span></td><td><span class="position">Line 6, Col 0</span></td></tr>
+            <tr><td><span class="file-path" title="bin/main/loan-origination.properties">bin/main/loan-origination.properties</span></td><td><span class="position">Line 7, Col 0</span></td></tr>
+            <tr><td><span class="file-path" title="bin/main/loan-origination.properties">bin/main/loan-origination.properties</span></td><td><span class="position">Line 8, Col 0</span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>Using secured protocols such as HTTPS and SFTP (over HTTP and FTP) should now be the norm as applications are more and more exposed and interconnected. <br/>This CloudReady patterns looks for unescured URI in the source code or deprecated URI libraries. <br/>Ideally, URLs should be replaced in your source code by secured protocols HTTPS and SFTP (and ensure the infrastructure implements these protocols for the resources your application calls, uses or references).</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="optional" data-targets='{"azure-aks":{"effort":3,"severity":"optional"},"azure-appservice":{"effort":3,"severity":"optional"},"azure-container-apps":{"effort":3,"severity":"optional"}}' data-default-effort="3" data-default-severity="optional" data-rule="hardcoded-urls-00001" onclick="toggleRow('row-cloudreadiness-1', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-cloudreadiness-1">&#x276F;</button> Avoid using hardcoded URLs (HTTP protocol) in source code</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-optional"></span>Optional</span></td>
+      <td class="sp-cell">3</td>
+    </tr>
+    <tr class="detail-row" id="row-cloudreadiness-1" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="src/main/resources/loan-origination.properties">src/main/resources/loan-origination.properties</span></td><td><span class="position">Line 6, Col 0</span></td></tr>
+            <tr><td><span class="file-path" title="src/main/resources/loan-origination.properties">src/main/resources/loan-origination.properties</span></td><td><span class="position">Line 7, Col 0</span></td></tr>
+            <tr><td><span class="file-path" title="src/main/resources/loan-origination.properties">src/main/resources/loan-origination.properties</span></td><td><span class="position">Line 8, Col 0</span></td></tr>
+            <tr><td><span class="file-path" title="bin/main/loan-origination.properties">bin/main/loan-origination.properties</span></td><td><span class="position">Line 6, Col 0</span></td></tr>
+            <tr><td><span class="file-path" title="bin/main/loan-origination.properties">bin/main/loan-origination.properties</span></td><td><span class="position">Line 7, Col 0</span></td></tr>
+            <tr><td><span class="file-path" title="bin/main/loan-origination.properties">bin/main/loan-origination.properties</span></td><td><span class="position">Line 8, Col 0</span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>This patterns verifies in source code and configuration files the presence of hardcoded URLs using the HTTP protocol (HTTP/HTTPS). This URL would need to be replaced by the new resource&#39;s URL during the Cloud migration, if any change occured.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+</div>
+<div class="issue-section" data-domain="java-upgrade">
+  <h2>Java Upgrade</h2>
+  <table class="issue-table">
+    <colgroup><col class="col-issue"/><col class="col-criticality"/><col class="col-storypoint"/></colgroup>
+    <thead><tr><th>Issue Category</th><th>Criticality</th><th>Story Point</th></tr></thead>
+    <tbody>
+    <tr class="issue-row" data-criticality="optional" data-targets='{"azure-aks":{"effort":8,"severity":"optional"},"azure-appservice":{"effort":8,"severity":"optional"},"azure-container-apps":{"effort":8,"severity":"optional"}}' data-default-effort="8" data-default-severity="optional" data-rule="azure-java-version-02000" onclick="toggleRow('row-javaupgrade-0', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-javaupgrade-0">&#x276F;</button> Java Version is not the latest LTS</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-optional"></span>Optional</span></td>
+      <td class="sp-cell">8</td>
+    </tr>
+    <tr class="detail-row" id="row-javaupgrade-0" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="build.gradle">build.gradle</span></td><td><span class="position">Line 7, Col 0</span></td></tr>
+            <tr><td><span class="file-path" title="build.gradle">build.gradle</span></td><td><span class="position">Line 8, Col 0</span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>The application is not using the latest LTS Java version. It is recommended to consider upgrading to the latest LTS version to take advantage of the newest language features, performance improvements, and extended support timelines.<br/>Upgrading to the latest LTS version ensures your application benefits from the most recent security enhancements and a longer support lifecycle.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+</div>
+</div><!-- #tab-issues -->
+<div id="tab-arch" class="tab-panel">
+  <div class="fact-content"><h1 id="architecture-diagram">Architecture Diagram</h1>
+<p>ZavaLoanOriginationAPI is a Java 11 Jakarta EE servlet-based web application (WAR) that orchestrates loan origination by coordinating three external microservices and persisting data to a SQL Server database.</p>
+<h2 id="application-architecture">Application Architecture</h2>
+<div class="mermaid">
+flowchart TD
+    subgraph Client["Client Layer"]
+        Browser["Web Browser / API Client"]
+    end
+    subgraph App["Application Layer - Java 11 / Jakarta EE 4.0 WAR"]
+        HealthServlet["HealthServlet\n/health"]
+        BootstrapServlet["LoanBootstrapServlet\n/internal/bootstrap"]
+        ApplyServlet["LoanApplyServlet\n/api/loans/apply"]
+        StatusServlet["LoanStatusServlet\n/api/loans/id/status"]
+        Config["LoanOriginationConfig\nenv vars + properties"]
+        ConnFactory["LoanConnectionFactory\nJDBC"]
+    end
+    subgraph External["External Services (HTTP REST)"]
+        KYC["KYC Service\nzava-kyc-service:8080"]
+        Risk["Risk Engine\nzava-risk-engine:8080"]
+        Ledger["Ledger Service\nzava-ledger:8080"]
+    end
+    subgraph Data["Data Layer"]
+        MSSQL[("SQL Server\nZavaBankDB")]
+    end
+
+    Browser -->|"HTTP GET /health"| HealthServlet
+    Browser -->|"HTTP POST /api/loans/apply"| ApplyServlet
+    Browser -->|"HTTP GET /api/loans/id/status"| StatusServlet
+    BootstrapServlet -->|"DDL init on startup"| ConnFactory
+    ApplyServlet -->|"reads config"| Config
+    StatusServlet -->|"reads config"| Config
+    ConnFactory -->|"reads config"| Config
+    ConnFactory -->|"JDBC MSSQL"| MSSQL
+    ApplyServlet -->|"JDBC insert/update"| ConnFactory
+    StatusServlet -->|"JDBC select"| ConnFactory
+    ApplyServlet -->|"POST /api/kyc/verify"| KYC
+    ApplyServlet -->|"POST /api/risk/score"| Risk
+    ApplyServlet -->|"POST /api/accounts/create"| Ledger
+</div>
+<h3 id="technology-stack-summary">Technology Stack Summary</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Layer</th><th>Technology</th><th>Version</th><th>Purpose</th></tr></thead><tbody>
+<tr><td>Servlet Container</td><td>Jakarta EE Servlet API</td><td>4.0.1 (javax)</td><td>HTTP request handling</td></tr>
+<tr><td>Language / Runtime</td><td>Java</td><td>11</td><td>Application runtime</td></tr>
+<tr><td>Build Tool</td><td>Gradle</td><td>8.9</td><td>Build and packaging</td></tr>
+<tr><td>Database Driver</td><td>Microsoft JDBC Driver for SQL Server</td><td>12.6.3.jre11</td><td>RDBMS connectivity</td></tr>
+<tr><td>JSON</td><td>org.json</td><td>20140107</td><td>JSON serialization/deserialization</td></tr>
+<tr><td>Packaging</td><td>WAR</td><td>—</td><td>Servlet container deployment</td></tr>
+</tbody></table></div>
+<h3 id="data-storage-external-services">Data Storage &amp; External Services</h3>
+<p>The application persists all loan application and decision data in a single <strong>SQL Server</strong> instance (<code>ZavaBankDB</code>) via direct JDBC. Schema initialization (DDL for <code>LoanApplications</code> and <code>LoanDecisions</code> tables) is performed at startup by <code>LoanBootstrapServlet</code>. Three external microservices are consumed synchronously over HTTP: a <strong>KYC Service</strong> for identity verification, a <strong>Risk Engine</strong> for credit scoring, and a <strong>Ledger Service</strong> for account creation. Configuration is sourced from environment variables with fallback to <code>loan-origination.properties</code>.</p>
+<h3 id="key-architectural-decisions">Key Architectural Decisions</h3>
+<ul>
+<li><strong>Servlet-first, no framework</strong>: The application uses raw <code>javax.servlet.HttpServlet</code> subclasses rather than a higher-level framework (Spring MVC, Jakarta RESTful Services), placing all request parsing, JSON handling, and response writing in servlet <code>doGet</code>/<code>doPost</code> methods.</li>
+<li><strong>Inline orchestration</strong>: The entire loan decision pipeline — KYC verification → risk scoring → ledger provisioning — is implemented as sequential HTTP calls within a single servlet method with transaction management via JDBC <code>setAutoCommit(false)</code>.</li>
+<li><strong>Startup DDL bootstrap</strong>: Table creation is handled programmatically at servlet container startup rather than by a migration tool (Flyway/Liquibase), making schema evolution manual.</li>
+</ul>
+<h2 id="component-relationships">Component Relationships</h2>
+<div class="mermaid">
+flowchart LR
+    subgraph Presentation["Presentation Layer"]
+        HealthSvlt["HealthServlet"]
+        BootSvlt["LoanBootstrapServlet"]
+        ApplySvlt["LoanApplyServlet"]
+        StatusSvlt["LoanStatusServlet"]
+    end
+    subgraph Infrastructure["Infrastructure"]
+        Config["LoanOriginationConfig"]
+        ConnFactory["LoanConnectionFactory"]
+    end
+    subgraph ExternalSvc["External Services"]
+        KYC["KYC Service"]
+        Risk["Risk Engine"]
+        Ledger["Ledger Service"]
+    end
+    subgraph DB["Data Store"]
+        MSSQL[("SQL Server")]
+    end
+
+    ApplySvlt -->|"reads base URLs"| Config
+    StatusSvlt -->|"reads base URLs"| Config
+    ConnFactory -->|"reads DB credentials"| Config
+    BootSvlt -->|"opens connection"| ConnFactory
+    ApplySvlt -->|"opens connection"| ConnFactory
+    StatusSvlt -->|"opens connection"| ConnFactory
+    ConnFactory -->|"JDBC"| MSSQL
+    ApplySvlt -->|"HTTP POST kyc/verify"| KYC
+    ApplySvlt -->|"HTTP POST risk/score"| Risk
+    ApplySvlt -->|"HTTP POST accounts/create"| Ledger
+</div>
+<h3 id="component-inventory">Component Inventory</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Component</th><th>Layer</th><th>Type</th><th>Responsibility</th></tr></thead><tbody>
+<tr><td>HealthServlet</td><td>Presentation</td><td>HttpServlet</td><td>Returns HTML liveness indicator for <code>/health</code></td></tr>
+<tr><td>LoanBootstrapServlet</td><td>Presentation</td><td>HttpServlet (load-on-startup=1)</td><td>Creates <code>LoanApplications</code> and <code>LoanDecisions</code> tables on startup via DDL</td></tr>
+<tr><td>LoanApplyServlet</td><td>Presentation</td><td>HttpServlet</td><td>Accepts POST loan applications; orchestrates KYC, risk, ledger calls; persists result</td></tr>
+<tr><td>LoanStatusServlet</td><td>Presentation</td><td>HttpServlet</td><td>Returns loan application status by ID from the database</td></tr>
+<tr><td>LoanOriginationConfig</td><td>Infrastructure</td><td>Configuration Utility</td><td>Reads DB and service URLs from environment variables or properties file</td></tr>
+<tr><td>LoanConnectionFactory</td><td>Infrastructure</td><td>JDBC Factory</td><td>Opens SQL Server JDBC connections using config values</td></tr>
+</tbody></table></div>
+</div>
+</div>
+<div id="tab-api" class="tab-panel">
+  <div class="fact-content"><h1 id="api-service-communication-contracts">API &amp; Service Communication Contracts</h1>
+<p>ZavaLoanOriginationAPI exposes 3 HTTP endpoints via Jakarta EE servlets and consumes 3 external downstream REST services synchronously during loan origination. There is no API gateway or async messaging layer.</p>
+<h2 id="service-catalog">Service Catalog</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Port</th><th>Category</th><th>Purpose</th></tr></thead><tbody>
+<tr><td>ZavaLoanOriginationAPI</td><td>8080 (container default)</td><td>Business</td><td>Loan origination API: accepts applications, orchestrates KYC/risk/ledger, returns decisions</td></tr>
+<tr><td>zava-kyc-service</td><td>8080</td><td>Business (external)</td><td>KYC identity verification — called synchronously during loan apply</td></tr>
+<tr><td>zava-risk-engine</td><td>8080</td><td>Business (external)</td><td>Credit risk scoring — called synchronously after KYC passes</td></tr>
+<tr><td>zava-ledger</td><td>8080</td><td>Business (external)</td><td>Ledger account creation — called synchronously after risk approval</td></tr>
+</tbody></table></div>
+<h2 id="api-endpoints-inventory">API Endpoints Inventory</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Method</th><th>Path</th><th>Request Type</th><th>Response Type</th></tr></thead><tbody>
+<tr><td>HealthServlet</td><td>GET</td><td><code>/health</code></td><td>None</td><td>HTML liveness page (200 OK)</td></tr>
+<tr><td>LoanApplyServlet</td><td>POST</td><td><code>/api/loans/apply</code></td><td>JSON body (LoanApplicationRequest)</td><td>JSON (LoanApplicationResponse) — 200, 400, 500</td></tr>
+<tr><td>LoanStatusServlet</td><td>GET</td><td><code>/api/loans/{id}/status</code></td><td>Path param: applicationId (long)</td><td>JSON (LoanStatusResponse) — 200, 400, 404, 500</td></tr>
+<tr><td>LoanBootstrapServlet</td><td>—</td><td><code>/internal/bootstrap</code></td><td>None</td><td>Servlet init-only; DDL on startup</td></tr>
+</tbody></table></div>
+<h2 id="management-observability-endpoints">Management &amp; Observability Endpoints</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Endpoint</th><th>Custom Metrics</th></tr></thead><tbody>
+<tr><td>ZavaLoanOriginationAPI</td><td><code>/health</code></td><td>None — returns static HTML only</td></tr>
+<tr><td>ZavaLoanOriginationAPI</td><td>(none)</td><td>No actuator, Prometheus, or custom metrics configured</td></tr>
+</tbody></table></div>
+<p>No Spring Boot Actuator, Micrometer, or equivalent observability framework is present.</p>
+<h2 id="dtos-contracts">DTOs &amp; Contracts</h2>
+<p>No formal DTO classes are defined. All request and response contracts are handled via inline JSON construction using <code>org.json.JSONObject</code>:</p>
+<ul>
+<li><strong>LoanApplicationRequest</strong> (implicit, POST <code>/api/loans/apply</code>): JSON body with fields <code>customerId</code> (int), <code>loanProductId</code> (int), <code>requestedAmount</code> (double), <code>termMonths</code> (int), <code>purpose</code> (string), <code>fullName</code> (string), <code>idNumber</code> (string), <code>loanAccountTypeId</code> (int). Parsed directly in <code>LoanApplyServlet.doPost()</code>.</li>
+<li><strong>LoanApplicationResponse</strong> (implicit): JSON object with fields <code>status</code>, <code>applicationId</code>, <code>kycStatus</code>, <code>riskScore</code>, <code>riskLevel</code>, <code>approvedAmount</code>, <code>ledgerAccountCreated</code>, <code>ledgerAccountId</code>. Constructed inline.</li>
+<li><strong>LoanStatusResponse</strong> (implicit): JSON object mirroring <code>LoanApplications</code> table columns.</li>
+<li><strong>OrchestrationResult</strong> (internal): private static inner class in <code>LoanApplyServlet</code> used to pass orchestration state between methods — not serialized directly.</li>
+</ul>
+<p>No OpenAPI/Swagger spec, protobuf schemas, or GraphQL schema files are present. No Jackson or custom serializer is configured — raw <code>JSONObject.toString()</code> is used.</p>
+<h2 id="communication-patterns">Communication Patterns</h2>
+<p><strong>Synchronous REST (outbound):</strong> <code>LoanApplyServlet</code> makes three sequential synchronous HTTP POST calls using <code>java.net.HttpURLConnection</code> with 7-second connect and read timeouts:</p>
+<ol>
+<li><code>POST {KYC_SERVICE_BASE_URL}/api/kyc/verify</code> — KYC identity check</li>
+<li><code>POST {RISK_SERVICE_BASE_URL}/api/risk/score</code> — credit risk scoring (only if KYC passes)</li>
+<li><code>POST {LEDGER_SERVICE_BASE_URL}/api/accounts/create</code> — ledger account creation (only if risk approves)</li>
+</ol>
+<p><strong>No resilience patterns:</strong> There is no circuit breaker (Resilience4j, Hystrix), retry policy, or bulkhead pattern. If a downstream service is unreachable or returns a non-2xx response, the <code>callJsonApi</code> helper silently swallows the exception and returns an empty <code>JSONObject</code>. Upstream callers then interpret default/absent fields as failure signals.</p>
+<p><strong>Service discovery:</strong> Services are discovered via hardcoded hostnames configured in <code>loan-origination.properties</code> (e.g., <code>zava-kyc-service</code>, <code>zava-risk-engine</code>, <code>zava-ledger</code>). No Eureka, Consul, or Kubernetes DNS abstraction is used.</p>
+<p><strong>No API gateway:</strong> The application receives client requests directly. There is no gateway layer for routing, load balancing, or request aggregation.</p>
+<p><strong>No asynchronous messaging:</strong> Kafka, RabbitMQ, Azure Service Bus, or equivalent are not present. The entire loan origination flow is synchronous and blocking.</p>
+<p><strong>Security posture:</strong> No authentication, authorization, or TLS is configured at the API level. All three endpoints (<code>/health</code>, <code>/api/loans/apply</code>, <code>/api/loans/{id}/status</code>) are publicly accessible with no authorization checks. No Spring Security, JWT, OAuth2, or Basic Auth is present. Communication with downstream services also has no authentication headers.</p>
+<h2 id="service-technology-matrix">Service Technology Matrix</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Web Framework</th><th>Data Access</th><th>Discovery</th><th>Gateway</th><th>Health Check</th><th>Cache</th><th>Metrics</th></tr></thead><tbody>
+<tr><td>ZavaLoanOriginationAPI</td><td>Servlet API 4.0.1 (javax)</td><td>Raw JDBC (mssql-jdbc)</td><td>None (hardcoded hostnames)</td><td>None</td><td>Static HTML <code>/health</code></td><td>None</td><td>None</td></tr>
+<tr><td>zava-kyc-service</td><td>Unknown (external)</td><td>Unknown</td><td>—</td><td>—</td><td>Unknown</td><td>—</td><td>—</td></tr>
+<tr><td>zava-risk-engine</td><td>Unknown (external)</td><td>Unknown</td><td>—</td><td>—</td><td>Unknown</td><td>—</td><td>—</td></tr>
+<tr><td>zava-ledger</td><td>Unknown (external)</td><td>Unknown</td><td>—</td><td>—</td><td>Unknown</td><td>—</td><td>—</td></tr>
+</tbody></table></div>
+<h2 id="service-communication-sequence">Service Communication Sequence</h2>
+<div class="mermaid">
+sequenceDiagram
+    participant Client
+    participant ApplySvlt as "LoanApplyServlet"
+    participant DB as "SQL Server"
+    participant KYC as "KYC Service"
+    participant Risk as "Risk Engine"
+    participant Ledger as "Ledger Service"
+
+    Client->>ApplySvlt: POST /api/loans/apply (JSON body)
+    ApplySvlt->>ApplySvlt: Validate required fields
+    alt Validation fails
+        ApplySvlt-->>Client: 400 Bad Request
+    else Validation passes
+        ApplySvlt->>DB: BEGIN TRANSACTION - INSERT LoanApplications
+        DB-->>ApplySvlt: applicationId
+        ApplySvlt->>KYC: POST /api/kyc/verify (customerId, fullName, idNumber)
+        KYC-->>ApplySvlt: kycStatus (PASS or REVIEW)
+        alt KYC not PASS
+            ApplySvlt->>DB: UPDATE status=KYC_REVIEW, INSERT LoanDecisions
+            ApplySvlt->>DB: COMMIT
+            ApplySvlt-->>Client: 200 status=KYC_REVIEW
+        else KYC PASS
+            ApplySvlt->>Risk: POST /api/risk/score (applicationId, requestedAmount)
+            Risk-->>ApplySvlt: riskScore, riskLevel, approved, approvedAmount
+            alt Risk declined
+                ApplySvlt->>DB: UPDATE status=Declined, INSERT LoanDecisions
+                ApplySvlt->>DB: COMMIT
+                ApplySvlt-->>Client: 200 status=Declined
+            else Risk approved
+                ApplySvlt->>Ledger: POST /api/accounts/create (customerId, accountTypeId)
+                Ledger-->>ApplySvlt: accountId, created
+                ApplySvlt->>DB: UPDATE status=Approved, INSERT LoanDecisions
+                ApplySvlt->>DB: COMMIT
+                ApplySvlt-->>Client: 200 status=Approved + ledgerAccountId
+            end
+        end
+    end
+</div>
+</div>
+</div>
+<div id="tab-config" class="tab-panel">
+  <div class="fact-content"><h1 id="configuration-externalized-settings-inventory">Configuration &amp; Externalized Settings Inventory</h1>
+<p>ZavaLoanOriginationAPI manages configuration through two sources: a classpath properties file (<code>loan-origination.properties</code>) and environment variables, with environment variables taking precedence. No Spring Cloud Config, Azure App Configuration, or secret management service is integrated.</p>
+<h2 id="configuration-sources">Configuration Sources</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Source</th><th>Type</th><th>Path/Location</th><th>Notes</th></tr></thead><tbody>
+<tr><td>loan-origination.properties</td><td>Properties file</td><td><code>src/main/resources/loan-origination.properties</code> (classpath)</td><td>Bundled into WAR; provides defaults for all configurable values</td></tr>
+<tr><td>Environment variables</td><td>OS/container env</td><td>Runtime container env</td><td>Override properties file values; keys follow <code>UPPER_SNAKE_CASE</code> convention</td></tr>
+</tbody></table></div>
+<h2 id="build-profiles">Build Profiles</h2>
+<p>No explicit build profiles are declared in <code>build.gradle</code>. The project uses a single build configuration:</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Profile</th><th>Activation</th><th>Purpose</th><th>Key Plugins / Tasks</th></tr></thead><tbody>
+<tr><td>(default)</td><td>Always active</td><td>Compiles Java 11 sources, packages as WAR</td><td><code>java</code>, <code>war</code> plugins; <code>archiveBaseName = ROOT</code>; <code>compileOnly</code> for servlet API</td></tr>
+</tbody></table></div>
+<h2 id="runtime-profiles">Runtime Profiles</h2>
+<p>No Spring Boot profile system or similar profile mechanism is used. There is a single runtime configuration controlled entirely by environment variables or the bundled properties file.</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Profile</th><th>Activation Method</th><th>Config Files</th><th>Key Overrides</th></tr></thead><tbody>
+<tr><td>(default — single profile)</td><td>Always active</td><td><code>loan-origination.properties</code> (classpath)</td><td>All values overridable via env vars at runtime</td></tr>
+</tbody></table></div>
+<h2 id="properties-inventory">Properties Inventory</h2>
+<h3 id="zavaloanoriginationapi">ZavaLoanOriginationAPI</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Property Key</th><th>Default Value</th><th>Environment Variable</th><th>Notes</th></tr></thead><tbody>
+<tr><td><code>db.host</code></td><td><code>sqlserver</code></td><td><code>DB_HOST</code></td><td>SQL Server hostname</td></tr>
+<tr><td><code>db.port</code></td><td><code>1433</code></td><td><code>DB_PORT</code></td><td>SQL Server port</td></tr>
+<tr><td><code>db.name</code></td><td><code>ZavaBankDB</code></td><td><code>DB_NAME</code></td><td>Database name</td></tr>
+<tr><td><code>db.user</code></td><td><code>sa</code></td><td><code>DB_USER</code></td><td>Database username</td></tr>
+<tr><td><code>db.password</code></td><td><code>YourStrong!Passw0rd</code></td><td><code>DB_PASSWORD</code></td><td>Database password (sensitive)</td></tr>
+<tr><td><code>kyc.service.baseUrl</code></td><td><code>http://zava-kyc-service:8080</code></td><td><code>KYC_SERVICE_BASE_URL</code></td><td>KYC service base URL</td></tr>
+<tr><td><code>risk.service.baseUrl</code></td><td><code>http://zava-risk-engine:8080</code></td><td><code>RISK_SERVICE_BASE_URL</code></td><td>Risk engine base URL</td></tr>
+<tr><td><code>ledger.service.baseUrl</code></td><td><code>http://zava-ledger:8080</code></td><td><code>LEDGER_SERVICE_BASE_URL</code></td><td>Ledger service base URL</td></tr>
+<tr><td><code>loan.default.interestRate</code></td><td><code>0.0725</code></td><td><code>LOAN_DEFAULT_INTEREST_RATE</code></td><td>Default interest rate (7.25%) used when risk engine does not return a rate</td></tr>
+</tbody></table></div>
+<p>Resolution order: environment variable (checked first) → properties file default. Implemented in <code>LoanOriginationConfig.read(envKey, propertyKey)</code>.</p>
+<h2 id="startup-parameters-resource-requirements">Startup Parameters &amp; Resource Requirements</h2>
+<p>No JVM tuning parameters, heap settings, or resource limits are declared in the project source. Runtime parameters depend on the deployment platform.</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>JVM Options</th><th>Memory</th><th>Instance Count</th><th>Notes</th></tr></thead><tbody>
+<tr><td>ZavaLoanOriginationAPI</td><td>Not specified</td><td>Not specified</td><td>Not specified</td><td>Deployment via WAR to servlet container; container-specific JVM settings apply</td></tr>
+</tbody></table></div>
+<p>The Dockerfile (if present) should be consulted for container-level resource configuration. No <code>docker-compose.yml</code> is present in the repository.</p>
+<h2 id="startup-dependency-chain">Startup Dependency Chain</h2>
+<p><code>LoanBootstrapServlet</code> is configured with <code>&lt;load-on-startup&gt;1&lt;/load-on-startup&gt;</code> in <code>web.xml</code>, ensuring it executes DDL before any request-serving servlet is initialized. The startup sequence within the application is:</p>
+<ol>
+<li><strong>Servlet container starts</strong> → loads <code>web.xml</code></li>
+<li><strong>LoanBootstrapServlet.init()</strong> (load-on-startup=1) → opens JDBC connection → executes DDL (<code>IF OBJECT_ID IS NULL CREATE TABLE</code>)</li>
+<li><strong>Request-serving servlets become available</strong> (HealthServlet, LoanApplyServlet, LoanStatusServlet)</li>
+</ol>
+<p>No external dependency wait mechanism (dockerize, readiness probe, Kubernetes init container) is configured. If SQL Server is unavailable at startup, <code>LoanBootstrapServlet.init()</code> throws a <code>ServletException</code> and the application fails to start.</p>
+<h2 id="secrets-sensitive-configuration">Secrets &amp; Sensitive Configuration</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Secret Reference</th><th>Type</th><th>Storage</th></tr></thead><tbody>
+<tr><td><code>db.password</code> / <code>DB_PASSWORD</code></td><td>Database password</td><td>Stored in plaintext in <code>loan-origination.properties</code> (default: <code>YourStrong!Passw0rd</code>)</td></tr>
+<tr><td><code>db.user</code> / <code>DB_USER</code></td><td>Database username</td><td>Stored in plaintext in <code>loan-origination.properties</code> (default: <code>sa</code>)</td></tr>
+</tbody></table></div>
+<p>&gt; <strong>Warning:</strong> The database password (<code>YourStrong!Passw0rd</code>) and username (<code>sa</code>) are hardcoded as defaults in the committed properties file. In production, these must be supplied exclusively via environment variables and the default values in the properties file should be removed or replaced with placeholders.</p>
+<h3 id="secrets-provisioning-workflow">Secrets Provisioning Workflow</h3>
+<p>No secrets management integration (HashiCorp Vault, Azure Key Vault, AWS Secrets Manager) is present. The current workflow is:</p>
+<ol>
+<li><strong>Source</strong>: Environment variables injected at container/VM startup by the deployment platform</li>
+<li><strong>Identity/access model</strong>: No managed identity or RBAC — secrets are passed as plain environment variables</li>
+<li><strong>Provisioning</strong>: Operator manually sets <code>DB_HOST</code>, <code>DB_PORT</code>, <code>DB_NAME</code>, <code>DB_USER</code>, <code>DB_PASSWORD</code>, <code>KYC_SERVICE_BASE_URL</code>, <code>RISK_SERVICE_BASE_URL</code>, <code>LEDGER_SERVICE_BASE_URL</code>, and optionally <code>LOAN_DEFAULT_INTEREST_RATE</code> in the container runtime environment</li>
+<li><strong>Fallback</strong>: If environment variables are absent, the bundled <code>loan-origination.properties</code> defaults are used (insecure for production)</li>
+</ol>
+<h2 id="feature-flags">Feature Flags</h2>
+<p>No feature flag framework is present. No <code>@ConditionalOnProperty</code>, LaunchDarkly, Unleash, or equivalent toggles are used. The only conditional behavior is the <code>loan.default.interestRate</code> fallback in <code>LoanOriginationConfig.getDefaultInterestRate()</code> (defaults to <code>0.0725</code> on parse failure).</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Flag Name</th><th>Default</th><th>Controlled By</th></tr></thead><tbody>
+<tr><td>(none)</td><td>—</td><td>—</td></tr>
+</tbody></table></div>
+<h2 id="framework-runtime-versions">Framework &amp; Runtime Versions</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Component</th><th>Version</th><th>Source</th></tr></thead><tbody>
+<tr><td>Java</td><td>11</td><td><code>build.gradle</code>: <code>sourceCompatibility = JavaVersion.VERSION_11</code></td></tr>
+<tr><td>Gradle</td><td>8.9</td><td><code>.gradle/8.9/gc.properties</code></td></tr>
+<tr><td>Servlet API</td><td>4.0.1 (javax)</td><td><code>build.gradle</code> dependency: <code>javax.servlet:javax.servlet-api:4.0.1</code></td></tr>
+<tr><td>Microsoft JDBC Driver for SQL Server</td><td>12.6.3.jre11</td><td><code>build.gradle</code> dependency</td></tr>
+<tr><td>org.json</td><td>20140107</td><td><code>build.gradle</code> dependency</td></tr>
+<tr><td>WAR archive base name</td><td>ROOT</td><td><code>build.gradle</code> war block</td></tr>
+<tr><td>Dockerfile base image</td><td>(see Dockerfile)</td><td><code>Dockerfile</code> in repository root</td></tr>
+</tbody></table></div>
+</div>
+</div>
+<div id="tab-workflows" class="tab-panel">
+  <div class="fact-content"><h1 id="core-business-workflows">Core Business Workflows</h1>
+<p>ZavaLoanOriginationAPI automates the end-to-end loan origination process for ZavaBank, coordinating identity verification, credit risk assessment, and ledger provisioning to deliver real-time loan decisions.</p>
+<h2 id="domain-entities">Domain Entities</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Entity</th><th>Service / Bounded Context</th><th>Description</th><th>Key Relationships</th></tr></thead><tbody>
+<tr><td>LoanApplication</td><td>Loan Origination</td><td>Represents a customer&#39;s request for a loan product, tracks the full lifecycle from submission to decision</td><td>Has many LoanDecisions; references external CustomerID, LoanProductID, and LoanAccountID</td></tr>
+<tr><td>LoanDecision</td><td>Loan Origination</td><td>Records the outcome of a specific decision event (Approve, Decline, ManualReview) for an application</td><td>Belongs to one LoanApplication; captures credit score and risk level at time of decision</td></tr>
+<tr><td>Customer (external)</td><td>KYC / Customer Management</td><td>Identity record verified by the KYC Service</td><td>Referenced by CustomerID in LoanApplication</td></tr>
+<tr><td>LoanProduct (external)</td><td>Product Catalog</td><td>Defines loan product terms; referenced but not owned</td><td>Referenced by LoanProductID in LoanApplication</td></tr>
+<tr><td>LedgerAccount (external)</td><td>Ledger / Core Banking</td><td>Financial account created in the ledger system upon approval</td><td>LoanAccountID stored in LoanApplication upon successful creation</td></tr>
+</tbody></table></div>
+<h2 id="service-to-domain-mapping">Service-to-Domain Mapping</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Domain Context</th><th>Owned Entities</th><th>External Dependencies</th></tr></thead><tbody>
+<tr><td>ZavaLoanOriginationAPI</td><td>Loan Origination</td><td>LoanApplications, LoanDecisions</td><td>KYC Service (customer identity), Risk Engine (credit score), Ledger Service (account creation)</td></tr>
+<tr><td>zava-kyc-service</td><td>Identity / Compliance</td><td>Customer identity records</td><td>—</td></tr>
+<tr><td>zava-risk-engine</td><td>Credit Risk</td><td>Risk profiles, credit scores</td><td>—</td></tr>
+<tr><td>zava-ledger</td><td>Core Banking / Ledger</td><td>Financial accounts</td><td>—</td></tr>
+</tbody></table></div>
+<h2 id="primary-workflows">Primary Workflows</h2>
+<h3 id="workflow-1-loan-application-submission">Workflow 1: Loan Application Submission</h3>
+<p>A client submits a POST to <code>/api/loans/apply</code>. The application validates required fields, persists an initial application record, then orchestrates a sequential three-step decision pipeline:</p>
+<ol>
+<li><strong>Input validation</strong> — checks <code>customerId</code>, <code>loanProductId</code>, <code>requestedAmount</code>, and <code>termMonths</code> are present and positive; returns 400 if not.</li>
+<li><strong>Application persistence</strong> — inserts a <code>LoanApplications</code> record with <code>Status = &#39;Submitted&#39;</code> and captures the generated <code>applicationId</code>. A database transaction is opened.</li>
+<li><strong>KYC verification</strong> — POSTs customer identity data (<code>customerId</code>, <code>fullName</code>, <code>idNumber</code>) to the KYC Service. If <code>kycStatus != &#39;PASS&#39;</code>, the application is updated to <code>Status = KYC_REVIEW</code> and a <code>ManualReview</code> decision is recorded; processing stops.</li>
+<li><strong>Risk scoring</strong> — POSTs <code>applicationId</code>, <code>customerId</code>, <code>requestedAmount</code>, and <code>termMonths</code> to the Risk Engine. Receives <code>riskScore</code>, <code>riskLevel</code>, and an <code>approved</code> flag. If not approved (score &lt; 620 threshold), the application is updated to <code>Status = Declined</code> and a <code>Decline</code> decision is recorded; processing stops.</li>
+<li><strong>Ledger account creation</strong> — POSTs to the Ledger Service to open a loan account. Receives <code>accountId</code> and <code>created</code> flag.</li>
+<li><strong>Final persistence</strong> — updates <code>LoanApplications</code> with final status (<code>Approved</code> or <code>APPROVED_PENDING_LEDGER</code>), approved amount, interest rate, and ledger account ID; inserts an <code>Approve</code> decision record. Transaction is committed.</li>
+<li><strong>Response</strong> — returns JSON with <code>status</code>, <code>applicationId</code>, <code>kycStatus</code>, <code>riskScore</code>, <code>riskLevel</code>, <code>approvedAmount</code>, <code>ledgerAccountCreated</code>, and <code>ledgerAccountId</code>.</li>
+</ol>
+<h3 id="workflow-2-loan-status-inquiry">Workflow 2: Loan Status Inquiry</h3>
+<p>A client sends GET <code>/api/loans/{id}/status</code>. The application:</p>
+<ol>
+<li>Parses and validates the <code>{id}</code> path segment as a non-negative long.</li>
+<li>Queries <code>LoanApplications</code> by <code>ApplicationID</code>.</li>
+<li>Returns a JSON response with all key fields (status, amounts, decision date, notes, ledger account ID), or a 404 if the application is not found.</li>
+</ol>
+<h3 id="workflow-3-application-bootstrap-startup">Workflow 3: Application Bootstrap (Startup)</h3>
+<p>On application startup (servlet container initialization), <code>LoanBootstrapServlet</code> (load-on-startup=1):</p>
+<ol>
+<li>Opens a JDBC connection to SQL Server.</li>
+<li>Executes idempotent DDL to create <code>LoanApplications</code> and <code>LoanDecisions</code> tables if they do not already exist.</li>
+<li>Logs or throws a <code>ServletException</code> on failure, preventing the application from starting.</li>
+</ol>
+<h2 id="cross-service-data-flows">Cross-Service Data Flows</h2>
+<p>The loan origination flow involves sequential synchronous HTTP calls to three external services. Data passes forward through the pipeline:</p>
+<ul>
+<li><strong>KYC Service</strong>: Receives <code>customerId</code>, <code>fullName</code>, <code>idNumber</code>; returns <code>kycStatus</code>. The origination service does not persist <code>fullName</code> or <code>idNumber</code>.</li>
+<li><strong>Risk Engine</strong>: Receives <code>applicationId</code>, <code>customerId</code>, <code>requestedAmount</code>, <code>termMonths</code>; returns <code>riskScore</code>, <code>riskLevel</code>, <code>approved</code>, <code>approvedAmount</code>, <code>interestRate</code>. The origination service persists <code>approvedAmount</code>, <code>interestRate</code>, <code>riskScore</code>, and <code>riskLevel</code> in its own tables.</li>
+<li><strong>Ledger Service</strong>: Receives <code>customerId</code>, <code>accountTypeId</code>, <code>openingBalance</code>, <code>description</code>; returns <code>accountId</code> and <code>created</code>. The <code>accountId</code> is persisted as <code>LoanAccountID</code> in <code>LoanApplications</code>.</li>
+</ul>
+<p><strong>Fallback behavior:</strong> If any downstream service is unreachable or returns an error, the <code>callJsonApi</code> helper silently returns an empty <code>JSONObject</code>. The calling code then interprets missing fields using <code>optString</code>/<code>optInt</code>/<code>optBoolean</code> defaults:</p>
+<ul>
+<li>KYC failure → <code>kycStatus</code> defaults to <code>&quot;REVIEW&quot;</code> → application is set to <code>KYC_REVIEW</code> (conservative — treated as manual review required)</li>
+<li>Risk failure → <code>approved</code> defaults to <code>false</code> → application is declined</li>
+<li>Ledger failure → <code>created</code> defaults to <code>false</code>, <code>accountId</code> defaults to 0 → application is set to <code>APPROVED_PENDING_LEDGER</code></li>
+</ul>
+<h2 id="business-workflow-sequence">Business Workflow Sequence</h2>
+<div class="mermaid">
+sequenceDiagram
+    participant Client
+    participant ApplySvlt as "LoanApplyServlet"
+    participant DB as "SQL Server"
+    participant KYC as "KYC Service"
+    participant Risk as "Risk Engine"
+    participant Ledger as "Ledger Service"
+
+    Client->>ApplySvlt: POST /api/loans/apply
+    ApplySvlt->>ApplySvlt: Validate required fields
+    alt Missing or invalid fields
+        ApplySvlt-->>Client: 400 - validation error
+    else Fields valid
+        ApplySvlt->>DB: INSERT LoanApplications (Status=Submitted)
+        DB-->>ApplySvlt: applicationId
+        ApplySvlt->>KYC: POST /api/kyc/verify (customerId, fullName, idNumber)
+        alt KYC service unreachable
+            Note over ApplySvlt: kycStatus defaults to REVIEW
+        else KYC responds
+            KYC-->>ApplySvlt: kycStatus
+        end
+        alt kycStatus != PASS
+            ApplySvlt->>DB: UPDATE status=KYC_REVIEW, INSERT LoanDecisions (ManualReview)
+            ApplySvlt->>DB: COMMIT
+            ApplySvlt-->>Client: 200 status=KYC_REVIEW
+        else KYC PASS
+            ApplySvlt->>Risk: POST /api/risk/score (applicationId, customerId, requestedAmount)
+            alt Risk engine unreachable
+                Note over ApplySvlt: approved defaults to false - Declined
+            else Risk engine responds
+                Risk-->>ApplySvlt: riskScore, riskLevel, approved, approvedAmount, interestRate
+            end
+            alt Risk declined (score below threshold)
+                ApplySvlt->>DB: UPDATE status=Declined, INSERT LoanDecisions (Decline)
+                ApplySvlt->>DB: COMMIT
+                ApplySvlt-->>Client: 200 status=Declined
+            else Risk approved
+                ApplySvlt->>Ledger: POST /api/accounts/create (customerId, accountTypeId)
+                alt Ledger unreachable or fails
+                    Note over ApplySvlt: status=APPROVED_PENDING_LEDGER
+                else Ledger responds
+                    Ledger-->>ApplySvlt: accountId, created=true
+                end
+                ApplySvlt->>DB: UPDATE status=Approved, LoanAccountID, INSERT LoanDecisions (Approve)
+                ApplySvlt->>DB: COMMIT
+                ApplySvlt-->>Client: 200 status=Approved + ledgerAccountId
+            end
+        end
+    end
+</div>
+<h2 id="business-rules-decision-logic">Business Rules &amp; Decision Logic</h2>
+<p><strong>Validation Rules:</strong></p>
+<ul>
+<li><code>customerId</code>, <code>loanProductId</code>, <code>termMonths</code> must be positive integers (&gt; 0)</li>
+<li><code>requestedAmount</code> must be greater than zero</li>
+<li><code>fullName</code> defaults to <code>&quot;Customer {customerId}&quot;</code> if not provided (no hard validation)</li>
+<li><code>loanAccountTypeId</code> defaults to <code>2</code> if not provided</li>
+</ul>
+<p><strong>Decision Logic:</strong></p>
+<ul>
+<li>KYC must return <code>kycStatus == &#39;PASS&#39;</code> (case-insensitive) for the application to proceed beyond KYC review</li>
+<li>Risk engine <code>riskScore &gt;= 620</code> is used as the implicit approval threshold when the engine does not return an explicit <code>approved</code> field; scores <code>&lt; 620</code> are declined</li>
+<li>Risk levels: score &gt;= 700 → Low; score &gt;= 620 → Medium; score &lt; 620 → High</li>
+<li>Default interest rate is <code>7.25%</code> (<code>loan.default.interestRate</code>), used when the risk engine does not return an explicit rate</li>
+</ul>
+<p><strong>State Transitions (LoanApplication.Status):</strong></p>
+<ul>
+<li><code>Submitted</code> → (KYC fails) → <code>KYC_REVIEW</code></li>
+<li><code>Submitted</code> → (KYC passes, Risk declines) → <code>Declined</code></li>
+<li><code>Submitted</code> → (KYC passes, Risk approves, Ledger succeeds) → <code>Approved</code></li>
+<li><code>Submitted</code> → (KYC passes, Risk approves, Ledger fails) → <code>APPROVED_PENDING_LEDGER</code></li>
+</ul>
+<p><strong>Decision Types (LoanDecisions.DecisionType):</strong></p>
+<ul>
+<li><code>Approve</code> — application is approved (status <code>Approved</code> or <code>APPROVED_PENDING_LEDGER</code>)</li>
+<li><code>Decline</code> — risk engine rejected the application</li>
+<li><code>ManualReview</code> — KYC did not pass, human review required</li>
+</ul>
+<p><strong>Transactions:</strong></p>
+<ul>
+<li>The entire apply flow (INSERT application + UPDATE application + INSERT decision) runs in a single JDBC transaction with <code>autoCommit=false</code></li>
+<li>On <code>SQLException</code>, the transaction is rolled back; a 500 response is returned</li>
+<li>KYC/Risk/Ledger HTTP calls are <strong>outside</strong> the transaction boundary — they are made after the initial INSERT commits implicitly (the transaction covers the UPDATE and decision INSERT after the orchestration result is known)</li>
+</ul>
+<p><strong>Error Handling:</strong></p>
+<ul>
+<li>All downstream HTTP call failures are silently swallowed (exceptions caught and empty JSONObject returned)</li>
+<li>All <code>SQLException</code> exceptions during reads result in a 500 response</li>
+<li>No dead-letter queue, compensating transaction, or saga pattern is implemented for partially completed flows</li>
+</ul>
+<p><strong>Authorization:</strong></p>
+<ul>
+<li>No authorization checks — all endpoints are publicly accessible</li>
+<li>The <code>DecisionBy</code> field in <code>LoanDecisions</code> is hardcoded to <code>&#39;LoanOriginationAPI&#39;</code> (no user identity context)</li>
+</ul>
+</div>
+</div>
+<div id="tab-deps" class="tab-panel">
+  <div class="fact-content"><h1 id="dependency-map">Dependency Map</h1>
+<p>ZavaLoanOriginationAPI declares 3 external runtime dependencies and 1 provided dependency across its Gradle build. No test-scope dependencies are declared.</p>
+<h2 id="dependencies">Dependencies</h2>
+<div class="mermaid">
+flowchart LR
+    App["ZavaLoanOriginationAPI\nv1.0.0"]
+
+    subgraph Web["Web Frameworks"]
+        ServletAPI["javax.servlet-api v4.0.1\n(provided)"]
+    end
+    subgraph DB["Database / JDBC"]
+        MSSQL["mssql-jdbc v12.6.3.jre11"]
+    end
+    subgraph Util["Utilities"]
+        JSON["org.json v20140107"]
+    end
+
+    App -->|"servlet container"| Web
+    App -->|"persistence"| DB
+    App -->|"json handling"| Util
+</div>
+<h3 id="dependency-summary">Dependency Summary</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Category</th><th>Count</th><th>Key Libraries</th><th>Notes</th></tr></thead><tbody>
+<tr><td>Web Frameworks</td><td>1</td><td>javax.servlet-api 4.0.1</td><td>Provided scope — supplied by servlet container (e.g., Tomcat)</td></tr>
+<tr><td>Database / JDBC</td><td>1</td><td>mssql-jdbc 12.6.3.jre11</td><td>Microsoft JDBC driver for SQL Server</td></tr>
+<tr><td>Utilities</td><td>1</td><td>org.json 20140107</td><td>JSON parsing and serialization</td></tr>
+</tbody></table></div>
+<h3 id="version-compatibility-risks">Version &amp; Compatibility Risks</h3>
+<p><code>javax.servlet-api 4.0.1</code> targets the Jakarta EE 8 namespace (<code>javax.<em></code>), which was superseded by Jakarta EE 9+ (renamed to <code>jakarta.</em></code> namespace). Migrating to a modern container (e.g., Tomcat 10+, WildFly 27+) requires a namespace migration. <code>org.json 20140107</code> is over a decade old (released 2014) and carries known CVEs in older versions; upgrading to a recent release (≥ 20231013) is recommended. <code>mssql-jdbc 12.6.3.jre11</code> is a recent release and is compatible with Azure SQL Database and Azure SQL Managed Instance.</p>
+<h3 id="notable-observations">Notable Observations</h3>
+<ul>
+<li><strong>Extremely lean dependency footprint</strong>: Only 3 declared dependencies — no framework (Spring, Jakarta EE CDI), no ORM (Hibernate, JPA), no logging facade (SLF4J), and no security library. All functionality is implemented by hand using raw JDBC and the Servlet API.</li>
+<li><strong>Ancient JSON library</strong>: <code>org.json 20140107</code> is from January 2014 and is not maintained through a standard release cadence. Modern alternatives (Jackson, Gson, JSON-B) offer better performance, type safety, and active CVE patching.</li>
+<li><strong>No logging framework</strong>: Neither SLF4J, Log4j2, nor Logback is declared. All error handling silently swallows exceptions (<code>catch (Exception ignored)</code>), making production observability and troubleshooting very difficult.</li>
+<li><strong>No test dependencies</strong>: No testing framework (JUnit, TestNG, Mockito) is declared. The project has no automated tests.</li>
+</ul>
+<h2 id="test-dependencies">Test Dependencies</h2>
+<p>No test-scope dependencies detected.</p>
+<p>Total test-scope dependencies: 0</p>
+<p>No test framework (JUnit, Mockito, Testcontainers, etc.) is declared in <code>build.gradle</code>. The project currently has no automated unit or integration test infrastructure.</p>
+</div>
+</div>
+<div id="tab-data" class="tab-panel">
+  <div class="fact-content"><h1 id="data-architecture-persistence-layer">Data Architecture &amp; Persistence Layer</h1>
+<p>ZavaLoanOriginationAPI uses a single SQL Server database (<code>ZavaBankDB</code>) accessed via raw JDBC (no ORM), with two application-managed tables created at startup via programmatic DDL.</p>
+<h2 id="database-configuration">Database Configuration</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service/Module</th><th>DB Type</th><th>Profile</th><th>Driver</th><th>Connection</th><th>Migration Tool</th></tr></thead><tbody>
+<tr><td>ZavaLoanOriginationAPI</td><td>SQL Server</td><td>All (single profile)</td><td>mssql-jdbc 12.6.3.jre11</td><td>jdbc:sqlserver://{DB_HOST}:{DB_PORT};databaseName={DB_NAME};encrypt=false;trustServerCertificate=true</td><td>None (programmatic DDL at startup via LoanBootstrapServlet)</td></tr>
+</tbody></table></div>
+<p>Default connection values (from <code>loan-origination.properties</code>): host=<code>sqlserver</code>, port=<code>1433</code>, database=<code>ZavaBankDB</code>. All values are overridable via environment variables. Schema is not versioned; DDL is idempotent (<code>IF OBJECT_ID ... IS NULL CREATE TABLE</code>).</p>
+<h2 id="data-ownership-per-service">Data Ownership per Service</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Tables Owned</th><th>ORM Framework</th><th>Caching</th><th>Notes</th></tr></thead><tbody>
+<tr><td>ZavaLoanOriginationAPI</td><td>LoanApplications, LoanDecisions</td><td>None (raw JDBC / PreparedStatement)</td><td>None</td><td>Schema created by LoanBootstrapServlet on startup; no connection pooling configured</td></tr>
+</tbody></table></div>
+<h2 id="entity-model">Entity Model</h2>
+<div class="mermaid">
+erDiagram
+    LoanApplications ||--o{ LoanDecisions : "has"
+
+    LoanApplications {
+        int ApplicationID PK
+        int CustomerID
+        int LoanProductID
+        decimal RequestedAmount
+        decimal ApprovedAmount
+        decimal InterestRate
+        int TermMonths
+        nvarchar Purpose
+        nvarchar Status
+        datetime ApplicationDate
+        datetime DecisionDate
+        nvarchar DecisionNotes
+        int LoanAccountID FK
+        datetime CreatedDate
+        datetime ModifiedDate
+    }
+
+    LoanDecisions {
+        int DecisionID PK
+        int ApplicationID FK
+        nvarchar DecisionType
+        nvarchar DecisionBy
+        datetime DecisionDate
+        nvarchar Reason
+        int CreditScoreAtTime
+        nvarchar RiskLevel
+        nvarchar Conditions
+    }
+</div>
+<p>&gt; Note: Entity definitions are inferred from DDL in <code>LoanBootstrapServlet.java</code> — no ORM entity classes exist.</p>
+<h2 id="key-repository-methods">Key Repository Methods</h2>
+<p>There are no formal repository interfaces. All data access is implemented as inline JDBC within servlet methods.</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Method / Operation</th><th>SQL Pattern</th><th>Purpose</th></tr></thead><tbody>
+<tr><td>LoanApplyServlet</td><td>insertApplication()</td><td>INSERT INTO LoanApplications ... RETURN_GENERATED_KEYS</td><td>Creates a new loan application and retrieves generated ID</td></tr>
+<tr><td>LoanApplyServlet</td><td>updateApplication()</td><td>UPDATE LoanApplications SET Status, ApprovedAmount, InterestRate, DecisionDate, DecisionNotes, LoanAccountID</td><td>Updates application with orchestration result after KYC/risk/ledger processing</td></tr>
+<tr><td>LoanApplyServlet</td><td>insertDecision()</td><td>INSERT INTO LoanDecisions ...</td><td>Records the loan decision with credit score, risk level, and conditions</td></tr>
+<tr><td>LoanStatusServlet</td><td>doGet()</td><td>SELECT ApplicationID, CustomerID, Status, RequestedAmount, ApprovedAmount, InterestRate, TermMonths, DecisionDate, DecisionNotes, LoanAccountID FROM LoanApplications WHERE ApplicationID = ?</td><td>Retrieves single loan application status by ID</td></tr>
+</tbody></table></div>
+<p>All database operations use <code>PreparedStatement</code> and manual resource management (no try-with-resources). Transaction management is performed manually via <code>connection.setAutoCommit(false)</code> / <code>connection.commit()</code> / <code>connection.rollback()</code>.</p>
+<h2 id="caching-strategy">Caching Strategy</h2>
+<p>No caching layer is present. Every request results in a direct JDBC call to SQL Server. No Redis, EhCache, Caffeine, or in-memory cache is configured. No <code>@Cacheable</code> or equivalent annotation is used.</p>
+<h2 id="data-ownership-boundaries">Data Ownership Boundaries</h2>
+<p><strong>Isolated data store:</strong> The application owns a single SQL Server database (<code>ZavaBankDB</code>) exclusively. There is no shared database with other services; external services (KYC, Risk Engine, Ledger) are called via HTTP REST and own their own data stores.</p>
+<p><strong>Cross-service data access:</strong> All cross-service data exchange is via synchronous REST (HTTP POST). The application does not access any external service&#39;s database directly. The only persistent identifier passed between services is <code>customerId</code> (passed to KYC and Ledger) and <code>applicationId</code> (passed to Risk Engine). The <code>ledgerAccountId</code> returned by the Ledger Service is stored in <code>LoanApplications.LoanAccountID</code> as a foreign reference.</p>
+<p><strong>Read/write patterns:</strong> Write-heavy for <code>LoanApplyServlet</code> (one INSERT + one UPDATE + one INSERT per request); read-only for <code>LoanStatusServlet</code> (one SELECT per request). No CQRS, event sourcing, or read replica patterns are used.</p>
+<h3 id="data-classification-sensitivity">Data Classification &amp; Sensitivity</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Entity</th><th>Sensitive Fields</th><th>Classification</th><th>Controls in Place</th></tr></thead><tbody>
+<tr><td>LoanApplications</td><td>CustomerID, RequestedAmount, ApprovedAmount, InterestRate, DecisionNotes</td><td>PII (indirect — customer reference) / Financial</td><td>None — no encryption-at-rest, masking, or field-level access controls configured</td></tr>
+<tr><td>LoanDecisions</td><td>ApplicationID, CreditScoreAtTime, RiskLevel, Reason</td><td>Financial / PII-adjacent</td><td>None — no encryption-at-rest or access controls configured</td></tr>
+<tr><td>API Request (transient)</td><td>fullName, idNumber (passed to KYC)</td><td>PII</td><td>Not persisted by this service; passed to KYC Service and discarded</td></tr>
+</tbody></table></div>
+<p><code>fullName</code> and <code>idNumber</code> are received in the loan apply request body and forwarded to the KYC service but are <strong>not persisted</strong> in the local database. The database connection uses <code>encrypt=false;trustServerCertificate=true</code>, meaning data in transit between the application and SQL Server is <strong>not encrypted</strong>. No database-level encryption (TDE), field-level masking, or row-level security is configured.</p>
+</div>
+</div>
+<p class="footer">Your feedback is invaluable &mdash; <a href="https://aka.ms/ghcp-appmod/feedback">Share feedback</a></p>
+<script>
+function toggleRow(rowId, triggerRow) {
+  var detail = document.getElementById(rowId);
+  var btn = document.getElementById('btn-' + rowId);
+  if (!detail) return;
+  var visible = detail.style.display !== 'none';
+  detail.style.display = visible ? 'none' : 'table-row';
+  if (btn) btn.classList.toggle('open', !visible);
+}
+(function() {
+  var nav = document.querySelector('.tab-nav');
+  if (!nav) return;
+  nav.addEventListener('click', function(e) {
+    var btn = e.target.closest('.tab-btn');
+    if (!btn) return;
+    var targetId = btn.getAttribute('data-tab');
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+    btn.classList.add('active');
+    var panel = document.getElementById(targetId);
+    if (panel) {
+      panel.classList.add('active');
+      // Render any mermaid diagrams in this panel that haven't been processed yet
+      if (window.__mermaidReady) { window.__renderMermaidIn(panel); }
+    }
+  });
+})();
+
+// ── Diagram lightbox ────────────────────────────────────────
+(function() {
+  var lightbox = document.getElementById('diagram-lightbox');
+  var inner = document.getElementById('diagram-lightbox-inner');
+  var closeBtn = document.getElementById('diagram-lightbox-close');
+  if (!lightbox || !inner || !closeBtn) return;
+
+  var scale = 1;
+  var translateX = 0;
+  var translateY = 0;
+  var isDragging = false;
+  var dragStartX = 0;
+  var dragStartY = 0;
+
+  function applyTransform() {
+    var svg = inner.querySelector('svg');
+    if (svg) {
+      svg.style.transform = 'translate(' + translateX + 'px, ' + translateY + 'px) scale(' + scale + ')';
+      svg.style.transformOrigin = 'center center';
+      svg.style.transition = 'none';
+    }
+  }
+
+  function resetTransform() {
+    scale = 1; translateX = 0; translateY = 0;
+    applyTransform();
+  }
+
+  function openLightbox(svgEl) {
+    inner.innerHTML = svgEl.outerHTML;
+    var injected = inner.querySelector('svg');
+    if (injected) {
+      injected.removeAttribute('width');
+      injected.removeAttribute('height');
+      injected.style.cursor = 'grab';
+    }
+    resetTransform();
+    lightbox.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLightbox() {
+    lightbox.classList.remove('open');
+    inner.innerHTML = '';
+    document.body.style.overflow = '';
+    resetTransform();
+  }
+
+  inner.addEventListener('wheel', function(e) {
+    e.preventDefault();
+    var delta = e.deltaY > 0 ? 0.9 : 1.1;
+    scale = Math.min(Math.max(scale * delta, 0.3), 8);
+    applyTransform();
+  }, { passive: false });
+
+  inner.addEventListener('mousedown', function(e) {
+    if (e.button !== 0) return;
+    isDragging = true;
+    dragStartX = e.clientX - translateX;
+    dragStartY = e.clientY - translateY;
+    var svg = inner.querySelector('svg');
+    if (svg) { svg.style.cursor = 'grabbing'; }
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', function(e) {
+    if (!isDragging) return;
+    translateX = e.clientX - dragStartX;
+    translateY = e.clientY - dragStartY;
+    applyTransform();
+  });
+
+  document.addEventListener('mouseup', function() {
+    if (!isDragging) return;
+    isDragging = false;
+    var svg = inner.querySelector('svg');
+    if (svg) { svg.style.cursor = 'grab'; }
+  });
+
+  inner.addEventListener('dblclick', function() { resetTransform(); });
+
+  document.addEventListener('click', function(e) {
+    var card = e.target.closest('.mermaid');
+    if (!card) return;
+    if (e.target.closest('.diagram-lightbox-close')) return;
+    var svg = card.querySelector('svg');
+    if (svg) { openLightbox(svg); }
+  });
+
+  closeBtn.addEventListener('click', closeLightbox);
+
+  lightbox.addEventListener('click', function(e) {
+    if (e.target === lightbox) { closeLightbox(); }
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') { closeLightbox(); }
+  });
+})();
+
+var _currentTarget = '';
+
+function toggleMultiSelect(id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  // Close others
+  document.querySelectorAll('.multi-select.open').forEach(function(ms) { if (ms.id !== id) ms.classList.remove('open'); });
+  el.classList.toggle('open');
+}
+
+// Close dropdowns on outside click
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.multi-select')) {
+    document.querySelectorAll('.multi-select.open').forEach(function(ms) { ms.classList.remove('open'); });
+  }
+});
+
+function getMultiSelectValues(msId) {
+  var el = document.getElementById(msId);
+  if (!el) return [];
+  var checked = el.querySelectorAll('input[type=checkbox]:checked');
+  var vals = [];
+  for (var i = 0; i < checked.length; i++) vals.push(checked[i].value);
+  return vals;
+}
+
+function onMultiSelectChange(msId, label) {
+  var el = document.getElementById(msId);
+  if (!el) return;
+  var vals = getMultiSelectValues(msId);
+  var total = el.querySelectorAll('input[type=checkbox]').length;
+  var btn = el.querySelector('.multi-select-btn');
+  if (btn) {
+    btn.textContent = vals.length > 0 && vals.length < total ? label + ' (' + vals.length + ')' : label;
+  }
+  applyFilters();
+}
+
+function applyFilters() {
+  var selectedDomains = getMultiSelectValues('domain-ms');
+  var selectedCrits = getMultiSelectValues('criticality-ms');
+
+  // Domain filter: show/hide entire sections (empty = show all)
+  var sections = document.querySelectorAll('.issue-section');
+  for (var i = 0; i < sections.length; i++) {
+    var domain = sections[i].getAttribute('data-domain');
+    sections[i].style.display = (selectedDomains.length === 0 || selectedDomains.indexOf(domain) >= 0) ? '' : 'none';
+  }
+
+  // Row-level filtering: respect target + criticality
+  var rows = document.querySelectorAll('.issue-row');
+  for (var i = 0; i < rows.length; i++) {
+    var row = rows[i];
+    var section = row.closest('.issue-section');
+    if (section && section.style.display === 'none') {
+      row.style.display = 'none';
+      var next = row.nextElementSibling;
+      if (next && next.classList.contains('detail-row')) next.style.display = 'none';
+      continue;
+    }
+
+    // Check target filter
+    var show = true;
+    if (_currentTarget && row.hasAttribute('data-targets')) {
+      var targetsStr = row.getAttribute('data-targets');
+      if (targetsStr && targetsStr !== '{}') {
+        try {
+          var targets = JSON.parse(targetsStr);
+          if (Object.keys(targets).length > 0 && !targets[_currentTarget]) {
+            show = false;
+          }
+        } catch(e) {}
+      }
+    }
+
+    // Check criticality filter
+    if (show && selectedCrits.length > 0) {
+      var crit = row.getAttribute('data-criticality');
+      if (selectedCrits.indexOf(crit) < 0) show = false;
+    }
+
+    row.style.display = show ? '' : 'none';
+    var nextRow = row.nextElementSibling;
+    if (nextRow && nextRow.classList.contains('detail-row')) {
+      if (!show) nextRow.style.display = 'none';
+    }
+  }
+}
+
+function clearAllFilters() {
+  document.querySelectorAll('.multi-select input[type=checkbox]').forEach(function(cb) { cb.checked = false; });
+  var domainBtn = document.querySelector('#domain-ms .multi-select-btn');
+  if (domainBtn) domainBtn.textContent = 'Domain';
+  var critBtn = document.querySelector('#criticality-ms .multi-select-btn');
+  if (critBtn) critBtn.textContent = 'Criticality';
+  applyFilters();
+}
+
+function onTargetChange(targetId) {
+  _currentTarget = targetId;
+  var rows = document.querySelectorAll('.issue-row[data-targets]');
+  var totalEffort = 0;
+  var domainCrits = {}; // domain -> {mandatory:0, potential:0, optional:0}
+
+  for (var i = 0; i < rows.length; i++) {
+    var row = rows[i];
+    var targets = JSON.parse(row.getAttribute('data-targets'));
+    var section = row.closest('.issue-section');
+    var domain = section ? section.getAttribute('data-domain') : '';
+
+    if (!targets || Object.keys(targets).length === 0) {
+      // No target data (e.g. security) — always show
+      var sp = parseFloat(row.querySelector('.sp-cell').textContent) || 0;
+      totalEffort += sp;
+      if (!domainCrits[domain]) domainCrits[domain] = {mandatory:0,potential:0,optional:0};
+      var crit = row.getAttribute('data-criticality') || 'optional';
+      domainCrits[domain][crit] = (domainCrits[domain][crit] || 0) + 1;
+      continue;
+    }
+
+    var override = targets[targetId];
+    if (!override) {
+      // Issue doesn't apply to this target
+      continue;
+    }
+
+    // Apply severity override
+    var newSeverity = (override.severity || row.getAttribute('data-default-severity') || '').toLowerCase();
+    row.setAttribute('data-criticality', newSeverity);
+    var critCell = row.querySelector('.crit-cell');
+    if (critCell) {
+      var critText = newSeverity === 'mandatory' ? 'Mandatory' : newSeverity === 'potential' ? 'Potential' : 'Optional';
+      var cssClass = newSeverity === 'mandatory' ? 'crit-square-mandatory' : newSeverity === 'potential' ? 'crit-square-potential' : 'crit-square-optional';
+      critCell.innerHTML = '<span class="crit-label"><span class="crit-square ' + cssClass + '"></span>' + critText + '</span>';
+    }
+
+    // Apply effort override
+    var newEffort = override.effort !== undefined ? override.effort : parseFloat(row.getAttribute('data-default-effort')) || 0;
+    var spCell = row.querySelector('.sp-cell');
+    if (spCell) spCell.textContent = newEffort;
+    totalEffort += newEffort;
+
+    if (!domainCrits[domain]) domainCrits[domain] = {mandatory:0,potential:0,optional:0};
+    domainCrits[domain][newSeverity] = (domainCrits[domain][newSeverity] || 0) + 1;
+  }
+
+  // Also add security findings effort (they don't have per-target data)
+  var secSection = document.querySelector('.issue-section[data-domain="security"]');
+  if (secSection) {
+    var secRows = secSection.querySelectorAll('.issue-row');
+    for (var j = 0; j < secRows.length; j++) {
+      if (!secRows[j].hasAttribute('data-targets') || secRows[j].getAttribute('data-targets') === '') {
+        var sp = parseFloat(secRows[j].querySelector('.sp-cell').textContent) || 0;
+        totalEffort += sp;
+        if (!domainCrits['security']) domainCrits['security'] = {mandatory:0,potential:0,optional:0};
+        var sc = secRows[j].getAttribute('data-criticality') || 'optional';
+        domainCrits['security'][sc] = (domainCrits['security'][sc] || 0) + 1;
+      }
+    }
+  }
+
+  // Update effort display
+  var label = totalEffort < 20 ? 'S' : totalEffort < 50 ? 'M' : totalEffort < 100 ? 'L' : 'XL';
+  var effortEl = document.getElementById('effort-display');
+  if (effortEl) effortEl.textContent = label + ' (total story points: ' + totalEffort + ')';
+
+  // Update donut charts
+  updateDonuts(domainCrits);
+
+  // Re-apply domain/criticality filters
+  applyFilters();
+}
+
+function updateDonuts(domainCrits) {
+  var container = document.getElementById('donut-container');
+  if (!container) return;
+  container.innerHTML = '';
+  var domainNames = {'cloud-readiness':'Cloud Readiness','java-upgrade':'Java Upgrade','dotnet-upgrade':'DotNET Upgrade','security':'Security'};
+  var domainOrder = ['cloud-readiness','java-upgrade','dotnet-upgrade','security'];
+  for (var d = 0; d < domainOrder.length; d++) {
+    var key = domainOrder[d];
+    var c = domainCrits[key];
+    if (!c || (c.mandatory + c.potential + c.optional) === 0) continue;
+    var total = c.mandatory + c.potential + c.optional;
+    var div = document.createElement('div');
+    div.className = 'domain-summary-item';
+    div.innerHTML = buildDonutSvg(c.mandatory, c.potential, c.optional) +
+      '<h3>' + domainNames[key] + '</h3>' +
+      '<div class="count">' + total + ' issue' + (total !== 1 ? 's' : '') + '</div>';
+    container.appendChild(div);
+  }
+}
+
+function buildDonutSvg(m, p, o) {
+  var total = m + p + o;
+  if (total === 0) return '<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;"><circle cx="50" cy="50" r="35" fill="none" stroke="#d0d7de" stroke-width="15" opacity="0.5"/></svg>';
+  var r = 35, circ = 2 * Math.PI * r, offset = 0;
+  var svg = '<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;transform:rotate(-90deg);">';
+  var segs = [{c:m,color:'var(--color-mandatory)'},{c:p,color:'var(--color-potential)'},{c:o,color:'var(--color-optional)'}];
+  for (var i = 0; i < segs.length; i++) {
+    if (segs[i].c === 0) continue;
+    var segLen = (segs[i].c / total) * circ;
+    var gap = total > segs[i].c ? 1.5 : 0;
+    var drawLen = Math.max(segLen - gap, 0.5);
+    svg += '<circle cx="50" cy="50" r="' + r + '" fill="none" stroke="' + segs[i].color + '" stroke-width="15" stroke-dasharray="' + drawLen.toFixed(2) + ' ' + circ.toFixed(2) + '" stroke-dashoffset="' + (-offset).toFixed(2) + '"/>';
+    offset += segLen;
+  }
+  svg += '</svg>';
+  return svg;
+}
+</script>
+<script>document.addEventListener('DOMContentLoaded', function() { onTargetChange('azure-aks'); });</script>
+</div></body></html>

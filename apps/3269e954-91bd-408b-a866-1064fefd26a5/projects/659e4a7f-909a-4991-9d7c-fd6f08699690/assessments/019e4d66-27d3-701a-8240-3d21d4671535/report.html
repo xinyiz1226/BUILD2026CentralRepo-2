@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Assessment - ZavaQueueBridge</title>
+<style>
+:root {
+  --bg-primary: #ffffff;
+  --bg-card: #f8f9fa;
+  --bg-page: #f0f1f3;
+  --text-primary: #24292f;
+  --text-secondary: #57606a;
+  --text-muted: #6b7280;
+  --border-color: #d0d7de;
+  --border-light: #e1e4e8;
+  --link-color: #2563eb;
+  --color-mandatory: #E3008C;
+  --color-potential: #637CEF;
+  --color-optional: #A19F9D;
+  --font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  --font-mono: 'Cascadia Code', 'Consolas', 'Courier New', monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-family); font-size: 13px; color: var(--text-primary); background: var(--bg-primary); line-height: 1.5; margin: 0; padding: 0; }
+a { color: var(--link-color); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Page layout ───────────────────────────────────────────── */
+.main { margin: 0; padding: 24px 32px; background: var(--bg-primary); }
+.back-link { color: var(--text-muted); font-size: 13px; margin-bottom: 16px; display: block; }
+h1 { font-weight: 600; font-size: 20px; color: var(--text-primary); margin-bottom: 20px; }
+
+/* ── Report cards (matches VS Code .vscode-report-card) ──── */
+.report-card { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 4px; padding: 12px; margin-bottom: 20px; }
+.report-card h2 { font-size: 14px; font-weight: 600; margin: 0; color: var(--text-primary); }
+.report-card-body { margin-top: 16px; }
+
+/* ── Application Information (two-column) ────────────────── */
+.app-info-container { display: flex; gap: 8px; flex-wrap: wrap; }
+.app-info-column { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 8px; }
+.app-info-row { display: flex; align-items: baseline; }
+.app-info-label { width: 136px; flex-shrink: 0; font-weight: 600; color: var(--text-primary); }
+.app-info-value { flex: 1; color: var(--text-primary); }
+
+/* ── Issue Summary (pie charts + legend) ─────────────────── */
+.cards-container { display: flex; align-items: stretch; gap: 20px; flex-wrap: wrap; }
+.issue-summary-card { flex: 2; }
+.domain-summary-container { display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-around; }
+.domain-summary-item { flex: 1; min-width: 120px; text-align: center; padding: 0 16px; border-right: 1px solid var(--border-light); }
+.domain-summary-item:last-child { border-right: none; }
+.domain-summary-item h3 { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-top: 8px; }
+.domain-summary-item .count { font-size: 12px; color: var(--text-secondary); }
+.criticality-legend { display: flex; flex-wrap: wrap; gap: 15px; padding-top: 12px; justify-content: center; }
+.criticality-legend .legend-item { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-secondary); }
+.legend-swatch { display: inline-block; width: 1em; height: 1em; border-radius: 2px; }
+
+/* ── Issue list tables ───────────────────────────────────── */
+.issue-section { margin-top: 20px; }
+.issue-section h2 { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+.issue-table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 600px; }
+.issue-table th { text-align: left; text-transform: uppercase; font-weight: 600; font-size: calc(13px * 0.875); padding: 6px 8px; background: var(--bg-card); border-bottom: 1px solid var(--border-color); color: var(--text-secondary); position: sticky; top: 0; z-index: 1; }
+.issue-table td { padding: 12px 8px; border-bottom: 1px solid var(--border-light); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
+.col-issue { width: 55%; }
+.col-criticality { width: 25%; }
+.col-storypoint { width: 20%; }
+
+/* ── Target dropdown ─────────────────────────────────────── */
+.target-select-container { margin: 4px 0 16px 0; display: flex; align-items: center; gap: 8px; }
+.target-select-container label { font-weight: 600; color: var(--text-primary); font-size: 14px; }
+.target-select-container select { font-family: var(--font-family); font-size: 13px; padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer; }
+
+/* ── Filter bar ──────────────────────────────────────────── */
+.filter-bar { display: flex; flex-wrap: wrap; gap: 16px; margin: 16px 0 8px 0; align-items: center; }
+.multi-select { position: relative; display: inline-block; min-width: 140px; }
+.multi-select-btn { font-family: var(--font-family); font-size: 13px; padding: 4px 24px 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer; width: 100%; text-align: left; position: relative; white-space: nowrap; }
+.multi-select-btn::after { content: '\25BE'; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--text-secondary); }
+.multi-select-dropdown { display: none; position: absolute; top: 100%; left: 0; min-width: 100%; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 100; margin-top: 2px; }
+.multi-select.open .multi-select-dropdown { display: block; }
+.multi-select-option { display: flex; align-items: center; gap: 6px; padding: 5px 10px; cursor: pointer; font-size: 13px; white-space: nowrap; }
+.multi-select-option:hover { background: var(--bg-secondary); }
+.multi-select-option input[type=checkbox] { margin: 0; cursor: pointer; }
+.clear-filters { font-size: 12px; color: var(--link-color); cursor: pointer; margin-left: 4px; }
+
+/* ── Criticality labels (colored square + text) ──────────── */
+.crit-label { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; white-space: nowrap; }
+.crit-square { display: inline-block; width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+.crit-square-mandatory { background: var(--color-mandatory); }
+.crit-square-potential { background: var(--color-potential); }
+.crit-square-optional { background: var(--color-optional); }
+
+/* ── Expandable rows ─────────────────────────────────────── */
+.expand-btn { background: none; border: none; cursor: pointer; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 11px; transition: transform 0.15s; padding: 0; vertical-align: middle; flex-shrink: 0; }
+.expand-btn.open { transform: rotate(90deg); }
+.issue-title-cell { display: flex; align-items: center; gap: 4px; }
+.detail-row td { padding: 0; border-bottom: 1px solid var(--border-light); white-space: normal; overflow: visible; text-overflow: clip; }
+.detail-content { display: flex; gap: 0; padding: 8px 8px 8px 32px; min-width: 0; }
+.file-list { flex: 0 0 50%; min-width: 0; overflow: hidden; }
+.file-list table { width: 100%; border-collapse: collapse; }
+.file-list th { font-size: calc(13px * 0.875); text-transform: uppercase; font-weight: 600; color: var(--text-secondary); padding: 6px 8px; border-bottom: 1px solid var(--border-color); text-align: left; height: 32px; }
+.file-list td { font-size: 13px; padding: 6px 8px; border-bottom: 1px solid var(--border-light); color: var(--text-primary); }
+.file-list .file-path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 300px; display: block; }
+.file-list .position { font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary); }
+.explanation-panel { flex: 1; padding-left: 16px; min-width: 0; overflow-wrap: break-word; word-wrap: break-word; }
+.explanation-panel h4 { font-size: calc(13px * 0.875); text-transform: uppercase; font-weight: 600; color: var(--text-secondary); padding: 6px 0; border-bottom: 1px solid var(--border-color); height: 32px; margin: 0; }
+.explanation-panel p { font-size: 13px; padding: 8px 0; color: var(--text-primary); line-height: 1.6; white-space: normal; word-break: break-word; }
+
+/* ── Experimental badge ──────────────────────────────────── */
+.badge-experimental { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; background: #fef9c3; color: #854d0e; vertical-align: middle; margin-left: 8px; cursor: default; }
+
+/* ── Footer ──────────────────────────────────────────────── */
+.footer { text-align: center; margin-top: 24px; color: var(--text-muted); font-size: 13px; }
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 800px) {
+  .main { padding: 16px; }
+  .app-info-container { flex-direction: column; }
+  .domain-summary-container { flex-direction: column; }
+  .domain-summary-item { border-right: none; border-bottom: 1px solid var(--border-light); padding-bottom: 12px; }
+  .detail-content { flex-direction: column; }
+  .file-list { flex: none; width: 100%; }
+  .explanation-panel { padding-left: 0; padding-top: 8px; }
+}
+/* ── Tab navigation ──────────────────────────────────────── */
+.tab-nav { display: flex; gap: 0; border-bottom: 1px solid var(--border-color); margin-bottom: 28px; flex-wrap: wrap; }
+.tab-btn { background: none; border: none; border-bottom: 2px solid transparent; padding: 10px 18px; font-size: 13px; font-family: var(--font-family); color: var(--text-secondary); cursor: pointer; margin-bottom: -1px; white-space: nowrap; position: relative; }
+.tab-btn:hover { color: var(--text-primary); }
+.tab-btn.active { color: var(--link-color); border-bottom-color: var(--link-color); font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ── Tooltip on tab ──────────────────────────────────────── */
+.tab-btn[data-tooltip]::after { content: attr(data-tooltip); position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); background: #24292f; color: #ffffff; font-size: 12px; font-weight: 400; padding: 6px 10px; border-radius: 4px; white-space: normal; width: max-content; max-width: 260px; text-align: center; pointer-events: none; opacity: 0; transition: opacity 0.15s; z-index: 100; }
+.tab-btn[data-tooltip]:hover::after { opacity: 1; }
+
+/* ── Fact content — prose column ─────────────────────────── */
+.fact-content { max-width: 860px; margin: 0 auto; line-height: 1.75; color: var(--text-primary); font-size: 14px; }
+.fact-content h1 { font-size: 22px; font-weight: 700; margin: 0 0 6px 0; color: var(--text-primary); letter-spacing: -0.01em; }
+.fact-content h1 + p { margin-top: 6px; color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
+.fact-content h2 { font-size: 17px; font-weight: 700; margin: 36px 0 12px 0; padding-bottom: 6px; border-bottom: 1px solid var(--border-color); color: var(--text-primary); letter-spacing: -0.01em; }
+.fact-content h3 { font-size: 14px; font-weight: 700; margin: 24px 0 8px 0; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.04em; font-size: 12px; color: var(--text-secondary); }
+.fact-content p { margin: 10px 0; color: var(--text-primary); }
+.fact-content ul, .fact-content ol { margin: 10px 0 10px 22px; }
+.fact-content li { margin: 5px 0; }
+.fact-content a { color: var(--link-color); }
+.fact-content a:hover { text-decoration: underline; }
+
+/* ── Fact tables ─────────────────────────────────────────── */
+.table-wrap { overflow-x: auto; margin: 16px 0; }
+.fact-content table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 13px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); }
+.fact-content thead { background: var(--bg-card); }
+.fact-content th { text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; padding: 8px 14px; border-bottom: 1px solid var(--border-color); color: var(--text-secondary); }
+.fact-content td { padding: 9px 14px; border-bottom: 1px solid var(--border-light); vertical-align: top; color: var(--text-primary); }
+.fact-content tr:last-child td { border-bottom: none; }
+.fact-content tbody tr:hover { background: #f6f8fa; }
+
+/* ── Fact code ───────────────────────────────────────────── */
+.fact-content code { font-family: var(--font-mono); font-size: 12px; background: #f0f1f3; padding: 2px 6px; border-radius: 4px; color: #c7254e; }
+.fact-content pre { background: #f6f8fa; border: 1px solid var(--border-light); border-radius: 6px; padding: 14px 16px; overflow-x: auto; margin: 14px 0; }
+.fact-content pre code { background: none; color: var(--text-primary); padding: 0; border-radius: 0; }
+.fact-content hr { border: none; border-top: 1px solid var(--border-light); margin: 28px 0; }
+.fact-content strong { font-weight: 600; }
+.fact-content em { font-style: italic; }
+.fact-content blockquote { border-left: 3px solid var(--border-color); margin: 12px 0; padding: 4px 16px; color: var(--text-secondary); }
+.fact-unavailable { padding: 32px 0; }
+.fact-unavailable h3 { font-size: 16px; font-weight: 600; color: var(--text-primary); text-transform: none; letter-spacing: 0; margin: 0 0 12px 0; }
+.fact-unavailable p { margin: 0 0 8px 0; color: var(--text-secondary); }
+.fact-unavailable ol, .fact-unavailable ul { margin: 0 0 0 22px; color: var(--text-primary); }
+.fact-unavailable li { margin: 6px 0; }
+
+/* ── Mermaid diagram card ─────────────────────────────────── */
+.mermaid { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 8px; padding: 24px 16px; margin: 20px 0; overflow-x: auto; text-align: center; cursor: pointer; position: relative; }
+.mermaid:hover { border-color: var(--border-color); }
+.mermaid svg { max-width: 100%; height: auto !important; display: inline-block; }
+.mermaid-zoom-hint { position: absolute; top: 8px; right: 10px; font-size: 11px; color: var(--text-muted); opacity: 0; transition: opacity 0.15s; pointer-events: none; }
+.mermaid:hover .mermaid-zoom-hint { opacity: 1; }
+
+/* ── Diagram lightbox ────────────────────────────────────── */
+.diagram-lightbox { display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.7); backdrop-filter: blur(2px); align-items: center; justify-content: center; cursor: zoom-out; padding: 48px 32px; }
+.diagram-lightbox.open { display: flex; }
+.diagram-lightbox-inner { background: #ffffff; border-radius: 10px; padding: 32px; width: 88vw; max-height: 88vh; overflow: hidden; cursor: default; box-shadow: 0 24px 64px rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; }
+.diagram-lightbox-inner svg { width: 100% !important; height: auto !important; max-height: 76vh; display: block; }
+.diagram-lightbox-close { position: fixed; top: 20px; right: 24px; background: #ffffff; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-primary); box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 1001; }
+.diagram-lightbox-close:hover { background: var(--bg-card); }
+.diagram-lightbox-hint { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.55); color: #ffffff; font-size: 12px; padding: 6px 14px; border-radius: 20px; pointer-events: none; white-space: nowrap; z-index: 1001; }
+</style>
+<script>
+window.__mermaidPending = [];
+window.__mermaidReady = false;
+window.__renderMermaidIn = function(container) {
+  // Until the real implementation overrides this (after the ES module import
+  // resolves), just queue the container so we can render it later.
+  if (container) { window.__mermaidPending.push(container); }
+};
+</script>
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+mermaid.initialize({ startOnLoad: false, theme: 'default', flowchart: { useMaxWidth: true }, sequence: { useMaxWidth: true } });
+
+// Real implementation: actually run mermaid on the unprocessed diagrams in the
+// given container (only ones not already rendered). Adds a "Click to expand"
+// hint span after each successful render so the lightbox affordance is
+// discoverable.
+window.__renderMermaidIn = function(container) {
+  var nodes = container ? container.querySelectorAll('.mermaid:not([data-processed])') : [];
+  if (nodes.length > 0) {
+    mermaid.run({ nodes: Array.from(nodes) }).then(function() {
+      nodes.forEach(function(node) {
+        if (!node.querySelector('.mermaid-zoom-hint')) {
+          var hint = document.createElement('span');
+          hint.className = 'mermaid-zoom-hint';
+          hint.textContent = 'Click to expand';
+          node.appendChild(hint);
+        }
+      });
+    });
+  }
+};
+
+// Drain any containers that were queued by the shim while mermaid was loading.
+// Use a Set to dedupe in case a container was both queued and is also the
+// initial-active panel below.
+var drained = new Set();
+(window.__mermaidPending || []).forEach(function(c) {
+  if (!drained.has(c)) { drained.add(c); window.__renderMermaidIn(c); }
+});
+window.__mermaidPending = [];
+window.__mermaidReady = true;
+
+// Render diagrams visible on initial load (the active tab panel(s) may not have
+// been queued by anyone — DOMContentLoaded handlers run before this if the
+// module is cached, after this if it's not, so handle both cases here).
+function renderActivePanels() {
+  document.querySelectorAll('.tab-panel.active').forEach(function(p) {
+    if (!drained.has(p)) { drained.add(p); window.__renderMermaidIn(p); }
+  });
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', renderActivePanels);
+} else {
+  renderActivePanels();
+}
+</script>
+</head><body>
+<div id="diagram-lightbox" class="diagram-lightbox" role="dialog" aria-modal="true">
+  <button class="diagram-lightbox-close" id="diagram-lightbox-close" aria-label="Close">&#x2715;</button>
+  <div class="diagram-lightbox-hint">Scroll to zoom &nbsp;·&nbsp; Drag to pan &nbsp;·&nbsp; Double-click to reset</div>
+  <div class="diagram-lightbox-inner" id="diagram-lightbox-inner"></div>
+</div>
+<div class="main">
+<a class="back-link" href="../../index.html">&#8592; Back to aggregate dashboard</a>
+<h1>ZavaQueueBridge</h1>
+<div class="report-card">
+  <h2>Application Information</h2>
+  <div class="report-card-body">
+    <div class="app-info-container">
+      <div class="app-info-column">
+        <div class="app-info-row"><span class="app-info-label">Application Name</span><span class="app-info-value">ZavaQueueBridge</span></div>
+        <div class="app-info-row"><span class="app-info-label">Effort</span><span class="app-info-value" id="effort-display">S (total story points: 6)</span></div>
+      </div>
+      <div class="app-info-column">
+        <div class="app-info-row"><span class="app-info-label">Build Tools</span><span class="app-info-value">MSBuild</span></div>
+        <div class="app-info-row"><span class="app-info-label">Frameworks</span><span class="app-info-value">.NETFramework,Version=v4.8</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+<nav class="tab-nav">
+  <button class="tab-btn active" data-tab="tab-issues" data-tooltip="Issues detected in the source code">Issues</button>
+  <button class="tab-btn" data-tab="tab-arch" data-tooltip="How the app&#39;s layers connect — from UI to data.">Architecture</button>
+  <button class="tab-btn" data-tab="tab-api" data-tooltip="Endpoints exposed by this app and how services communicate.">API Contracts</button>
+  <button class="tab-btn" data-tab="tab-config" data-tooltip="Environment settings, runtime profiles, and deployment manifests.">Configuration</button>
+  <button class="tab-btn" data-tab="tab-workflows" data-tooltip="Domain entities and the core flows users move through.">Business Workflows</button>
+  <button class="tab-btn" data-tab="tab-deps" data-tooltip="Libraries and frameworks this app depends on, grouped by category.">Dependencies</button>
+  <button class="tab-btn" data-tab="tab-data" data-tooltip="Database schema, entity relationships, and persistence behavior.">Data Model</button>
+</nav>
+<div id="tab-issues" class="tab-panel active">
+<div class="target-select-container">
+  <label for="target-select">Target Compute Service:</label>
+  <select id="target-select" onchange="onTargetChange(this.value)">
+    <option value="AppService.Windows">Azure App Service</option>
+    <option value="AppService.Linux">Azure Kubernetes Service</option>
+    <option value="AKS.Linux">Azure Container Apps</option>
+    <option value="AKS.Windows">Azure App Service Container</option>
+    <option value="ACA">Azure App Service Managed Instance</option>
+  </select>
+</div>
+<div class="report-card">
+  <h2>Issue Summary</h2>
+  <div class="report-card-body">
+    <div class="domain-summary-container" id="donut-container">
+      <div class="domain-summary-item">
+<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;transform:rotate(-90deg);">
+  <circle cx="50" cy="50" r="35" fill="none" stroke="var(--color-optional)" stroke-width="15" stroke-dasharray="219.91 219.91" stroke-dashoffset="-0.00"/>
+</svg>
+
+        <h3>Cloud Readiness</h3>
+        <div class="count">2 issues</div>
+      </div>
+      <div class="domain-summary-item">
+<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;transform:rotate(-90deg);">
+  <circle cx="50" cy="50" r="35" fill="none" stroke="var(--color-mandatory)" stroke-width="15" stroke-dasharray="219.91 219.91" stroke-dashoffset="-0.00"/>
+</svg>
+
+        <h3>DotNET Upgrade</h3>
+        <div class="count">2 issues</div>
+      </div>
+    </div>
+    <div class="criticality-legend">
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--color-mandatory)"></span>Mandatory</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--color-potential)"></span>Potential</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--color-optional)"></span>Optional</div>
+    </div>
+  </div>
+</div>
+<div class="filter-bar" id="filter-bar">
+  <div class="multi-select" id="domain-ms">
+    <button class="multi-select-btn" onclick="toggleMultiSelect('domain-ms')">Domain</button>
+    <div class="multi-select-dropdown">
+      <label class="multi-select-option"><input type="checkbox" value="cloud-readiness" onchange="onMultiSelectChange('domain-ms','Domain')"/> Cloud Readiness</label>
+      <label class="multi-select-option"><input type="checkbox" value="dotnet-upgrade" onchange="onMultiSelectChange('domain-ms','Domain')"/> DotNET Upgrade</label>
+    </div>
+  </div>
+  <a class="clear-filters" href="javascript:void(0)" onclick="clearAllFilters()">Clear all</a>
+</div>
+<div class="issue-section" data-domain="cloud-readiness">
+  <h2>Cloud Readiness</h2>
+  <table class="issue-table">
+    <colgroup><col class="col-issue"/><col class="col-criticality"/><col class="col-storypoint"/></colgroup>
+    <thead><tr><th>Issue Category</th><th>Criticality</th><th>Story Point</th></tr></thead>
+    <tbody>
+    <tr class="issue-row" data-criticality="optional" data-targets='{"AppService.Windows":{"effort":3,"severity":"optional"},"AppService.Linux":{"effort":3,"severity":"optional"},"AKS.Linux":{"effort":3,"severity":"optional"},"AKS.Windows":{"effort":3,"severity":"optional"},"ACA":{"effort":3,"severity":"optional"},"AppServiceContainer.Linux":{"effort":3,"severity":"optional"},"AppServiceContainer.Windows":{"effort":3,"severity":"optional"},"AppServiceManagedInstance.Windows":{"effort":3,"severity":"mandatory"}}' data-default-effort="3" data-default-severity="optional" data-rule="Security.0003" onclick="toggleRow('row-cloudreadiness-0', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-cloudreadiness-0">&#x276F;</button> Hardcoded sensitive data detected</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-optional"></span>Optional</span></td>
+      <td class="sp-cell">3</td>
+    </tr>
+    <tr class="detail-row" id="row-cloudreadiness-0" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="app.config">app.config</span></td><td><span class="position"></span></td></tr>
+            <tr><td><span class="file-path" title="Program.cs">Program.cs</span></td><td><span class="position">Line 81, Col 34</span></td></tr>
+            <tr><td><span class="file-path" title="Program.cs">Program.cs</span></td><td><span class="position">Line 81, Col 55</span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>Hardcoded sensitive data detected.</p><p>If you are targeting Managed Instance on Azure App Service, externalize secrets to Key Vault/App Configuration; use managed identity instead of passwords or embedded connection strings.</p><p>While if targeting other Azure compute services:</p><p>Avoid placing sensitive data such as passwords, ids, tokens etc., directly in config files and code since it compromises the security of your application.</p><p>Use Azure App Configuration or Azure KeyVault to store secrets.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="optional" data-targets='{"AppService.Windows":{"effort":3,"severity":"optional"},"AppService.Linux":{"effort":3,"severity":"optional"},"AKS.Linux":{"effort":3,"severity":"optional"},"AKS.Windows":{"effort":3,"severity":"optional"},"ACA":{"effort":3,"severity":"optional"},"AppServiceContainer.Linux":{"effort":3,"severity":"optional"},"AppServiceContainer.Windows":{"effort":3,"severity":"optional"},"AppServiceManagedInstance.Windows":{"effort":3,"severity":"optional"}}' data-default-effort="3" data-default-severity="optional" data-rule="Security.0002" onclick="toggleRow('row-cloudreadiness-1', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-cloudreadiness-1">&#x276F;</button> Connection strings without configuration builders detected</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-optional"></span>Optional</span></td>
+      <td class="sp-cell">3</td>
+    </tr>
+    <tr class="detail-row" id="row-cloudreadiness-1" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="app.config">app.config</span></td><td><span class="position"></span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>Connection strings without configuration builders detected.  </p><p> Keeping connection strings directly in the app is not the best practice and might introduce security risks, increased maintenance, scalability challenges or compliance standards (such as PCI DSS, GDPR, etc.). </p><p> Instead, it is recommended to use configuration builders to get secrets from secure sources in Azure environment.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+</div>
+<div class="issue-section" data-domain="dotnet-upgrade">
+  <h2>DotNET Upgrade</h2>
+  <table class="issue-table">
+    <colgroup><col class="col-issue"/><col class="col-criticality"/><col class="col-storypoint"/></colgroup>
+    <thead><tr><th>Issue Category</th><th>Criticality</th><th>Story Point</th></tr></thead>
+    <tbody>
+    <tr class="issue-row" data-criticality="mandatory" data-targets='{}' data-default-effort="1" data-default-severity="mandatory" data-rule="Project.0001" onclick="toggleRow('row-dotnetupgrade-0', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-dotnetupgrade-0">&#x276F;</button> Project file needs to be converted to SDK-style</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-mandatory"></span>Mandatory</span></td>
+      <td class="sp-cell">1</td>
+    </tr>
+    <tr class="detail-row" id="row-dotnetupgrade-0" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="ZavaQueueBridge.csproj">ZavaQueueBridge.csproj</span></td><td><span class="position"></span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>Project file needs to be converted to SDK-style. Modern .NET framework projects require a change in the project file format and use SDK corresponding to project flavor and functionality.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="mandatory" data-targets='{}' data-default-effort="1" data-default-severity="mandatory" data-rule="Project.0002" onclick="toggleRow('row-dotnetupgrade-1', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-dotnetupgrade-1">&#x276F;</button> Project&#39;s target framework(s) needs to be changed</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-mandatory"></span>Mandatory</span></td>
+      <td class="sp-cell">1</td>
+    </tr>
+    <tr class="detail-row" id="row-dotnetupgrade-1" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="ZavaQueueBridge.csproj">ZavaQueueBridge.csproj</span></td><td><span class="position"></span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>Project&#39;s target framework(s) needs to be changed to the new target framework that you selected for this upgrade.</p><p>During upgrade target framework will be adjusted to corresponding platform when applicable. In some cases project would result in multiple target frameworks after the upgrade if it was using features that now have their own platforms in modern .NET frameworks (windows, iOS, Android etc).</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+  <p style="margin-top:12px;"><a href="scenarios/dotnet-version-upgrade/assessment.html">View DotNET Upgrade Assessment →</a></p>
+</div>
+</div><!-- #tab-issues -->
+<div id="tab-arch" class="tab-panel">
+  <div class="fact-content"><h1 id="architecture-diagram">Architecture Diagram</h1>
+<p>ZavaQueueBridge is a .NET Framework 4.8 console service that bridges a local file-drop directory to a RabbitMQ message broker, parsing incoming data files and publishing their contents as JSON messages.</p>
+<h2 id="application-architecture">Application Architecture</h2>
+<div class="mermaid">
+flowchart TD
+    subgraph FileSystem["File System"]
+        DropDir[("Drop Directory\n/shared/filedrop")]
+        ProcessedDir[("Processed Directory\n/filedrop/processed")]
+        ErrorDir[("Error Directory\n/filedrop/error")]
+    end
+
+    subgraph App["Application Layer - .NET Framework 4.8"]
+        Watcher["FileSystemWatcher\nFile Detection"]
+        PollLoop["Poll Loop\nFile Scan"]
+        FileParser["File Parser\nCSV / Fixed-Width"]
+        Publisher["Message Publisher\nJSON Serializer"]
+        DLQ["Dead Letter Publisher\nError Handler"]
+    end
+
+    subgraph Config["Configuration"]
+        AppConfig["app.config\nApp Settings"]
+        EnvVars["Environment Variables\nOverrides"]
+    end
+
+    subgraph MQ["Message Broker - RabbitMQ 5.2"]
+        Exchange[["filedrop.events\nTopic Exchange"]]
+        DLX[["zava.dlx\nDead Letter Exchange"]]
+    end
+
+    EnvVars -->|"overrides"| AppConfig
+    AppConfig -->|"configures"| App
+
+    DropDir -->|"file events"| Watcher
+    DropDir -->|"poll scan"| PollLoop
+    Watcher -->|"enqueues path"| PollLoop
+    PollLoop -->|"reads file"| FileParser
+    FileParser -->|"parsed records"| Publisher
+    Publisher -->|"JSON messages\nrouting key: filedrop.ext"| Exchange
+    Publisher -->|"move on success"| ProcessedDir
+    DLQ -->|"error payload"| DLX
+    DLQ -->|"move on error"| ErrorDir
+    FileParser -->|"parse error"| DLQ
+</div>
+<h3 id="technology-stack-summary">Technology Stack Summary</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Layer</th><th>Technology</th><th>Version</th><th>Purpose</th></tr></thead><tbody>
+<tr><td>Runtime</td><td>.NET Framework</td><td>4.8</td><td>Console application host</td></tr>
+<tr><td>Language</td><td>C#</td><td>7.3</td><td>Application logic</td></tr>
+<tr><td>File Monitoring</td><td>System.IO.FileSystemWatcher</td><td>Built-in</td><td>Real-time file-change detection</td></tr>
+<tr><td>Serialization</td><td>System.Web.Script.Serialization.JavaScriptSerializer</td><td>Built-in</td><td>JSON payload construction</td></tr>
+<tr><td>Messaging Client</td><td>RabbitMQ.Client</td><td>5.2.0</td><td>AMQP connection and message publishing</td></tr>
+<tr><td>Configuration</td><td>System.Configuration.ConfigurationManager</td><td>Built-in</td><td>App settings and environment overrides</td></tr>
+</tbody></table></div>
+<h3 id="data-storage-external-services">Data Storage &amp; External Services</h3>
+<p>The application does not use a persistent database. File system directories serve as transient storage: the drop directory receives input files (CSV, TXT, DAT), a processed sub-directory stores successfully published files, and an error sub-directory stores files that failed processing. All parsed record payloads are published to a RabbitMQ broker — a Topic Exchange (<code>filedrop.events</code>) for normal records and a Fanout Dead Letter Exchange (<code>zava.dlx</code>) for files that could not be processed. Connection details (host, port, virtual host, credentials, exchange names) are read from <code>app.config</code> and can be overridden via environment variables at runtime.</p>
+<h3 id="key-architectural-decisions">Key Architectural Decisions</h3>
+<ul>
+<li><strong>Dual detection strategy</strong>: Combines <code>FileSystemWatcher</code> events with a periodic poll loop so files that arrive between event callbacks are never missed; a <code>HashSet&lt;string&gt;</code> with a lock de-duplicates paths before processing.</li>
+<li><strong>Per-batch RabbitMQ connection</strong>: A single <code>IConnection</code> and <code>IModel</code> are opened per poll cycle rather than kept open continuously, simplifying error recovery at the cost of connection overhead.</li>
+<li><strong>Extension-based routing</strong>: The AMQP routing key is derived from the file extension (<code>filedrop.csv</code>, <code>filedrop.txt</code>, <code>filedrop.dat</code>), allowing downstream consumers to subscribe selectively by file type.</li>
+</ul>
+<h2 id="component-relationships">Component Relationships</h2>
+<div class="mermaid">
+flowchart LR
+    subgraph Entry["Entry Point"]
+        Main["Program.Main\nApplication Bootstrap"]
+    end
+
+    subgraph Infrastructure["Infrastructure"]
+        LoadConfig["LoadConfig\nConfiguration Reader"]
+        EnsureDirs["EnsureDirectories\nDirectory Setup"]
+        ConfigureWatcher["ConfigureWatcher\nFSW Setup"]
+        CreateFactory["CreateFactory\nConnectionFactory Builder"]
+    end
+
+    subgraph Detection["File Detection"]
+        FSW["FileSystemWatcher\nEvent Listener"]
+        QueuePending["QueuePendingFile\nPath Enqueue"]
+        IsCandidateFile["IsCandidateFile\nExtension Filter"]
+        PollFiles["PollFiles\nPoll Cycle Coordinator"]
+    end
+
+    subgraph Processing["File Processing"]
+        ProcessSingleFile["ProcessSingleFile\nOrchestrator"]
+        WaitFileReady["WaitForFileReady\nLock Wait"]
+        ParseRecords["ParseRecords\nFormat Dispatcher"]
+        ParseCsv["ParseCsv\nCSV Parser"]
+        ParseFixedWidth["ParseFixedWidth\nFixed-Width Parser"]
+        SplitCsvLine["SplitCsvLine\nCSV Tokenizer"]
+        BuildPayload["BuildPayload\nJSON Serializer"]
+        BuildRoutingKey["BuildRoutingKey\nRouting Key Builder"]
+    end
+
+    subgraph ErrorHandling["Error Handling"]
+        PublishDeadLetter["PublishDeadLetter\nDLX Publisher"]
+        MoveFile["MoveFile\nFile Mover"]
+    end
+
+    Main -->|"calls"| LoadConfig
+    Main -->|"calls"| EnsureDirs
+    Main -->|"calls"| ConfigureWatcher
+    ConfigureWatcher -->|"registers events on"| FSW
+    FSW -->|"Created/Changed/Renamed"| QueuePending
+    QueuePending -->|"validates via"| IsCandidateFile
+    Main -->|"loop calls"| PollFiles
+    PollFiles -->|"adds to pending"| QueuePending
+    PollFiles -->|"drains pending set"| ProcessSingleFile
+    PollFiles -->|"gets connection from"| CreateFactory
+    ProcessSingleFile -->|"waits via"| WaitFileReady
+    ProcessSingleFile -->|"dispatches to"| ParseRecords
+    ParseRecords -->|"csv"| ParseCsv
+    ParseRecords -->|"txt/dat"| ParseFixedWidth
+    ParseCsv -->|"uses"| SplitCsvLine
+    ProcessSingleFile -->|"builds payload via"| BuildPayload
+    ProcessSingleFile -->|"gets key via"| BuildRoutingKey
+    ProcessSingleFile -->|"moves on success via"| MoveFile
+    PollFiles -->|"on error calls"| PublishDeadLetter
+    PollFiles -->|"on error calls"| MoveFile
+</div>
+<h3 id="component-inventory">Component Inventory</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Component</th><th>Layer</th><th>Type</th><th>Responsibility</th></tr></thead><tbody>
+<tr><td>Program.Main</td><td>Entry Point</td><td>Application Bootstrap</td><td>Initialises configuration, directories, watcher, and drives the main poll loop</td></tr>
+<tr><td>LoadConfig</td><td>Infrastructure</td><td>Configuration Reader</td><td>Resolves settings from environment variables then app.config with defaults</td></tr>
+<tr><td>EnsureDirectories</td><td>Infrastructure</td><td>Directory Setup</td><td>Creates drop, processed, and error directories if they do not exist</td></tr>
+<tr><td>ConfigureWatcher</td><td>Infrastructure</td><td>FSW Setup</td><td>Creates and starts the FileSystemWatcher on the drop directory</td></tr>
+<tr><td>CreateFactory</td><td>Infrastructure</td><td>Connection Factory</td><td>Builds a RabbitMQ ConnectionFactory from loaded configuration</td></tr>
+<tr><td>FileSystemWatcher</td><td>File Detection</td><td>Event Listener</td><td>Raises Created/Changed/Renamed events when files arrive</td></tr>
+<tr><td>QueuePendingFile</td><td>File Detection</td><td>Path Enqueue</td><td>Thread-safely adds a file path to the pending set after filtering</td></tr>
+<tr><td>IsCandidateFile</td><td>File Detection</td><td>Extension Filter</td><td>Accepts .csv, .txt, .dat files and rejects sub-directory names</td></tr>
+<tr><td>PollFiles</td><td>File Detection</td><td>Poll Cycle Coordinator</td><td>Scans drop directory, drains pending set, opens RabbitMQ connection, and dispatches files</td></tr>
+<tr><td>ProcessSingleFile</td><td>File Processing</td><td>Orchestrator</td><td>Waits for file readiness, parses, publishes each record, then moves the file</td></tr>
+<tr><td>WaitForFileReady</td><td>File Processing</td><td>Lock Wait</td><td>Retries opening the file up to 5 times to confirm it is fully written</td></tr>
+<tr><td>ParseRecords</td><td>File Processing</td><td>Format Dispatcher</td><td>Routes to CSV or fixed-width parser based on file extension</td></tr>
+<tr><td>ParseCsv</td><td>File Processing</td><td>CSV Parser</td><td>Splits header and data rows into dictionaries</td></tr>
+<tr><td>SplitCsvLine</td><td>File Processing</td><td>CSV Tokenizer</td><td>Handles quoted fields when splitting a CSV line</td></tr>
+<tr><td>ParseFixedWidth</td><td>File Processing</td><td>Fixed-Width Parser</td><td>Extracts RecordType, CustomerId, AccountId, Amount, Details from 80-character lines</td></tr>
+<tr><td>BuildPayload</td><td>File Processing</td><td>JSON Serializer</td><td>Wraps a record dictionary with sourceFile and processedAt metadata</td></tr>
+<tr><td>BuildRoutingKey</td><td>File Processing</td><td>Routing Key Builder</td><td>Derives AMQP routing key from file extension (e.g. filedrop.csv)</td></tr>
+<tr><td>PublishDeadLetter</td><td>Error Handling</td><td>DLX Publisher</td><td>Publishes error payload to the dead letter fanout exchange</td></tr>
+<tr><td>MoveFile</td><td>Error Handling</td><td>File Mover</td><td>Moves a file to processed or error directory with timestamp collision avoidance</td></tr>
+</tbody></table></div>
+</div>
+</div>
+<div id="tab-api" class="tab-panel">
+  <div class="fact-content"><h1 id="api-service-communication-contracts">API &amp; Service Communication Contracts</h1>
+<p>ZavaQueueBridge exposes no HTTP API surface; it is a headless worker service that bridges a file-drop directory to RabbitMQ using asynchronous AMQP message publishing as its sole outbound communication channel.</p>
+<h2 id="service-catalog">Service Catalog</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Port</th><th>Category</th><th>Purpose</th></tr></thead><tbody>
+<tr><td>ZavaQueueBridge</td><td>N/A (no HTTP listener)</td><td>Business</td><td>Monitors a file-drop directory and publishes parsed file records as JSON messages to a RabbitMQ Topic Exchange</td></tr>
+<tr><td>RabbitMQ (external)</td><td>5672 (AMQP)</td><td>Infrastructure</td><td>Message broker receiving published records via <code>filedrop.events</code> Topic Exchange and dead-letter events via <code>zava.dlx</code> Fanout Exchange</td></tr>
+</tbody></table></div>
+<h2 id="api-endpoints-inventory">API Endpoints Inventory</h2>
+<p>No HTTP API endpoints are defined. ZavaQueueBridge is a console-mode worker with no web framework, no controllers, and no HTTP listener. All inbound triggers come from the file system (via <code>FileSystemWatcher</code> and a poll loop), and all outbound communication is over AMQP to RabbitMQ.</p>
+<p>&gt; Note: If an HTTP health or management endpoint is required by the hosting environment, it must be added during migration.</p>
+<h2 id="management-observability-endpoints">Management &amp; Observability Endpoints</h2>
+<p>No management or observability endpoints are exposed. The application has no HTTP server and therefore provides no <code>/health</code>, <code>/metrics</code>, or Swagger endpoints. Operational visibility is limited to <code>Console.WriteLine</code> log lines written to standard output.</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Endpoint</th><th>Custom Metrics</th></tr></thead><tbody>
+<tr><td>ZavaQueueBridge</td><td>None</td><td>None</td></tr>
+</tbody></table></div>
+<h2 id="dtos-contracts">DTOs &amp; Contracts</h2>
+<p>The application produces two JSON message shapes, constructed inline using <code>System.Web.Script.Serialization.JavaScriptSerializer</code> (no formal DTO classes are declared):</p>
+<p><strong>File Record Message</strong> — published to the <code>filedrop.events</code> Topic Exchange:</p>
+<pre><code>
+{
+  &quot;sourceFile&quot;: &quot;&lt;filename&gt;&quot;,
+  &quot;processedAt&quot;: &quot;&lt;yyyy-MM-ddTHH:mm:ss&gt;&quot;,
+  &quot;record&quot;: { /* key-value pairs from CSV headers or fixed-width field names */ }
+}
+</code></pre>
+<p>The <code>record</code> payload schema varies by file extension:</p>
+<ul>
+<li><strong>CSV files</strong>: keys are taken from the first header row; values are the corresponding column values.</li>
+<li><strong>Fixed-width files (.txt / .dat)</strong>: keys are <code>RecordType</code>, <code>CustomerId</code>, <code>AccountId</code>, <code>Amount</code>, <code>Details</code> (fixed positions in an 80-character line layout).</li>
+</ul>
+<p><strong>Dead Letter Message</strong> — published to the <code>zava.dlx</code> Fanout Exchange on processing failure:</p>
+<pre><code>
+{
+  &quot;sourceFile&quot;: &quot;&lt;filename&gt;&quot;,
+  &quot;error&quot;: &quot;&lt;exception message&gt;&quot;,
+  &quot;failedAt&quot;: &quot;&lt;yyyy-MM-ddTHH:mm:ss&gt;&quot;
+}
+</code></pre>
+<p>No OpenAPI/Swagger specifications, protobuf schemas, GraphQL schemas, or formal DTO class definitions exist in the codebase. All message structures are implicitly defined by dictionary construction in <code>BuildPayload</code> and <code>PublishDeadLetter</code>.</p>
+<h2 id="communication-patterns">Communication Patterns</h2>
+<p><strong>Asynchronous (outbound only):</strong> ZavaQueueBridge publishes messages to RabbitMQ using the AMQP 0-9-1 protocol via <code>RabbitMQ.Client 5.2.0</code>. Two exchanges are used:</p>
+<ul>
+<li><code>filedrop.events</code> — Topic Exchange; routing key is derived from file extension (e.g. <code>filedrop.csv</code>, <code>filedrop.txt</code>, <code>filedrop.dat</code>). Downstream consumers subscribe to specific routing key patterns to receive only the file types they care about.</li>
+<li><code>zava.dlx</code> — Fanout Exchange; receives error payloads for any file that could not be processed.</li>
+</ul>
+<p>All messages are marked <code>Persistent = true</code> and <code>ContentType = application/json</code>.</p>
+<p><strong>No synchronous inter-service communication:</strong> The application makes no HTTP calls, gRPC calls, or other synchronous remote requests.</p>
+<p><strong>Resilience policies:</strong> No circuit breaker, retry, or timeout policy is implemented for the RabbitMQ connection (<code>AutomaticRecoveryEnabled = false</code>). A transient connection failure during a poll cycle will cause that cycle to fail entirely; the files remain in the pending set and will be retried on the next poll interval. A file-level retry is implemented only for file readiness (up to 5 attempts with 250 ms sleep to wait for the file to be fully written).</p>
+<p><strong>Service discovery:</strong> None. The RabbitMQ host, port, and virtual host are read directly from configuration (environment variables or <code>app.config</code>). No dynamic service registry is used.</p>
+<p><strong>Security posture:</strong> No TLS/SSL is configured for the AMQP connection (plain TCP on port 5672). Credentials are passed via <code>UserName</code>/<code>Password</code> on the <code>ConnectionFactory</code>. No token-based authentication, certificate authentication, or encrypted transport is implemented. If the application is deployed in a network where the RabbitMQ broker is not isolated, credentials and message payloads are transmitted in clear text.</p>
+<h2 id="service-technology-matrix">Service Technology Matrix</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Web Framework</th><th>Data Access</th><th>Discovery</th><th>Gateway</th><th>Health Checks</th><th>Cache</th><th>Metrics</th></tr></thead><tbody>
+<tr><td>ZavaQueueBridge</td><td>None</td><td>File System (System.IO)</td><td>None (static config)</td><td>None</td><td>None</td><td>None</td><td>None (stdout only)</td></tr>
+</tbody></table></div>
+<h2 id="service-communication-sequence">Service Communication Sequence</h2>
+<div class="mermaid">
+sequenceDiagram
+    participant FS as "File System\n(Drop Directory)"
+    participant Bridge as "ZavaQueueBridge"
+    participant RMQ as "RabbitMQ"
+
+    Note over Bridge: Service starts, configures FileSystemWatcher and poll loop
+
+    FS-->>Bridge: FileSystemWatcher event (Created/Changed/Renamed)
+    Bridge->>Bridge: QueuePendingFile (filter by extension, add to HashSet)
+
+    loop Every poll interval (default 5000 ms)
+        Bridge->>FS: Directory.GetFiles (poll scan)
+        FS-->>Bridge: File paths list
+        Bridge->>Bridge: QueuePendingFile for any undetected files
+
+        alt Files pending
+            Bridge->>RMQ: ConnectionFactory.CreateConnection (AMQP TCP)
+            RMQ-->>Bridge: Connection established
+
+            loop Each pending file
+                Bridge->>FS: WaitForFileReady (up to 5 x 250 ms retries)
+                FS-->>Bridge: File handle opened
+
+                Bridge->>FS: File.ReadAllLines
+                FS-->>Bridge: Raw lines
+
+                Bridge->>Bridge: ParseRecords (CSV or fixed-width)
+                Bridge->>Bridge: BuildPayload (JSON dict per record)
+                Bridge->>RMQ: BasicPublish to filedrop.events\n(routing key: filedrop.ext, persistent)
+                RMQ-->>Bridge: Publish acknowledged
+
+                Bridge->>FS: MoveFile to /processed
+                FS-->>Bridge: File moved
+
+            end
+
+            Bridge->>RMQ: Connection disposed
+        else No files pending
+            Bridge->>Bridge: Log "No files available"
+        end
+    end
+
+    Note over Bridge,RMQ: On file processing error
+    Bridge->>RMQ: BasicPublish to zava.dlx (error payload, persistent)
+    RMQ-->>Bridge: Publish acknowledged
+    Bridge->>FS: MoveFile to /error
+</div>
+</div>
+</div>
+<div id="tab-config" class="tab-panel">
+  <div class="fact-content"><h1 id="configuration-externalized-settings-inventory">Configuration &amp; Externalized Settings Inventory</h1>
+<p>ZavaQueueBridge uses two configuration sources — an <code>app.config</code> file and runtime environment variable overrides — with no profiles, secret stores, or feature flags.</p>
+<h2 id="configuration-sources">Configuration Sources</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Source</th><th>Type</th><th>Path/Location</th><th>Notes</th></tr></thead><tbody>
+<tr><td><code>app.config</code></td><td>XML (System.Configuration)</td><td><code>/app.config</code> (repository root)</td><td>Standard .NET Framework application configuration; all settings are under <code>&lt;appSettings&gt;</code></td></tr>
+<tr><td>Environment Variables</td><td>OS environment</td><td>Runtime (container / host)</td><td>Checked first before <code>app.config</code>; any <code>app.config</code> value can be overridden by the corresponding env var</td></tr>
+<tr><td>Dockerfile</td><td>Container build script</td><td><code>/Dockerfile</code></td><td>Defines the runtime container using <code>mono:6.12</code>; no <code>ENV</code> directives — all runtime config must be injected at <code>docker run</code> time</td></tr>
+</tbody></table></div>
+<p>No Spring Cloud Config, Azure App Configuration, Consul KV, HashiCorp Vault, or external config repository is used.</p>
+<h2 id="build-profiles">Build Profiles</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Profile</th><th>Activation</th><th>Purpose</th><th>Key Dependencies/Plugins</th></tr></thead><tbody>
+<tr><td>Debug</td><td>Default MSBuild configuration</td><td>Includes debug symbols (<code>DebugType=full</code>), disables optimisations</td><td>Standard .NET Framework debug output</td></tr>
+<tr><td>Release</td><td>Manual (<code>/p:Configuration=Release</code>)</td><td>Optimised build without debug symbols (<code>DebugType=pdbonly</code>)</td><td>NuGet restore via <code>nuget restore</code>, MSBuild via <code>msbuild</code>; used in Dockerfile</td></tr>
+</tbody></table></div>
+<p>No Maven build profiles, Gradle flavors, or profile-specific dependency additions exist.</p>
+<h2 id="runtime-profiles">Runtime Profiles</h2>
+<p>No runtime profiles are defined. The application has a single configuration set that is active in all environments; per-environment overrides are applied exclusively via environment variables injected at container start.</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Profile</th><th>Activation Method</th><th>Config Files</th><th>Key Overrides</th></tr></thead><tbody>
+<tr><td>(single/all)</td><td>N/A — no profile system</td><td><code>app.config</code></td><td>Any setting overrideable via corresponding <code>RABBITMQ_<em></code> / <code>FILEDROP_</em></code> / <code>WORKER_*</code> env vars</td></tr>
+</tbody></table></div>
+<h2 id="properties-inventory">Properties Inventory</h2>
+<h3 id="zavaqueuebridge">ZavaQueueBridge</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Property Key (app.config)</th><th>Environment Variable Override</th><th>Default Value</th><th>Type</th><th>Notes</th></tr></thead><tbody>
+<tr><td><code>RabbitMQ.Host</code></td><td><code>RABBITMQ_HOST</code></td><td><code>rabbitmq</code></td><td>string</td><td>Hostname or IP of the RabbitMQ broker</td></tr>
+<tr><td><code>RabbitMQ.Port</code></td><td><code>RABBITMQ_PORT</code></td><td><code>5672</code></td><td>int</td><td>AMQP TCP port</td></tr>
+<tr><td><code>RabbitMQ.VHost</code></td><td><code>RABBITMQ_VHOST</code></td><td><code>/zavabank</code></td><td>string</td><td>RabbitMQ virtual host</td></tr>
+<tr><td><code>RabbitMQ.User</code></td><td><code>RABBITMQ_USER</code></td><td><code>zava_app</code></td><td>string</td><td>AMQP username</td></tr>
+<tr><td><code>RabbitMQ.Password</code></td><td><code>RABBITMQ_PASSWORD</code></td><td><code>zava_pass</code></td><td>string</td><td>AMQP password (sensitive)</td></tr>
+<tr><td><code>RabbitMQ.FiledropExchange</code></td><td><code>FILEDROP_EXCHANGE</code></td><td><code>filedrop.events</code></td><td>string</td><td>Target Topic Exchange name</td></tr>
+<tr><td><code>RabbitMQ.DeadLetterExchange</code></td><td><code>RABBITMQ_DLX</code></td><td><code>zava.dlx</code></td><td>string</td><td>Dead Letter Fanout Exchange name</td></tr>
+<tr><td><code>Worker.PollIntervalMs</code></td><td><code>WORKER_POLL_INTERVAL_MS</code></td><td><code>5000</code></td><td>int</td><td>Milliseconds between poll cycles</td></tr>
+<tr><td><code>FileDrop.Path</code></td><td><code>FILEDROP_PATH</code></td><td><code>/shared/filedrop</code></td><td>string</td><td>Root directory monitored for incoming files</td></tr>
+<tr><td><code>FileDrop.ProcessedPath</code></td><td><code>FILEDROP_PROCESSED_PATH</code></td><td><code>{FileDrop.Path}/processed</code></td><td>string</td><td>Directory where successfully processed files are archived</td></tr>
+<tr><td><code>FileDrop.ErrorPath</code></td><td><code>FILEDROP_ERROR_PATH</code></td><td><code>{FileDrop.Path}/error</code></td><td>string</td><td>Directory where failed files are archived</td></tr>
+</tbody></table></div>
+<p>Resolution order: environment variable → <code>app.config</code> appSetting → hardcoded default in code.</p>
+<h2 id="startup-parameters-resource-requirements">Startup Parameters &amp; Resource Requirements</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Runtime Options</th><th>Memory</th><th>CPU</th><th>Instance Count</th></tr></thead><tbody>
+<tr><td>ZavaQueueBridge</td><td><code>mono ZavaQueueBridge.exe</code> (no JVM; Mono CLR)</td><td>Not specified in Dockerfile or compose</td><td>Not specified</td><td>Single instance (no scaling config)</td></tr>
+</tbody></table></div>
+<p>No <code>-Xms</code>/<code>-Xmx</code> JVM heap parameters apply (Mono runtime, not JVM). No container resource limits (<code>mem_limit</code>, <code>cpus</code>) are declared in the Dockerfile. The Mono runtime default GC will manage heap automatically.</p>
+<h2 id="startup-dependency-chain">Startup Dependency Chain</h2>
+<p>The application has a single implicit startup dependency:</p>
+<ol>
+<li><strong>RabbitMQ must be reachable</strong> before the first poll cycle attempts to publish. If RabbitMQ is unavailable, the poll cycle throws an exception that is caught and logged; the service continues running and retries on the next poll interval.</li>
+</ol>
+<p>No health-check probes, <code>dockerize</code>/<code>wait-for-it</code> scripts, Kubernetes readiness probes, or <code>depends_on</code> directives are configured. There is no built-in startup retry or back-off for the initial RabbitMQ connection attempt.</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Step</th><th>Service</th><th>Waits For</th><th>Mechanism</th><th>Timeout</th></tr></thead><tbody>
+<tr><td>1</td><td>RabbitMQ (external)</td><td>—</td><td>External — must be started separately</td><td>None configured</td></tr>
+<tr><td>2</td><td>ZavaQueueBridge</td><td>RabbitMQ (implicit)</td><td>Exception catch + sleep(pollIntervalMs) per cycle</td><td>None (infinite retry)</td></tr>
+</tbody></table></div>
+<h2 id="secrets-sensitive-configuration">Secrets &amp; Sensitive Configuration</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Secret Reference</th><th>Type</th><th>Storage</th><th>Current Status</th></tr></thead><tbody>
+<tr><td><code>RabbitMQ.Password</code> / <code>RABBITMQ_PASSWORD</code></td><td>AMQP credential</td><td>Plaintext in <code>app.config</code> (default: <code>zava_pass</code>)</td><td><strong>Insecure</strong> — hardcoded default; should be injected via secret store at deploy time</td></tr>
+<tr><td><code>RabbitMQ.User</code> / <code>RABBITMQ_USER</code></td><td>AMQP credential</td><td>Plaintext in <code>app.config</code> (default: <code>zava_app</code>)</td><td>Should be injected via secret store at deploy time</td></tr>
+</tbody></table></div>
+<p>No secret store (HashiCorp Vault, Azure Key Vault, AWS Secrets Manager) is configured. No encryption (Jasypt, DPAPI) is applied to values in <code>app.config</code>.</p>
+<h3 id="secrets-provisioning-workflow">Secrets Provisioning Workflow</h3>
+<p>Currently, secrets are embedded in <code>app.config</code> as plaintext defaults or expected to be provided as container environment variables at <code>docker run</code> time (e.g., <code>-e RABBITMQ_PASSWORD=&lt;value&gt;</code>). No automated secret provisioning workflow, managed identity, or RBAC model is configured.</p>
+<p><strong>Recommended workflow for production deployment:</strong></p>
+<ol>
+<li>Store <code>RABBITMQ_USER</code> and <code>RABBITMQ_PASSWORD</code> in a secret store (e.g., Azure Key Vault, AWS Secrets Manager, or Kubernetes Secret).</li>
+<li>Inject them as environment variables into the container at runtime via the orchestrator&#39;s secret binding (Kubernetes <code>secretKeyRef</code>, ACA secret references, etc.).</li>
+<li>Remove the plaintext defaults from <code>app.config</code> so that the application fails fast if secrets are not injected.</li>
+</ol>
+<h2 id="feature-flags">Feature Flags</h2>
+<p>No feature flag framework is used. No <code>@ConditionalOnProperty</code>, <code>IFeatureManager</code>, or custom toggle mechanism exists. The application has a single fixed code path.</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Flag Name</th><th>Default</th><th>Controlled By</th></tr></thead><tbody>
+<tr><td>(none detected)</td><td>—</td><td>—</td></tr>
+</tbody></table></div>
+<h2 id="framework-runtime-versions">Framework &amp; Runtime Versions</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Component</th><th>Version</th><th>Source</th></tr></thead><tbody>
+<tr><td>.NET Framework</td><td>4.8</td><td><code>ZavaQueueBridge.csproj</code> (<code>&lt;TargetFrameworkVersion&gt;v4.8</code>)</td></tr>
+<tr><td>C# Language</td><td>7.3</td><td><code>ZavaQueueBridge.csproj</code> (<code>&lt;LangVersion&gt;7.3</code>)</td></tr>
+<tr><td>RabbitMQ.Client</td><td>5.2.0</td><td><code>packages.config</code></td></tr>
+<tr><td>Mono Runtime (container)</td><td>6.12</td><td><code>Dockerfile</code> (<code>FROM mono:6.12</code>)</td></tr>
+<tr><td>NuGet (build)</td><td>Debian package (version from <code>mono:6.12</code> image)</td><td><code>Dockerfile</code> (<code>apt-get install nuget</code>)</td></tr>
+<tr><td>MSBuild</td><td>Bundled with Mono 6.12</td><td><code>Dockerfile</code> (<code>msbuild</code> command)</td></tr>
+<tr><td>Debian (base OS)</td><td>Buster (Debian 10)</td><td><code>mono:6.12</code> base image; APT sources patched to <code>archive.debian.org</code> due to end-of-life</td></tr>
+</tbody></table></div>
+</div>
+</div>
+<div id="tab-workflows" class="tab-panel">
+  <div class="fact-content"><h1 id="core-business-workflows">Core Business Workflows</h1>
+<p>ZavaQueueBridge serves as a financial-domain file ingestion bridge: it reliably moves transaction records and banking data files from an on-premises drop zone into a RabbitMQ message exchange, decoupling upstream file producers from downstream event-driven consumers.</p>
+<h2 id="domain-entities">Domain Entities</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Entity</th><th>Service / Bounded Context</th><th>Description</th><th>Key Relationships</th></tr></thead><tbody>
+<tr><td>Incoming File</td><td>File Ingestion</td><td>A data file (.csv, .txt, or .dat) deposited in the drop directory by an upstream system</td><td>Source of one or more File Records</td></tr>
+<tr><td>File Record (CSV)</td><td>File Ingestion</td><td>A single data row extracted from a CSV file, keyed by header column names</td><td>Belongs to one Incoming File; maps to one File Record Message</td></tr>
+<tr><td>File Record (Fixed-Width)</td><td>File Ingestion</td><td>A structured banking record extracted from a fixed-width line; fields: RecordType, CustomerId, AccountId, Amount, Details</td><td>Belongs to one Incoming File; maps to one File Record Message</td></tr>
+<tr><td>File Record Message</td><td>Messaging</td><td>A JSON envelope published to the <code>filedrop.events</code> exchange containing the source file name, processing timestamp, and parsed record</td><td>Derived from one File Record; routed by file extension</td></tr>
+<tr><td>Dead Letter Message</td><td>Error Handling</td><td>A JSON envelope published to the <code>zava.dlx</code> exchange when a file fails processing; contains source file name, error message, and failure timestamp</td><td>Created when an Incoming File cannot be processed</td></tr>
+<tr><td>Processed File</td><td>Archive</td><td>An Incoming File moved to the <code>/processed</code> sub-directory after all its records are successfully published</td><td>Terminal state of a successful Incoming File</td></tr>
+<tr><td>Error File</td><td>Archive</td><td>An Incoming File moved to the <code>/error</code> sub-directory after a processing failure</td><td>Terminal state of a failed Incoming File</td></tr>
+</tbody></table></div>
+<h2 id="service-to-domain-mapping">Service-to-Domain Mapping</h2>
+<p>ZavaQueueBridge is a single-service application with no microservice decomposition.</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Domain Context</th><th>Owned Entities</th><th>External Dependencies</th></tr></thead><tbody>
+<tr><td>ZavaQueueBridge</td><td>File Ingestion &amp; Message Routing</td><td>Incoming File, File Record, File Record Message, Dead Letter Message, Processed File, Error File</td><td>File system (drop directory mount); RabbitMQ broker (AMQP 5672)</td></tr>
+<tr><td>Upstream file producer (external)</td><td>Not in scope</td><td>Produces Incoming Files</td><td>Writes files to the drop directory</td></tr>
+<tr><td>Downstream consumers (external)</td><td>Not in scope</td><td>Consume File Record Messages</td><td>Subscribe to <code>filedrop.events</code> by routing key pattern</td></tr>
+</tbody></table></div>
+<h2 id="primary-workflows">Primary Workflows</h2>
+<h3 id="workflow-1-file-detection">Workflow 1: File Detection</h3>
+<p><strong>Entry points:</strong> <code>FileSystemWatcher</code> events (Created, Changed, Renamed) and the periodic poll loop (every 5 000 ms by default).</p>
+<ol>
+<li><code>FileSystemWatcher</code> raises an event when a file is created, modified, or renamed in the drop directory.</li>
+<li>The event handler calls <code>QueuePendingFile</code>, which checks the file extension — only <code>.csv</code>, <code>.txt</code>, and <code>.dat</code> files are accepted; directories named <code>processed</code> or <code>error</code> are explicitly excluded.</li>
+<li>The accepted file path is added to an in-memory <code>HashSet&lt;string&gt;</code> (thread-safe via a lock) to await the next poll cycle.</li>
+<li>In parallel, the poll loop runs <code>Directory.GetFiles</code> on the drop directory at each interval, adding any files not already in the pending set. This ensures files that arrive between watcher events are never missed.</li>
+</ol>
+<p><strong>Business rule:</strong> Only files with extensions <code>.csv</code>, <code>.txt</code>, or <code>.dat</code> are eligible for processing.</p>
+<h3 id="workflow-2-file-processing-message-publishing">Workflow 2: File Processing &amp; Message Publishing</h3>
+<p><strong>Entry point:</strong> Poll cycle drains the pending file set and opens a RabbitMQ connection.</p>
+<ol>
+<li>For each pending file, <code>WaitForFileReady</code> attempts to open the file up to 5 times (250 ms apart) to confirm the upstream writer has finished.</li>
+<li><code>ParseRecords</code> dispatches to the appropriate parser based on file extension:</li>
+</ol>
+<ul>
+<ul>
+<li><strong>CSV</strong>: The first line is treated as a header row; subsequent non-empty lines are split into key-value dictionaries by <code>SplitCsvLine</code> (quote-aware tokeniser). Empty lines are skipped.</li>
+<li><strong>Fixed-width (.txt / .dat)</strong>: Each non-empty line is padded to 80 characters and sliced into five named fields: <code>RecordType</code> (0–9), <code>CustomerId</code> (10–29), <code>AccountId</code> (30–49), <code>Amount</code> (50–64), <code>Details</code> (65+).</li>
+</ul>
+</ul>
+<ol>
+<li>For every parsed record, <code>BuildPayload</code> constructs a JSON envelope with <code>sourceFile</code>, <code>processedAt</code> (ISO-8601 timestamp), and the <code>record</code> dictionary.</li>
+<li><code>BuildRoutingKey</code> derives the AMQP routing key from the file extension (e.g., <code>filedrop.csv</code>), allowing downstream consumers to subscribe selectively.</li>
+<li>The message is published to the <code>filedrop.events</code> Topic Exchange as a persistent, <code>application/json</code> message.</li>
+<li>After all records in the file are published, the file is moved to the <code>/processed</code> archive directory (with a timestamp-prefixed name if a collision occurs).</li>
+</ol>
+<h3 id="workflow-3-error-handling-dead-lettering">Workflow 3: Error Handling &amp; Dead-Lettering</h3>
+<p><strong>Trigger:</strong> Any exception thrown during <code>ProcessSingleFile</code> (file lock failure, parse error, RabbitMQ publish error).</p>
+<ol>
+<li>The exception is caught in the poll loop.</li>
+<li><code>PublishDeadLetter</code> builds an error envelope (<code>sourceFile</code>, <code>error</code>, <code>failedAt</code>) and publishes it to the <code>zava.dlx</code> Fanout Exchange so all bound dead-letter queues receive the failure notification.</li>
+<li>The failed file is moved to the <code>/error</code> archive directory.</li>
+<li>Processing continues with the remaining files in the current batch.</li>
+</ol>
+<h2 id="cross-service-data-flows">Cross-Service Data Flows</h2>
+<p>ZavaQueueBridge is a single-service pipeline with no aggregation of data from multiple backend services. The data flow is strictly unidirectional:</p>
+<pre><code>
+Upstream producer → File System (drop directory) → ZavaQueueBridge → RabbitMQ (filedrop.events)
+                                                                     ↘ RabbitMQ (zava.dlx) on error
+</code></pre>
+<p>Downstream consumers of <code>filedrop.events</code> are fully decoupled — they receive messages asynchronously and are not part of this service. There is no request/response pattern, no circuit breaker between ZavaQueueBridge and its consumers, and no fallback that merges data from multiple sources.</p>
+<p>The only cross-context dependency is the implicit contract between the upstream file producer and this service: the producer must write files with the correct extension and a schema compatible with the CSV or fixed-width parsers.</p>
+<h2 id="business-workflow-sequence">Business Workflow Sequence</h2>
+<div class="mermaid">
+sequenceDiagram
+    participant Producer as "Upstream File Producer"
+    participant FS as "File System (Drop Directory)"
+    participant Bridge as "ZavaQueueBridge"
+    participant MQ as "RabbitMQ"
+
+    Producer->>FS: Write data file (.csv / .txt / .dat)
+    FS-->>Bridge: FileSystemWatcher event (or next poll scan)
+
+    Bridge->>Bridge: Filter by extension (.csv .txt .dat only)
+    Bridge->>Bridge: Add path to pending set
+
+    loop Every poll interval (5 000 ms default)
+        Bridge->>FS: Scan directory for any missed files
+        FS-->>Bridge: File paths
+        Bridge->>Bridge: Merge into pending set
+
+        alt Pending files exist
+            Bridge->>MQ: Open AMQP connection
+            MQ-->>Bridge: Connection ready
+
+            loop Each pending file
+                Bridge->>FS: WaitForFileReady (up to 5 x 250 ms)
+                FS-->>Bridge: File accessible
+
+                Bridge->>FS: Read all lines
+                FS-->>Bridge: Raw content
+
+                alt CSV file (.csv)
+                    Bridge->>Bridge: Parse header row as field names
+                    Bridge->>Bridge: Parse each data row into key-value record
+                else Fixed-width file (.txt or .dat)
+                    Bridge->>Bridge: Slice 80-char line into RecordType, CustomerId, AccountId, Amount, Details
+                end
+
+                loop Each parsed record
+                    Bridge->>Bridge: Build JSON envelope (sourceFile, processedAt, record)
+                    Bridge->>MQ: Publish to filedrop.events\n(routing key: filedrop.ext, persistent)
+                    MQ-->>Bridge: Acknowledged
+                end
+
+                Bridge->>FS: Move file to /processed
+                FS-->>Bridge: File archived
+            end
+
+            Bridge->>MQ: Close connection
+
+        else No pending files
+            Bridge->>Bridge: Log "No files available"
+        end
+    end
+
+    Note over Bridge,MQ: On any processing error
+    Bridge->>MQ: Publish error envelope to zava.dlx (sourceFile, error, failedAt)
+    MQ-->>Bridge: Acknowledged
+    Bridge->>FS: Move file to /error
+</div>
+<h2 id="business-rules-decision-logic">Business Rules &amp; Decision Logic</h2>
+<h3 id="validation-rules">Validation Rules</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Rule</th><th>Where Applied</th><th>Behaviour on Violation</th></tr></thead><tbody>
+<tr><td>File extension must be <code>.csv</code>, <code>.txt</code>, or <code>.dat</code></td><td><code>IsCandidateFile</code> (detection)</td><td>File is silently ignored; no error logged</td></tr>
+<tr><td>File must not be located in <code>processed</code> or <code>error</code> sub-directories</td><td><code>IsCandidateFile</code> and poll-cycle guard</td><td>File is skipped; never re-processed</td></tr>
+<tr><td>File must not be empty</td><td><code>ParseRecords</code></td><td>Throws <code>InvalidOperationException(&quot;File is empty.&quot;)</code>; file is dead-lettered and moved to <code>/error</code></td></tr>
+<tr><td>CSV file must have at least one header row</td><td><code>ParseCsv</code></td><td>An empty record set results in zero publish calls; file is moved to <code>/processed</code> with 0 messages published</td></tr>
+</tbody></table></div>
+<h3 id="decision-logic">Decision Logic</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Decision Point</th><th>Logic</th><th>Outcome</th></tr></thead><tbody>
+<tr><td>Format detection</td><td>File extension</td><td><code>.csv</code> → CSV parser; <code>.txt</code> or <code>.dat</code> → fixed-width parser</td></tr>
+<tr><td>Routing key selection</td><td>File extension stripped and lowercased</td><td><code>filedrop.csv</code>, <code>filedrop.txt</code>, <code>filedrop.dat</code>, <code>filedrop.unknown</code> (fallback)</td></tr>
+<tr><td>File-name collision in archive</td><td>Check if destination file already exists</td><td>Timestamp prefix added to destination name to prevent overwrite</td></tr>
+<tr><td>File readiness</td><td>Up to 5 open-attempt retries</td><td>If all 5 attempts fail, an exception propagates to the error handler</td></tr>
+</tbody></table></div>
+<h3 id="state-transitions">State Transitions</h3>
+<pre><code>
+Incoming File lifecycle:
+  Detected → Pending → [WaitForReady] → Parsing → Publishing → Processed (success path)
+                                                              ↘ Error (failure path)
+</code></pre>
+<h3 id="business-constraints">Business Constraints</h3>
+<ul>
+<li><strong>Exchange durability</strong>: Both <code>filedrop.events</code> (Topic) and <code>zava.dlx</code> (Fanout) are declared durable (<code>durable=true</code>); messages are marked <code>Persistent=true</code>. This ensures messages survive a RabbitMQ broker restart.</li>
+<li><strong>No deduplication guarantee</strong>: If ZavaQueueBridge restarts between publishing a record and moving the file, the same file may be re-processed and its records published again (at-least-once delivery semantics).</li>
+<li><strong>No transactional publishing</strong>: There is no AMQP transaction or publisher confirm; a network failure after <code>BasicPublish</code> but before the broker acknowledges can result in lost messages (fire-and-forget within the connection lifetime).</li>
+</ul>
+<h3 id="cross-cutting-concerns">Cross-Cutting Concerns</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Concern</th><th>Implementation</th></tr></thead><tbody>
+<tr><td>Error handling</td><td>Per-file try/catch in poll loop; failed files are dead-lettered and archived to <code>/error</code></td></tr>
+<tr><td>Audit/logging</td><td><code>Console.WriteLine</code> for each poll cycle, file move, publish count, and error event; no structured logging framework</td></tr>
+<tr><td>Concurrency</td><td><code>HashSet&lt;string&gt;</code> pending set guarded by a <code>lock</code> object; <code>FileSystemWatcher</code> callback and poll loop share the set safely</td></tr>
+<tr><td>Graceful shutdown</td><td><code>Console.CancelKeyPress</code> and <code>AppDomain.ProcessExit</code> set a volatile boolean flag; poll loop and file-processing loop check the flag before each iteration</td></tr>
+<tr><td>Authorization</td><td>None — no authentication or authorisation is implemented at any level</td></tr>
+</tbody></table></div>
+</div>
+</div>
+<div id="tab-deps" class="tab-panel">
+  <div class="fact-content"><h1 id="dependency-map">Dependency Map</h1>
+<p>ZavaQueueBridge declares 1 external dependency across 1 functional category. All other capabilities (file I/O, configuration, JSON serialization) rely on .NET Framework 4.8 built-in assemblies.</p>
+<h2 id="dependencies">Dependencies</h2>
+<div class="mermaid">
+flowchart LR
+    App["ZavaQueueBridge\n.NET Framework 4.8"]
+
+    subgraph Messaging["Messaging"]
+        RabbitMQ["RabbitMQ.Client v5.2.0"]
+    end
+
+    subgraph BuiltIn["Built-in Assemblies"]
+        SysConfig["System.Configuration"]
+        SysNetHttp["System.Net.Http"]
+        SysWebExt["System.Web.Extensions\nJavaScriptSerializer"]
+        SysIO["System.IO\nSystem.Core"]
+    end
+
+    App -->|"messaging"| Messaging
+    App -->|"framework"| BuiltIn
+</div>
+<h3 id="dependency-summary">Dependency Summary</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Category</th><th>Count</th><th>Key Libraries</th><th>Notes</th></tr></thead><tbody>
+<tr><td>Messaging</td><td>1</td><td>RabbitMQ.Client 5.2.0</td><td>AMQP 0-9-1 client for .NET Framework; v5.x is the legacy branch targeting net4x</td></tr>
+<tr><td>Built-in (.NET 4.8)</td><td>4</td><td>System.Configuration, System.Net.Http, System.Web.Extensions, System.Core</td><td>No third-party additions; all platform assemblies included with .NET Framework 4.8</td></tr>
+</tbody></table></div>
+<h3 id="version-compatibility-risks">Version &amp; Compatibility Risks</h3>
+<p>.NET Framework 4.8 is Microsoft&#39;s final .NET Framework release and is in long-term servicing mode with no new feature development; it cannot run cross-platform. RabbitMQ.Client 5.2.0 targets the legacy <code>net451</code> TFM and is several major versions behind the current 6.x/7.x line, which targets .NET Standard 2.0+ and modern .NET. The 5.x series no longer receives security patches from the maintainers. <code>System.Web.Extensions.JavaScriptSerializer</code> is a legacy, feature-limited JSON serializer that has been superseded by <code>System.Text.Json</code> (built into modern .NET) and is not available on .NET 5+, making it a direct migration blocker.</p>
+<h3 id="notable-observations">Notable Observations</h3>
+<ul>
+<li><strong>Single external dependency</strong>: The minimal dependency footprint reduces migration complexity, but the one external library (RabbitMQ.Client 5.2.0) requires a major version upgrade (to 6.x or 7.x) when targeting modern .NET.</li>
+<li><strong>JavaScriptSerializer is a migration blocker</strong>: <code>System.Web.Extensions</code> (which contains <code>JavaScriptSerializer</code>) does not exist on .NET 5+; all usages must be replaced with <code>System.Text.Json.JsonSerializer</code> or <code>Newtonsoft.Json</code> before the project can target modern .NET.</li>
+<li><strong>No logging framework</strong>: The application uses raw <code>Console.WriteLine</code> throughout. Adopting a structured logging library (e.g., Serilog, Microsoft.Extensions.Logging) would be required for production-grade cloud deployments.</li>
+<li><strong>No dependency injection or configuration abstractions</strong>: Configuration is read directly via <code>ConfigurationManager</code>; migrating to <code>Microsoft.Extensions.Configuration</code> and <code>IOptions&lt;T&gt;</code> would align the project with modern .NET conventions and improve testability.</li>
+</ul>
+<h2 id="test-dependencies">Test Dependencies</h2>
+<p>No test-scoped dependencies detected. The project contains no test project, test framework references (e.g., xUnit, NUnit, MSTest), or mocking libraries.</p>
+<p>Total test-scope dependencies: 0</p>
+<p>The absence of any test infrastructure is a significant gap; adding a unit test project with xUnit or NUnit and a mocking library such as Moq is strongly recommended before undertaking a migration.</p>
+</div>
+</div>
+<div id="tab-data" class="tab-panel">
+  <div class="fact-content"><h1 id="data-architecture-persistence-layer">Data Architecture &amp; Persistence Layer</h1>
+<p>ZavaQueueBridge has no relational database or ORM layer; its sole persistent storage is the local file system, and its primary data output is AMQP message payloads published to RabbitMQ.</p>
+<h2 id="database-configuration">Database Configuration</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service/Module</th><th>DB Type</th><th>Profile</th><th>Driver</th><th>Connection</th><th>Migration Tool</th></tr></thead><tbody>
+<tr><td>ZavaQueueBridge</td><td>File System</td><td>All</td><td>System.IO (built-in)</td><td>Configured via <code>FILEDROP_PATH</code> env var or <code>FileDrop.Path</code> in app.config; defaults to <code>/shared/filedrop</code></td><td>None</td></tr>
+<tr><td>RabbitMQ (external)</td><td>Message Broker</td><td>All</td><td>RabbitMQ.Client 5.2.0 (AMQP 0-9-1)</td><td>Host/port/vhost from env vars or app.config; no TLS configured; default port 5672</td><td>None</td></tr>
+</tbody></table></div>
+<p>No relational or NoSQL database is used. No connection pooling, migration tool, or schema management is configured.</p>
+<h2 id="data-ownership-per-service">Data Ownership per Service</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Data Owned</th><th>ORM Framework</th><th>Caching</th><th>Notes</th></tr></thead><tbody>
+<tr><td>ZavaQueueBridge</td><td>Drop directory files (.csv, .txt, .dat); processed and error sub-directories</td><td>None (raw System.IO)</td><td>None</td><td>Files are the unit of work; they are moved (not deleted) to <code>/processed</code> or <code>/error</code> after each cycle</td></tr>
+</tbody></table></div>
+<h2 id="entity-model">Entity Model</h2>
+<p>The application has no formal entity or ORM model. The two logical message structures that flow through the system are documented below as conceptual message records rather than database entities.</p>
+<div class="mermaid">
+erDiagram
+    FileRecordMessage {
+        string sourceFile "Name of the originating file"
+        string processedAt "Timestamp yyyy-MM-ddTHH-mm-ss"
+        object record "Key-value pairs from file content"
+    }
+
+    CsvRecord {
+        string dynamicHeaders "Keys from CSV header row"
+        string dynamicValues "Values per data row"
+    }
+
+    FixedWidthRecord {
+        string RecordType "Characters 0-9"
+        string CustomerId "Characters 10-29"
+        string AccountId "Characters 30-49"
+        string Amount "Characters 50-64"
+        string Details "Characters 65 onward"
+    }
+
+    DeadLetterMessage {
+        string sourceFile "Name of the failed file"
+        string error "Exception message"
+        string failedAt "Timestamp yyyy-MM-ddTHH-mm-ss"
+    }
+
+    FileRecordMessage ||--o| CsvRecord : "record (CSV files)"
+    FileRecordMessage ||--o| FixedWidthRecord : "record (TXT or DAT files)"
+</div>
+<p>&gt; Note: These are not database entities. They represent the JSON payload schemas constructed in memory and published to RabbitMQ. No ORM annotations or persistence configuration exists.</p>
+<h2 id="key-repository-methods">Key Repository Methods</h2>
+<p>No repository interfaces exist. Data access is performed directly via <code>System.IO</code> static methods:</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Operation</th><th>Method</th><th>Purpose</th></tr></thead><tbody>
+<tr><td>Scan drop directory</td><td><code>Directory.GetFiles(_dropPath)</code></td><td>Enumerate all files in the drop directory each poll cycle</td></tr>
+<tr><td>Check file existence</td><td><code>File.Exists(fullPath)</code></td><td>Guard before processing a pending path</td></tr>
+<tr><td>Read file content</td><td><code>File.ReadAllLines(path)</code></td><td>Load all lines of a candidate file for parsing</td></tr>
+<tr><td>Wait for file lock</td><td><code>File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read)</code></td><td>Retry up to 5 times to confirm a file is fully written</td></tr>
+<tr><td>Move to processed</td><td><code>File.Move(sourcePath, processedPath)</code></td><td>Archive successfully published files</td></tr>
+<tr><td>Move to error</td><td><code>File.Move(sourcePath, errorPath)</code></td><td>Archive files that failed processing</td></tr>
+<tr><td>Create directories</td><td><code>Directory.CreateDirectory(path)</code></td><td>Ensure drop, processed, and error directories exist at startup</td></tr>
+</tbody></table></div>
+<h2 id="caching-strategy">Caching Strategy</h2>
+<p>No caching layer is implemented. The only in-memory state is a <code>HashSet&lt;string&gt;</code> (<code>PendingFiles</code>) that de-duplicates file paths between the <code>FileSystemWatcher</code> event callback and the poll cycle. This set is drained on every poll cycle and provides no persistence across process restarts.</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Aspect</th><th>Detail</th></tr></thead><tbody>
+<tr><td>Cache provider</td><td>None</td></tr>
+<tr><td>In-memory dedup set</td><td><code>HashSet&lt;string&gt; PendingFiles</code> (guarded by <code>object PendingLock</code>)</td></tr>
+<tr><td>Eviction</td><td>Set is cleared at the start of each poll cycle</td></tr>
+<tr><td>TTL</td><td>Effective TTL is the poll interval (default 5 000 ms)</td></tr>
+<tr><td>Rationale</td><td>Prevents duplicate processing when both <code>FileSystemWatcher</code> and the directory scan detect the same file in the same cycle</td></tr>
+</tbody></table></div>
+<h2 id="data-ownership-boundaries">Data Ownership Boundaries</h2>
+<p>ZavaQueueBridge is a single-process, single-service application with no shared data store and no inter-service data access. All data it owns is confined to the local file system mount:</p>
+<ul>
+<li><strong>Drop directory</strong> — input: files written here by an external upstream producer (not part of this codebase)</li>
+<li><strong>Processed directory</strong> — output: successfully published files archived here</li>
+<li><strong>Error directory</strong> — output: files that could not be processed archived here</li>
+</ul>
+<p>The application is a unidirectional pipeline: it reads from the file system and writes to RabbitMQ. It does not read from RabbitMQ or write back to any upstream system. Downstream consumers of the <code>filedrop.events</code> exchange are entirely separate services not included in this repository.</p>
+<h3 id="data-classification-sensitivity">Data Classification &amp; Sensitivity</h3>
+<p>The application processes files whose content is determined entirely by the upstream file producer. The fixed-width parser extracts the following fields that may carry sensitive banking data:</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Message Field</th><th>Sensitive Fields</th><th>Classification</th><th>Controls in Place</th></tr></thead><tbody>
+<tr><td>FixedWidthRecord.CustomerId</td><td>Customer identifier</td><td>PII (potential)</td><td>None — transmitted in plaintext AMQP, no masking, no encryption at rest</td></tr>
+<tr><td>FixedWidthRecord.AccountId</td><td>Account identifier</td><td>PII / PCI (potential)</td><td>None — transmitted in plaintext AMQP, no masking, no encryption at rest</td></tr>
+<tr><td>FixedWidthRecord.Amount</td><td>Financial amount</td><td>PCI (potential)</td><td>None — transmitted in plaintext AMQP, no field-level access controls</td></tr>
+<tr><td>CsvRecord (dynamic)</td><td>Depends on file producer</td><td>Unknown — schema not enforced</td><td>None — no schema validation, no masking</td></tr>
+<tr><td>FileRecordMessage.sourceFile</td><td>File name</td><td>Low</td><td>None</td></tr>
+</tbody></table></div>
+<p>No encryption-at-rest is applied to files in the drop, processed, or error directories. No field-level masking or tokenisation is applied before publishing to RabbitMQ. If the files contain PII or PCI data (which is likely given the banking domain and field names such as <code>CustomerId</code> and <code>AccountId</code>), appropriate controls (TLS for AMQP, at-rest encryption for the file share, field masking) must be added before production deployment.</p>
+</div>
+</div>
+<p class="footer">Your feedback is invaluable &mdash; <a href="https://aka.ms/ghcp-appmod/feedback">Share feedback</a></p>
+<script>
+function toggleRow(rowId, triggerRow) {
+  var detail = document.getElementById(rowId);
+  var btn = document.getElementById('btn-' + rowId);
+  if (!detail) return;
+  var visible = detail.style.display !== 'none';
+  detail.style.display = visible ? 'none' : 'table-row';
+  if (btn) btn.classList.toggle('open', !visible);
+}
+(function() {
+  var nav = document.querySelector('.tab-nav');
+  if (!nav) return;
+  nav.addEventListener('click', function(e) {
+    var btn = e.target.closest('.tab-btn');
+    if (!btn) return;
+    var targetId = btn.getAttribute('data-tab');
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+    btn.classList.add('active');
+    var panel = document.getElementById(targetId);
+    if (panel) {
+      panel.classList.add('active');
+      // Render any mermaid diagrams in this panel that haven't been processed yet
+      if (window.__mermaidReady) { window.__renderMermaidIn(panel); }
+    }
+  });
+})();
+
+// ── Diagram lightbox ────────────────────────────────────────
+(function() {
+  var lightbox = document.getElementById('diagram-lightbox');
+  var inner = document.getElementById('diagram-lightbox-inner');
+  var closeBtn = document.getElementById('diagram-lightbox-close');
+  if (!lightbox || !inner || !closeBtn) return;
+
+  var scale = 1;
+  var translateX = 0;
+  var translateY = 0;
+  var isDragging = false;
+  var dragStartX = 0;
+  var dragStartY = 0;
+
+  function applyTransform() {
+    var svg = inner.querySelector('svg');
+    if (svg) {
+      svg.style.transform = 'translate(' + translateX + 'px, ' + translateY + 'px) scale(' + scale + ')';
+      svg.style.transformOrigin = 'center center';
+      svg.style.transition = 'none';
+    }
+  }
+
+  function resetTransform() {
+    scale = 1; translateX = 0; translateY = 0;
+    applyTransform();
+  }
+
+  function openLightbox(svgEl) {
+    inner.innerHTML = svgEl.outerHTML;
+    var injected = inner.querySelector('svg');
+    if (injected) {
+      injected.removeAttribute('width');
+      injected.removeAttribute('height');
+      injected.style.cursor = 'grab';
+    }
+    resetTransform();
+    lightbox.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLightbox() {
+    lightbox.classList.remove('open');
+    inner.innerHTML = '';
+    document.body.style.overflow = '';
+    resetTransform();
+  }
+
+  inner.addEventListener('wheel', function(e) {
+    e.preventDefault();
+    var delta = e.deltaY > 0 ? 0.9 : 1.1;
+    scale = Math.min(Math.max(scale * delta, 0.3), 8);
+    applyTransform();
+  }, { passive: false });
+
+  inner.addEventListener('mousedown', function(e) {
+    if (e.button !== 0) return;
+    isDragging = true;
+    dragStartX = e.clientX - translateX;
+    dragStartY = e.clientY - translateY;
+    var svg = inner.querySelector('svg');
+    if (svg) { svg.style.cursor = 'grabbing'; }
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', function(e) {
+    if (!isDragging) return;
+    translateX = e.clientX - dragStartX;
+    translateY = e.clientY - dragStartY;
+    applyTransform();
+  });
+
+  document.addEventListener('mouseup', function() {
+    if (!isDragging) return;
+    isDragging = false;
+    var svg = inner.querySelector('svg');
+    if (svg) { svg.style.cursor = 'grab'; }
+  });
+
+  inner.addEventListener('dblclick', function() { resetTransform(); });
+
+  document.addEventListener('click', function(e) {
+    var card = e.target.closest('.mermaid');
+    if (!card) return;
+    if (e.target.closest('.diagram-lightbox-close')) return;
+    var svg = card.querySelector('svg');
+    if (svg) { openLightbox(svg); }
+  });
+
+  closeBtn.addEventListener('click', closeLightbox);
+
+  lightbox.addEventListener('click', function(e) {
+    if (e.target === lightbox) { closeLightbox(); }
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') { closeLightbox(); }
+  });
+})();
+
+var _currentTarget = '';
+
+function toggleMultiSelect(id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  // Close others
+  document.querySelectorAll('.multi-select.open').forEach(function(ms) { if (ms.id !== id) ms.classList.remove('open'); });
+  el.classList.toggle('open');
+}
+
+// Close dropdowns on outside click
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.multi-select')) {
+    document.querySelectorAll('.multi-select.open').forEach(function(ms) { ms.classList.remove('open'); });
+  }
+});
+
+function getMultiSelectValues(msId) {
+  var el = document.getElementById(msId);
+  if (!el) return [];
+  var checked = el.querySelectorAll('input[type=checkbox]:checked');
+  var vals = [];
+  for (var i = 0; i < checked.length; i++) vals.push(checked[i].value);
+  return vals;
+}
+
+function onMultiSelectChange(msId, label) {
+  var el = document.getElementById(msId);
+  if (!el) return;
+  var vals = getMultiSelectValues(msId);
+  var total = el.querySelectorAll('input[type=checkbox]').length;
+  var btn = el.querySelector('.multi-select-btn');
+  if (btn) {
+    btn.textContent = vals.length > 0 && vals.length < total ? label + ' (' + vals.length + ')' : label;
+  }
+  applyFilters();
+}
+
+function applyFilters() {
+  var selectedDomains = getMultiSelectValues('domain-ms');
+  var selectedCrits = getMultiSelectValues('criticality-ms');
+
+  // Domain filter: show/hide entire sections (empty = show all)
+  var sections = document.querySelectorAll('.issue-section');
+  for (var i = 0; i < sections.length; i++) {
+    var domain = sections[i].getAttribute('data-domain');
+    sections[i].style.display = (selectedDomains.length === 0 || selectedDomains.indexOf(domain) >= 0) ? '' : 'none';
+  }
+
+  // Row-level filtering: respect target + criticality
+  var rows = document.querySelectorAll('.issue-row');
+  for (var i = 0; i < rows.length; i++) {
+    var row = rows[i];
+    var section = row.closest('.issue-section');
+    if (section && section.style.display === 'none') {
+      row.style.display = 'none';
+      var next = row.nextElementSibling;
+      if (next && next.classList.contains('detail-row')) next.style.display = 'none';
+      continue;
+    }
+
+    // Check target filter
+    var show = true;
+    if (_currentTarget && row.hasAttribute('data-targets')) {
+      var targetsStr = row.getAttribute('data-targets');
+      if (targetsStr && targetsStr !== '{}') {
+        try {
+          var targets = JSON.parse(targetsStr);
+          if (Object.keys(targets).length > 0 && !targets[_currentTarget]) {
+            show = false;
+          }
+        } catch(e) {}
+      }
+    }
+
+    // Check criticality filter
+    if (show && selectedCrits.length > 0) {
+      var crit = row.getAttribute('data-criticality');
+      if (selectedCrits.indexOf(crit) < 0) show = false;
+    }
+
+    row.style.display = show ? '' : 'none';
+    var nextRow = row.nextElementSibling;
+    if (nextRow && nextRow.classList.contains('detail-row')) {
+      if (!show) nextRow.style.display = 'none';
+    }
+  }
+}
+
+function clearAllFilters() {
+  document.querySelectorAll('.multi-select input[type=checkbox]').forEach(function(cb) { cb.checked = false; });
+  var domainBtn = document.querySelector('#domain-ms .multi-select-btn');
+  if (domainBtn) domainBtn.textContent = 'Domain';
+  var critBtn = document.querySelector('#criticality-ms .multi-select-btn');
+  if (critBtn) critBtn.textContent = 'Criticality';
+  applyFilters();
+}
+
+function onTargetChange(targetId) {
+  _currentTarget = targetId;
+  var rows = document.querySelectorAll('.issue-row[data-targets]');
+  var totalEffort = 0;
+  var domainCrits = {}; // domain -> {mandatory:0, potential:0, optional:0}
+
+  for (var i = 0; i < rows.length; i++) {
+    var row = rows[i];
+    var targets = JSON.parse(row.getAttribute('data-targets'));
+    var section = row.closest('.issue-section');
+    var domain = section ? section.getAttribute('data-domain') : '';
+
+    if (!targets || Object.keys(targets).length === 0) {
+      // No target data (e.g. security) — always show
+      var sp = parseFloat(row.querySelector('.sp-cell').textContent) || 0;
+      totalEffort += sp;
+      if (!domainCrits[domain]) domainCrits[domain] = {mandatory:0,potential:0,optional:0};
+      var crit = row.getAttribute('data-criticality') || 'optional';
+      domainCrits[domain][crit] = (domainCrits[domain][crit] || 0) + 1;
+      continue;
+    }
+
+    var override = targets[targetId];
+    if (!override) {
+      // Issue doesn't apply to this target
+      continue;
+    }
+
+    // Apply severity override
+    var newSeverity = (override.severity || row.getAttribute('data-default-severity') || '').toLowerCase();
+    row.setAttribute('data-criticality', newSeverity);
+    var critCell = row.querySelector('.crit-cell');
+    if (critCell) {
+      var critText = newSeverity === 'mandatory' ? 'Mandatory' : newSeverity === 'potential' ? 'Potential' : 'Optional';
+      var cssClass = newSeverity === 'mandatory' ? 'crit-square-mandatory' : newSeverity === 'potential' ? 'crit-square-potential' : 'crit-square-optional';
+      critCell.innerHTML = '<span class="crit-label"><span class="crit-square ' + cssClass + '"></span>' + critText + '</span>';
+    }
+
+    // Apply effort override
+    var newEffort = override.effort !== undefined ? override.effort : parseFloat(row.getAttribute('data-default-effort')) || 0;
+    var spCell = row.querySelector('.sp-cell');
+    if (spCell) spCell.textContent = newEffort;
+    totalEffort += newEffort;
+
+    if (!domainCrits[domain]) domainCrits[domain] = {mandatory:0,potential:0,optional:0};
+    domainCrits[domain][newSeverity] = (domainCrits[domain][newSeverity] || 0) + 1;
+  }
+
+  // Also add security findings effort (they don't have per-target data)
+  var secSection = document.querySelector('.issue-section[data-domain="security"]');
+  if (secSection) {
+    var secRows = secSection.querySelectorAll('.issue-row');
+    for (var j = 0; j < secRows.length; j++) {
+      if (!secRows[j].hasAttribute('data-targets') || secRows[j].getAttribute('data-targets') === '') {
+        var sp = parseFloat(secRows[j].querySelector('.sp-cell').textContent) || 0;
+        totalEffort += sp;
+        if (!domainCrits['security']) domainCrits['security'] = {mandatory:0,potential:0,optional:0};
+        var sc = secRows[j].getAttribute('data-criticality') || 'optional';
+        domainCrits['security'][sc] = (domainCrits['security'][sc] || 0) + 1;
+      }
+    }
+  }
+
+  // Update effort display
+  var label = totalEffort < 20 ? 'S' : totalEffort < 50 ? 'M' : totalEffort < 100 ? 'L' : 'XL';
+  var effortEl = document.getElementById('effort-display');
+  if (effortEl) effortEl.textContent = label + ' (total story points: ' + totalEffort + ')';
+
+  // Update donut charts
+  updateDonuts(domainCrits);
+
+  // Re-apply domain/criticality filters
+  applyFilters();
+}
+
+function updateDonuts(domainCrits) {
+  var container = document.getElementById('donut-container');
+  if (!container) return;
+  container.innerHTML = '';
+  var domainNames = {'cloud-readiness':'Cloud Readiness','java-upgrade':'Java Upgrade','dotnet-upgrade':'DotNET Upgrade','security':'Security'};
+  var domainOrder = ['cloud-readiness','java-upgrade','dotnet-upgrade','security'];
+  for (var d = 0; d < domainOrder.length; d++) {
+    var key = domainOrder[d];
+    var c = domainCrits[key];
+    if (!c || (c.mandatory + c.potential + c.optional) === 0) continue;
+    var total = c.mandatory + c.potential + c.optional;
+    var div = document.createElement('div');
+    div.className = 'domain-summary-item';
+    div.innerHTML = buildDonutSvg(c.mandatory, c.potential, c.optional) +
+      '<h3>' + domainNames[key] + '</h3>' +
+      '<div class="count">' + total + ' issue' + (total !== 1 ? 's' : '') + '</div>';
+    container.appendChild(div);
+  }
+}
+
+function buildDonutSvg(m, p, o) {
+  var total = m + p + o;
+  if (total === 0) return '<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;"><circle cx="50" cy="50" r="35" fill="none" stroke="#d0d7de" stroke-width="15" opacity="0.5"/></svg>';
+  var r = 35, circ = 2 * Math.PI * r, offset = 0;
+  var svg = '<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;transform:rotate(-90deg);">';
+  var segs = [{c:m,color:'var(--color-mandatory)'},{c:p,color:'var(--color-potential)'},{c:o,color:'var(--color-optional)'}];
+  for (var i = 0; i < segs.length; i++) {
+    if (segs[i].c === 0) continue;
+    var segLen = (segs[i].c / total) * circ;
+    var gap = total > segs[i].c ? 1.5 : 0;
+    var drawLen = Math.max(segLen - gap, 0.5);
+    svg += '<circle cx="50" cy="50" r="' + r + '" fill="none" stroke="' + segs[i].color + '" stroke-width="15" stroke-dasharray="' + drawLen.toFixed(2) + ' ' + circ.toFixed(2) + '" stroke-dashoffset="' + (-offset).toFixed(2) + '"/>';
+    offset += segLen;
+  }
+  svg += '</svg>';
+  return svg;
+}
+</script>
+<script>document.addEventListener('DOMContentLoaded', function() { onTargetChange('AppService.Windows'); });</script>
+</div></body></html>

@@ -1,0 +1,81 @@
+{
+  "name": "Zava Bank Modernization assessment",
+  "execution_mode": "cca",
+  "status": "completed",
+  "target": "",
+  "domain": "",
+  "created_at": "2026-05-22T01:56:41.1404624\u002B00:00",
+  "completed_at": "2026-05-22T03:15:33.4242271\u002B00:00",
+  "base_commit": "06384ee0fdc0aa3502df0defa9288dc46848e33e",
+  "apps": {
+    "cd4d109a-8fbe-41ff-9369-9dcc71ba0173": {
+      "status": "completed"
+    },
+    "16a03c87-19d1-4041-8c1d-bd0234b47549": {
+      "status": "completed"
+    },
+    "4df91c06-d8a5-4d9a-a9a5-41286e558d2a": {
+      "status": "completed"
+    },
+    "162282a5-2a64-4150-9534-9faf19b8f8dd": {
+      "status": "completed"
+    },
+    "513fa972-c724-4973-95da-ed0374cb0a55": {
+      "status": "completed"
+    },
+    "1014a03c-f5ee-46a8-b177-1f9432bdd36e": {
+      "status": "completed"
+    },
+    "5dd6dbd5-8ef6-44d2-a946-2d1db3d0fe8b": {
+      "status": "completed"
+    },
+    "485c38b4-f9a0-4e6c-aaf1-6c8fe2fab0d0": {
+      "status": "completed"
+    },
+    "a4d9b8cc-c26a-468c-8ded-2821e4840fdf": {
+      "status": "completed"
+    },
+    "8d6c7b86-32fc-4796-beed-122affc061bf": {
+      "status": "completed"
+    },
+    "9a17dab8-3ddf-4b2f-aebe-c73c83852bfd": {
+      "status": "completed"
+    },
+    "5181d8ac-a789-4bde-b5bf-e4b938b267bb": {
+      "status": "completed"
+    },
+    "f430a1c9-d31d-48e1-a200-9376c063247d": {
+      "status": "completed"
+    },
+    "ee070b8c-b975-4d9a-a78e-0c3194436df5": {
+      "status": "completed"
+    },
+    "751a405f-f5c8-47d0-8263-ac56b09d7f1d": {
+      "status": "completed"
+    },
+    "41f836c9-89b8-4f0b-902d-2f52cfd5c1c9": {
+      "status": "completed"
+    },
+    "bdacfac0-b305-42d1-a6f6-523176c9435d": {
+      "status": "completed"
+    },
+    "7fefcf5d-38bb-4a16-a135-55613eef4199": {
+      "status": "completed"
+    },
+    "3269e954-91bd-408b-a866-1064fefd26a5": {
+      "status": "completed"
+    },
+    "1b053c9a-4f94-4c4c-9762-308cd572e46c": {
+      "status": "completed"
+    },
+    "3fa026ae-19b0-4e2f-a6d8-c08c33322446": {
+      "status": "completed"
+    },
+    "55071151-f781-43df-8420-b5aeb347ef0f": {
+      "status": "completed"
+    },
+    "580108ed-d60d-4220-8a5c-aca6277545df": {
+      "status": "completed"
+    }
+  }
+}

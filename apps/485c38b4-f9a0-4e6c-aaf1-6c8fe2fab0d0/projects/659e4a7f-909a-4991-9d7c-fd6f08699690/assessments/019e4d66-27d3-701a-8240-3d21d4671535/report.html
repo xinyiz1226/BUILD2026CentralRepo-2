@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Assessment - ZavaCurrencyService</title>
+<style>
+:root {
+  --bg-primary: #ffffff;
+  --bg-card: #f8f9fa;
+  --bg-page: #f0f1f3;
+  --text-primary: #24292f;
+  --text-secondary: #57606a;
+  --text-muted: #6b7280;
+  --border-color: #d0d7de;
+  --border-light: #e1e4e8;
+  --link-color: #2563eb;
+  --color-mandatory: #E3008C;
+  --color-potential: #637CEF;
+  --color-optional: #A19F9D;
+  --font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  --font-mono: 'Cascadia Code', 'Consolas', 'Courier New', monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-family); font-size: 13px; color: var(--text-primary); background: var(--bg-primary); line-height: 1.5; margin: 0; padding: 0; }
+a { color: var(--link-color); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Page layout ───────────────────────────────────────────── */
+.main { margin: 0; padding: 24px 32px; background: var(--bg-primary); }
+.back-link { color: var(--text-muted); font-size: 13px; margin-bottom: 16px; display: block; }
+h1 { font-weight: 600; font-size: 20px; color: var(--text-primary); margin-bottom: 20px; }
+
+/* ── Report cards (matches VS Code .vscode-report-card) ──── */
+.report-card { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 4px; padding: 12px; margin-bottom: 20px; }
+.report-card h2 { font-size: 14px; font-weight: 600; margin: 0; color: var(--text-primary); }
+.report-card-body { margin-top: 16px; }
+
+/* ── Application Information (two-column) ────────────────── */
+.app-info-container { display: flex; gap: 8px; flex-wrap: wrap; }
+.app-info-column { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 8px; }
+.app-info-row { display: flex; align-items: baseline; }
+.app-info-label { width: 136px; flex-shrink: 0; font-weight: 600; color: var(--text-primary); }
+.app-info-value { flex: 1; color: var(--text-primary); }
+
+/* ── Issue Summary (pie charts + legend) ─────────────────── */
+.cards-container { display: flex; align-items: stretch; gap: 20px; flex-wrap: wrap; }
+.issue-summary-card { flex: 2; }
+.domain-summary-container { display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-around; }
+.domain-summary-item { flex: 1; min-width: 120px; text-align: center; padding: 0 16px; border-right: 1px solid var(--border-light); }
+.domain-summary-item:last-child { border-right: none; }
+.domain-summary-item h3 { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-top: 8px; }
+.domain-summary-item .count { font-size: 12px; color: var(--text-secondary); }
+.criticality-legend { display: flex; flex-wrap: wrap; gap: 15px; padding-top: 12px; justify-content: center; }
+.criticality-legend .legend-item { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-secondary); }
+.legend-swatch { display: inline-block; width: 1em; height: 1em; border-radius: 2px; }
+
+/* ── Issue list tables ───────────────────────────────────── */
+.issue-section { margin-top: 20px; }
+.issue-section h2 { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+.issue-table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 600px; }
+.issue-table th { text-align: left; text-transform: uppercase; font-weight: 600; font-size: calc(13px * 0.875); padding: 6px 8px; background: var(--bg-card); border-bottom: 1px solid var(--border-color); color: var(--text-secondary); position: sticky; top: 0; z-index: 1; }
+.issue-table td { padding: 12px 8px; border-bottom: 1px solid var(--border-light); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
+.col-issue { width: 55%; }
+.col-criticality { width: 25%; }
+.col-storypoint { width: 20%; }
+
+/* ── Target dropdown ─────────────────────────────────────── */
+.target-select-container { margin: 4px 0 16px 0; display: flex; align-items: center; gap: 8px; }
+.target-select-container label { font-weight: 600; color: var(--text-primary); font-size: 14px; }
+.target-select-container select { font-family: var(--font-family); font-size: 13px; padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer; }
+
+/* ── Filter bar ──────────────────────────────────────────── */
+.filter-bar { display: flex; flex-wrap: wrap; gap: 16px; margin: 16px 0 8px 0; align-items: center; }
+.multi-select { position: relative; display: inline-block; min-width: 140px; }
+.multi-select-btn { font-family: var(--font-family); font-size: 13px; padding: 4px 24px 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer; width: 100%; text-align: left; position: relative; white-space: nowrap; }
+.multi-select-btn::after { content: '\25BE'; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--text-secondary); }
+.multi-select-dropdown { display: none; position: absolute; top: 100%; left: 0; min-width: 100%; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 100; margin-top: 2px; }
+.multi-select.open .multi-select-dropdown { display: block; }
+.multi-select-option { display: flex; align-items: center; gap: 6px; padding: 5px 10px; cursor: pointer; font-size: 13px; white-space: nowrap; }
+.multi-select-option:hover { background: var(--bg-secondary); }
+.multi-select-option input[type=checkbox] { margin: 0; cursor: pointer; }
+.clear-filters { font-size: 12px; color: var(--link-color); cursor: pointer; margin-left: 4px; }
+
+/* ── Criticality labels (colored square + text) ──────────── */
+.crit-label { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; white-space: nowrap; }
+.crit-square { display: inline-block; width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+.crit-square-mandatory { background: var(--color-mandatory); }
+.crit-square-potential { background: var(--color-potential); }
+.crit-square-optional { background: var(--color-optional); }
+
+/* ── Expandable rows ─────────────────────────────────────── */
+.expand-btn { background: none; border: none; cursor: pointer; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 11px; transition: transform 0.15s; padding: 0; vertical-align: middle; flex-shrink: 0; }
+.expand-btn.open { transform: rotate(90deg); }
+.issue-title-cell { display: flex; align-items: center; gap: 4px; }
+.detail-row td { padding: 0; border-bottom: 1px solid var(--border-light); white-space: normal; overflow: visible; text-overflow: clip; }
+.detail-content { display: flex; gap: 0; padding: 8px 8px 8px 32px; min-width: 0; }
+.file-list { flex: 0 0 50%; min-width: 0; overflow: hidden; }
+.file-list table { width: 100%; border-collapse: collapse; }
+.file-list th { font-size: calc(13px * 0.875); text-transform: uppercase; font-weight: 600; color: var(--text-secondary); padding: 6px 8px; border-bottom: 1px solid var(--border-color); text-align: left; height: 32px; }
+.file-list td { font-size: 13px; padding: 6px 8px; border-bottom: 1px solid var(--border-light); color: var(--text-primary); }
+.file-list .file-path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 300px; display: block; }
+.file-list .position { font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary); }
+.explanation-panel { flex: 1; padding-left: 16px; min-width: 0; overflow-wrap: break-word; word-wrap: break-word; }
+.explanation-panel h4 { font-size: calc(13px * 0.875); text-transform: uppercase; font-weight: 600; color: var(--text-secondary); padding: 6px 0; border-bottom: 1px solid var(--border-color); height: 32px; margin: 0; }
+.explanation-panel p { font-size: 13px; padding: 8px 0; color: var(--text-primary); line-height: 1.6; white-space: normal; word-break: break-word; }
+
+/* ── Experimental badge ──────────────────────────────────── */
+.badge-experimental { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; background: #fef9c3; color: #854d0e; vertical-align: middle; margin-left: 8px; cursor: default; }
+
+/* ── Footer ──────────────────────────────────────────────── */
+.footer { text-align: center; margin-top: 24px; color: var(--text-muted); font-size: 13px; }
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 800px) {
+  .main { padding: 16px; }
+  .app-info-container { flex-direction: column; }
+  .domain-summary-container { flex-direction: column; }
+  .domain-summary-item { border-right: none; border-bottom: 1px solid var(--border-light); padding-bottom: 12px; }
+  .detail-content { flex-direction: column; }
+  .file-list { flex: none; width: 100%; }
+  .explanation-panel { padding-left: 0; padding-top: 8px; }
+}
+/* ── Tab navigation ──────────────────────────────────────── */
+.tab-nav { display: flex; gap: 0; border-bottom: 1px solid var(--border-color); margin-bottom: 28px; flex-wrap: wrap; }
+.tab-btn { background: none; border: none; border-bottom: 2px solid transparent; padding: 10px 18px; font-size: 13px; font-family: var(--font-family); color: var(--text-secondary); cursor: pointer; margin-bottom: -1px; white-space: nowrap; position: relative; }
+.tab-btn:hover { color: var(--text-primary); }
+.tab-btn.active { color: var(--link-color); border-bottom-color: var(--link-color); font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ── Tooltip on tab ──────────────────────────────────────── */
+.tab-btn[data-tooltip]::after { content: attr(data-tooltip); position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); background: #24292f; color: #ffffff; font-size: 12px; font-weight: 400; padding: 6px 10px; border-radius: 4px; white-space: normal; width: max-content; max-width: 260px; text-align: center; pointer-events: none; opacity: 0; transition: opacity 0.15s; z-index: 100; }
+.tab-btn[data-tooltip]:hover::after { opacity: 1; }
+
+/* ── Fact content — prose column ─────────────────────────── */
+.fact-content { max-width: 860px; margin: 0 auto; line-height: 1.75; color: var(--text-primary); font-size: 14px; }
+.fact-content h1 { font-size: 22px; font-weight: 700; margin: 0 0 6px 0; color: var(--text-primary); letter-spacing: -0.01em; }
+.fact-content h1 + p { margin-top: 6px; color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
+.fact-content h2 { font-size: 17px; font-weight: 700; margin: 36px 0 12px 0; padding-bottom: 6px; border-bottom: 1px solid var(--border-color); color: var(--text-primary); letter-spacing: -0.01em; }
+.fact-content h3 { font-size: 14px; font-weight: 700; margin: 24px 0 8px 0; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.04em; font-size: 12px; color: var(--text-secondary); }
+.fact-content p { margin: 10px 0; color: var(--text-primary); }
+.fact-content ul, .fact-content ol { margin: 10px 0 10px 22px; }
+.fact-content li { margin: 5px 0; }
+.fact-content a { color: var(--link-color); }
+.fact-content a:hover { text-decoration: underline; }
+
+/* ── Fact tables ─────────────────────────────────────────── */
+.table-wrap { overflow-x: auto; margin: 16px 0; }
+.fact-content table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 13px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); }
+.fact-content thead { background: var(--bg-card); }
+.fact-content th { text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; padding: 8px 14px; border-bottom: 1px solid var(--border-color); color: var(--text-secondary); }
+.fact-content td { padding: 9px 14px; border-bottom: 1px solid var(--border-light); vertical-align: top; color: var(--text-primary); }
+.fact-content tr:last-child td { border-bottom: none; }
+.fact-content tbody tr:hover { background: #f6f8fa; }
+
+/* ── Fact code ───────────────────────────────────────────── */
+.fact-content code { font-family: var(--font-mono); font-size: 12px; background: #f0f1f3; padding: 2px 6px; border-radius: 4px; color: #c7254e; }
+.fact-content pre { background: #f6f8fa; border: 1px solid var(--border-light); border-radius: 6px; padding: 14px 16px; overflow-x: auto; margin: 14px 0; }
+.fact-content pre code { background: none; color: var(--text-primary); padding: 0; border-radius: 0; }
+.fact-content hr { border: none; border-top: 1px solid var(--border-light); margin: 28px 0; }
+.fact-content strong { font-weight: 600; }
+.fact-content em { font-style: italic; }
+.fact-content blockquote { border-left: 3px solid var(--border-color); margin: 12px 0; padding: 4px 16px; color: var(--text-secondary); }
+.fact-unavailable { padding: 32px 0; }
+.fact-unavailable h3 { font-size: 16px; font-weight: 600; color: var(--text-primary); text-transform: none; letter-spacing: 0; margin: 0 0 12px 0; }
+.fact-unavailable p { margin: 0 0 8px 0; color: var(--text-secondary); }
+.fact-unavailable ol, .fact-unavailable ul { margin: 0 0 0 22px; color: var(--text-primary); }
+.fact-unavailable li { margin: 6px 0; }
+
+/* ── Mermaid diagram card ─────────────────────────────────── */
+.mermaid { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 8px; padding: 24px 16px; margin: 20px 0; overflow-x: auto; text-align: center; cursor: pointer; position: relative; }
+.mermaid:hover { border-color: var(--border-color); }
+.mermaid svg { max-width: 100%; height: auto !important; display: inline-block; }
+.mermaid-zoom-hint { position: absolute; top: 8px; right: 10px; font-size: 11px; color: var(--text-muted); opacity: 0; transition: opacity 0.15s; pointer-events: none; }
+.mermaid:hover .mermaid-zoom-hint { opacity: 1; }
+
+/* ── Diagram lightbox ────────────────────────────────────── */
+.diagram-lightbox { display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.7); backdrop-filter: blur(2px); align-items: center; justify-content: center; cursor: zoom-out; padding: 48px 32px; }
+.diagram-lightbox.open { display: flex; }
+.diagram-lightbox-inner { background: #ffffff; border-radius: 10px; padding: 32px; width: 88vw; max-height: 88vh; overflow: hidden; cursor: default; box-shadow: 0 24px 64px rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; }
+.diagram-lightbox-inner svg { width: 100% !important; height: auto !important; max-height: 76vh; display: block; }
+.diagram-lightbox-close { position: fixed; top: 20px; right: 24px; background: #ffffff; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-primary); box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 1001; }
+.diagram-lightbox-close:hover { background: var(--bg-card); }
+.diagram-lightbox-hint { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.55); color: #ffffff; font-size: 12px; padding: 6px 14px; border-radius: 20px; pointer-events: none; white-space: nowrap; z-index: 1001; }
+</style>
+<script>
+window.__mermaidPending = [];
+window.__mermaidReady = false;
+window.__renderMermaidIn = function(container) {
+  // Until the real implementation overrides this (after the ES module import
+  // resolves), just queue the container so we can render it later.
+  if (container) { window.__mermaidPending.push(container); }
+};
+</script>
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+mermaid.initialize({ startOnLoad: false, theme: 'default', flowchart: { useMaxWidth: true }, sequence: { useMaxWidth: true } });
+
+// Real implementation: actually run mermaid on the unprocessed diagrams in the
+// given container (only ones not already rendered). Adds a "Click to expand"
+// hint span after each successful render so the lightbox affordance is
+// discoverable.
+window.__renderMermaidIn = function(container) {
+  var nodes = container ? container.querySelectorAll('.mermaid:not([data-processed])') : [];
+  if (nodes.length > 0) {
+    mermaid.run({ nodes: Array.from(nodes) }).then(function() {
+      nodes.forEach(function(node) {
+        if (!node.querySelector('.mermaid-zoom-hint')) {
+          var hint = document.createElement('span');
+          hint.className = 'mermaid-zoom-hint';
+          hint.textContent = 'Click to expand';
+          node.appendChild(hint);
+        }
+      });
+    });
+  }
+};
+
+// Drain any containers that were queued by the shim while mermaid was loading.
+// Use a Set to dedupe in case a container was both queued and is also the
+// initial-active panel below.
+var drained = new Set();
+(window.__mermaidPending || []).forEach(function(c) {
+  if (!drained.has(c)) { drained.add(c); window.__renderMermaidIn(c); }
+});
+window.__mermaidPending = [];
+window.__mermaidReady = true;
+
+// Render diagrams visible on initial load (the active tab panel(s) may not have
+// been queued by anyone — DOMContentLoaded handlers run before this if the
+// module is cached, after this if it's not, so handle both cases here).
+function renderActivePanels() {
+  document.querySelectorAll('.tab-panel.active').forEach(function(p) {
+    if (!drained.has(p)) { drained.add(p); window.__renderMermaidIn(p); }
+  });
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', renderActivePanels);
+} else {
+  renderActivePanels();
+}
+</script>
+</head><body>
+<div id="diagram-lightbox" class="diagram-lightbox" role="dialog" aria-modal="true">
+  <button class="diagram-lightbox-close" id="diagram-lightbox-close" aria-label="Close">&#x2715;</button>
+  <div class="diagram-lightbox-hint">Scroll to zoom &nbsp;·&nbsp; Drag to pan &nbsp;·&nbsp; Double-click to reset</div>
+  <div class="diagram-lightbox-inner" id="diagram-lightbox-inner"></div>
+</div>
+<div class="main">
+<a class="back-link" href="../../index.html">&#8592; Back to aggregate dashboard</a>
+<h1>ZavaCurrencyService</h1>
+<div class="report-card">
+  <h2>Application Information</h2>
+  <div class="report-card-body">
+    <div class="app-info-container">
+      <div class="app-info-column">
+        <div class="app-info-row"><span class="app-info-label">Application Name</span><span class="app-info-value">ZavaCurrencyService</span></div>
+        <div class="app-info-row"><span class="app-info-label">Effort</span><span class="app-info-value" id="effort-display">S (total story points: 12)</span></div>
+      </div>
+      <div class="app-info-column">
+        <div class="app-info-row"><span class="app-info-label">Build Tools</span><span class="app-info-value">MSBuild</span></div>
+        <div class="app-info-row"><span class="app-info-label">Frameworks</span><span class="app-info-value">.NETFramework,Version=v4.8</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+<nav class="tab-nav">
+  <button class="tab-btn active" data-tab="tab-issues" data-tooltip="Issues detected in the source code">Issues</button>
+  <button class="tab-btn" data-tab="tab-arch" data-tooltip="How the app&#39;s layers connect — from UI to data.">Architecture</button>
+  <button class="tab-btn" data-tab="tab-api" data-tooltip="Endpoints exposed by this app and how services communicate.">API Contracts</button>
+  <button class="tab-btn" data-tab="tab-config" data-tooltip="Environment settings, runtime profiles, and deployment manifests.">Configuration</button>
+  <button class="tab-btn" data-tab="tab-workflows" data-tooltip="Domain entities and the core flows users move through.">Business Workflows</button>
+  <button class="tab-btn" data-tab="tab-deps" data-tooltip="Libraries and frameworks this app depends on, grouped by category.">Dependencies</button>
+  <button class="tab-btn" data-tab="tab-data" data-tooltip="Database schema, entity relationships, and persistence behavior.">Data Model</button>
+</nav>
+<div id="tab-issues" class="tab-panel active">
+<div class="target-select-container">
+  <label for="target-select">Target Compute Service:</label>
+  <select id="target-select" onchange="onTargetChange(this.value)">
+    <option value="AppService.Windows">Azure App Service</option>
+    <option value="AppService.Linux">Azure Kubernetes Service</option>
+    <option value="AKS.Linux">Azure Container Apps</option>
+    <option value="AKS.Windows">Azure App Service Container</option>
+    <option value="ACA">Azure App Service Managed Instance</option>
+  </select>
+</div>
+<div class="report-card">
+  <h2>Issue Summary</h2>
+  <div class="report-card-body">
+    <div class="domain-summary-container" id="donut-container">
+      <div class="domain-summary-item">
+<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;transform:rotate(-90deg);">
+  <circle cx="50" cy="50" r="35" fill="none" stroke="var(--color-potential)" stroke-width="15" stroke-dasharray="53.48 219.91" stroke-dashoffset="-0.00"/>
+  <circle cx="50" cy="50" r="35" fill="none" stroke="var(--color-optional)" stroke-width="15" stroke-dasharray="163.43 219.91" stroke-dashoffset="-54.98"/>
+</svg>
+
+        <h3>Cloud Readiness</h3>
+        <div class="count">4 issues</div>
+      </div>
+      <div class="domain-summary-item">
+<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;transform:rotate(-90deg);">
+  <circle cx="50" cy="50" r="35" fill="none" stroke="var(--color-mandatory)" stroke-width="15" stroke-dasharray="219.91 219.91" stroke-dashoffset="-0.00"/>
+</svg>
+
+        <h3>DotNET Upgrade</h3>
+        <div class="count">2 issues</div>
+      </div>
+    </div>
+    <div class="criticality-legend">
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--color-mandatory)"></span>Mandatory</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--color-potential)"></span>Potential</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--color-optional)"></span>Optional</div>
+    </div>
+  </div>
+</div>
+<div class="filter-bar" id="filter-bar">
+  <div class="multi-select" id="domain-ms">
+    <button class="multi-select-btn" onclick="toggleMultiSelect('domain-ms')">Domain</button>
+    <div class="multi-select-dropdown">
+      <label class="multi-select-option"><input type="checkbox" value="cloud-readiness" onchange="onMultiSelectChange('domain-ms','Domain')"/> Cloud Readiness</label>
+      <label class="multi-select-option"><input type="checkbox" value="dotnet-upgrade" onchange="onMultiSelectChange('domain-ms','Domain')"/> DotNET Upgrade</label>
+    </div>
+  </div>
+  <div class="multi-select" id="criticality-ms">
+    <button class="multi-select-btn" onclick="toggleMultiSelect('criticality-ms')">Criticality</button>
+    <div class="multi-select-dropdown">
+      <label class="multi-select-option"><input type="checkbox" value="potential" onchange="onMultiSelectChange('criticality-ms','Criticality')"/> Potential</label>
+      <label class="multi-select-option"><input type="checkbox" value="optional" onchange="onMultiSelectChange('criticality-ms','Criticality')"/> Optional</label>
+    </div>
+  </div>
+  <a class="clear-filters" href="javascript:void(0)" onclick="clearAllFilters()">Clear all</a>
+</div>
+<div class="issue-section" data-domain="cloud-readiness">
+  <h2>Cloud Readiness</h2>
+  <table class="issue-table">
+    <colgroup><col class="col-issue"/><col class="col-criticality"/><col class="col-storypoint"/></colgroup>
+    <thead><tr><th>Issue Category</th><th>Criticality</th><th>Story Point</th></tr></thead>
+    <tbody>
+    <tr class="issue-row" data-criticality="potential" data-targets='{"AppService.Windows":{"effort":3,"severity":"potential"},"AppService.Linux":{"effort":3,"severity":"potential"},"AKS.Linux":{"effort":3,"severity":"potential"},"AKS.Windows":{"effort":3,"severity":"potential"},"ACA":{"effort":3,"severity":"potential"},"AppServiceContainer.Linux":{"effort":3,"severity":"potential"},"AppServiceContainer.Windows":{"effort":3,"severity":"potential"},"AppServiceManagedInstance.Windows":{"effort":3,"severity":"potential"}}' data-default-effort="3" data-default-severity="potential" data-rule="Database.0002" onclick="toggleRow('row-cloudreadiness-0', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-cloudreadiness-0">&#x276F;</button> SQL database connection detected</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-potential"></span>Potential</span></td>
+      <td class="sp-cell">3</td>
+    </tr>
+    <tr class="detail-row" id="row-cloudreadiness-0" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="web.config">web.config</span></td><td><span class="position"></span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>SQL database connection detected.</p><p>Ensure the database is available/reachable on Azure.</p><p>If it is not, there are multiple ways you can move your data to Azure:<br/>    1. Migrate to Azure SQL Database.<br/>    2. Consider Azure SQL Managed Instance if you need features that are not available in Azure SQL Database and you don’t want to use a VM.<br/>    3. Migrate your database servers directly to SQL Server on Azure VMs.</p><p>To assess database migration effort, you can use Azure Migrate tool, see the link below.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="optional" data-targets='{"AppService.Windows":{"effort":3,"severity":"optional"},"AppService.Linux":{"effort":3,"severity":"optional"},"AKS.Linux":{"effort":3,"severity":"optional"},"AKS.Windows":{"effort":3,"severity":"optional"},"ACA":{"effort":3,"severity":"optional"},"AppServiceContainer.Linux":{"effort":3,"severity":"optional"},"AppServiceContainer.Windows":{"effort":3,"severity":"optional"},"AppServiceManagedInstance.Windows":{"effort":3,"severity":"mandatory"}}' data-default-effort="3" data-default-severity="optional" data-rule="Security.0003" onclick="toggleRow('row-cloudreadiness-1', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-cloudreadiness-1">&#x276F;</button> Hardcoded sensitive data detected</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-optional"></span>Optional</span></td>
+      <td class="sp-cell">3</td>
+    </tr>
+    <tr class="detail-row" id="row-cloudreadiness-1" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="DbConfig.cs">DbConfig.cs</span></td><td><span class="position">Line 22, Col 20</span></td></tr>
+            <tr><td><span class="file-path" title="DbConfig.cs">DbConfig.cs</span></td><td><span class="position">Line 13, Col 62</span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>Hardcoded sensitive data detected.</p><p>If you are targeting Managed Instance on Azure App Service, externalize secrets to Key Vault/App Configuration; use managed identity instead of passwords or embedded connection strings.</p><p>While if targeting other Azure compute services:</p><p>Avoid placing sensitive data such as passwords, ids, tokens etc., directly in config files and code since it compromises the security of your application.</p><p>Use Azure App Configuration or Azure KeyVault to store secrets.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="optional" data-targets='{"AppService.Windows":{"effort":3,"severity":"optional"},"AppService.Linux":{"effort":3,"severity":"optional"},"AKS.Linux":{"effort":3,"severity":"optional"},"AKS.Windows":{"effort":3,"severity":"optional"},"ACA":{"effort":3,"severity":"optional"},"AppServiceContainer.Linux":{"effort":3,"severity":"optional"},"AppServiceContainer.Windows":{"effort":3,"severity":"optional"},"AppServiceManagedInstance.Windows":{"effort":3,"severity":"optional"}}' data-default-effort="3" data-default-severity="optional" data-rule="Database.0003" onclick="toggleRow('row-cloudreadiness-2', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-cloudreadiness-2">&#x276F;</button> System.Data.SqlClient dependency detected</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-optional"></span>Optional</span></td>
+      <td class="sp-cell">3</td>
+    </tr>
+    <tr class="detail-row" id="row-cloudreadiness-2" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="web.config">web.config</span></td><td><span class="position"></span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>System.Data.SqlClient dependency is detected.</p><p>While System.Data.SqlClient will work in Azure, the newer Microsoft.Data.SqlClient package is the primary .NET SQL client moving forward and receiving the latest features. For example, Microsoft.Data.SqlClient easily allows use of Azure Managed Identity from a connection string.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="optional" data-targets='{"AppService.Windows":{"effort":3,"severity":"optional"},"AppService.Linux":{"effort":3,"severity":"optional"},"AKS.Linux":{"effort":3,"severity":"optional"},"AKS.Windows":{"effort":3,"severity":"optional"},"ACA":{"effort":3,"severity":"optional"},"AppServiceContainer.Linux":{"effort":3,"severity":"optional"},"AppServiceContainer.Windows":{"effort":3,"severity":"optional"},"AppServiceManagedInstance.Windows":{"effort":3,"severity":"optional"}}' data-default-effort="3" data-default-severity="optional" data-rule="Security.0002" onclick="toggleRow('row-cloudreadiness-3', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-cloudreadiness-3">&#x276F;</button> Connection strings without configuration builders detected</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-optional"></span>Optional</span></td>
+      <td class="sp-cell">3</td>
+    </tr>
+    <tr class="detail-row" id="row-cloudreadiness-3" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="web.config">web.config</span></td><td><span class="position"></span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>Connection strings without configuration builders detected.  </p><p> Keeping connection strings directly in the app is not the best practice and might introduce security risks, increased maintenance, scalability challenges or compliance standards (such as PCI DSS, GDPR, etc.). </p><p> Instead, it is recommended to use configuration builders to get secrets from secure sources in Azure environment.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+</div>
+<div class="issue-section" data-domain="dotnet-upgrade">
+  <h2>DotNET Upgrade</h2>
+  <table class="issue-table">
+    <colgroup><col class="col-issue"/><col class="col-criticality"/><col class="col-storypoint"/></colgroup>
+    <thead><tr><th>Issue Category</th><th>Criticality</th><th>Story Point</th></tr></thead>
+    <tbody>
+    <tr class="issue-row" data-criticality="mandatory" data-targets='{}' data-default-effort="1" data-default-severity="mandatory" data-rule="Project.0001" onclick="toggleRow('row-dotnetupgrade-0', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-dotnetupgrade-0">&#x276F;</button> Project file needs to be converted to SDK-style</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-mandatory"></span>Mandatory</span></td>
+      <td class="sp-cell">1</td>
+    </tr>
+    <tr class="detail-row" id="row-dotnetupgrade-0" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="ZavaCurrencyService.csproj">ZavaCurrencyService.csproj</span></td><td><span class="position"></span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>Project file needs to be converted to SDK-style. Modern .NET framework projects require a change in the project file format and use SDK corresponding to project flavor and functionality.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="mandatory" data-targets='{}' data-default-effort="1" data-default-severity="mandatory" data-rule="Project.0002" onclick="toggleRow('row-dotnetupgrade-1', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-dotnetupgrade-1">&#x276F;</button> Project&#39;s target framework(s) needs to be changed</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-mandatory"></span>Mandatory</span></td>
+      <td class="sp-cell">1</td>
+    </tr>
+    <tr class="detail-row" id="row-dotnetupgrade-1" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="ZavaCurrencyService.csproj">ZavaCurrencyService.csproj</span></td><td><span class="position"></span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>Project&#39;s target framework(s) needs to be changed to the new target framework that you selected for this upgrade.</p><p>During upgrade target framework will be adjusted to corresponding platform when applicable. In some cases project would result in multiple target frameworks after the upgrade if it was using features that now have their own platforms in modern .NET frameworks (windows, iOS, Android etc).</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+  <p style="margin-top:12px;"><a href="scenarios/dotnet-version-upgrade/assessment.html">View DotNET Upgrade Assessment →</a></p>
+</div>
+</div><!-- #tab-issues -->
+<div id="tab-arch" class="tab-panel">
+  <div class="fact-content"><h1 id="architecture-diagram">Architecture Diagram</h1>
+<p>ZavaCurrencyService is a legacy .NET Framework 4.8 WCF (Windows Communication Foundation) SOAP service that provides currency exchange rate lookup and conversion functionality backed by a SQL Server database.</p>
+<h2 id="application-architecture">Application Architecture</h2>
+<div class="mermaid">
+flowchart TD
+    subgraph Client["Client Layer"]
+        SOAPClient["SOAP Client (basicHttpBinding)"]
+        HealthCheck["HTTP Health Check Client"]
+    end
+    subgraph App["Application Layer - .NET Framework 4.8 / WCF"]
+        WCFEndpoint["WCF Service Endpoint (CurrencyService.svc)"]
+        HealthHandler["HealthHandler (IHttpHandler - /health)"]
+        ServiceImpl["CurrencyService (Business Logic)"]
+        DbConfigHelper["DbConfig (Connection String Helper)"]
+    end
+    subgraph Data["Data Layer"]
+        ADO["ADO.NET (SqlConnection / SqlCommand)"]
+        DB[("SQL Server (ZavaBankDB)")]
+    end
+    subgraph External["External Configuration"]
+        EnvVars["Environment Variables (DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD)"]
+        WebConfig["web.config (ZavaBankDb connection string)"]
+    end
+
+    SOAPClient -->|"SOAP/HTTP requests"| WCFEndpoint
+    HealthCheck -->|"GET /health"| HealthHandler
+    WCFEndpoint -->|"delegates operations"| ServiceImpl
+    ServiceImpl -->|"gets connection string"| DbConfigHelper
+    DbConfigHelper -->|"reads (primary)"| EnvVars
+    DbConfigHelper -->|"reads (fallback)"| WebConfig
+    ServiceImpl -->|"executes raw SQL"| ADO
+    ADO -->|"SQL queries (CurrencyPairs, ExchangeRates)"| DB
+</div>
+<h3 id="technology-stack-summary">Technology Stack Summary</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Layer</th><th>Technology</th><th>Version</th><th>Purpose</th></tr></thead><tbody>
+<tr><td>Service Contract</td><td>WCF (Windows Communication Foundation)</td><td>.NET Framework 4.8</td><td>SOAP web service definition and hosting</td></tr>
+<tr><td>Business Logic</td><td>C# / ASP.NET</td><td>.NET Framework 4.8</td><td>Currency rate lookup and conversion</td></tr>
+<tr><td>Data Access</td><td>ADO.NET (SqlConnection / SqlCommand)</td><td>.NET Framework 4.8</td><td>Raw SQL queries against SQL Server</td></tr>
+<tr><td>Database</td><td>SQL Server</td><td>Not specified (SSMS-compatible)</td><td>Stores currency pairs and exchange rates</td></tr>
+<tr><td>Health Check</td><td>ASP.NET IHttpHandler</td><td>.NET Framework 4.8</td><td>HTTP liveness probe at <code>/health</code></td></tr>
+<tr><td>Configuration</td><td>Environment variables + web.config</td><td>—</td><td>Database connection string management</td></tr>
+<tr><td>Hosting</td><td>IIS / ASP.NET (svc endpoint)</td><td>.NET Framework 4.8</td><td>SOAP service hosting and HTTP routing</td></tr>
+</tbody></table></div>
+<h3 id="data-storage-external-services">Data Storage &amp; External Services</h3>
+<p>The application relies exclusively on a <strong>SQL Server</strong> database (<code>ZavaBankDB</code>) accessed via ADO.NET without any ORM. Two key tables are involved: <code>CurrencyPairs</code> (mapping base/quote currency pairs with an active flag) and <code>ExchangeRates</code> (mid-rates with effective and expiry dates, linked by <code>PairID</code>). There are no caches, message brokers, or additional external APIs — all data is fetched in real time from SQL Server on each request. Database connectivity is resolved through environment variables at runtime, falling back to the <code>web.config</code> connection string.</p>
+<h3 id="key-architectural-decisions">Key Architectural Decisions</h3>
+<ul>
+<li><strong>WCF with basicHttpBinding</strong>: The service exposes a SOAP endpoint using <code>basicHttpBinding</code>, making it consumable by any SOAP-capable client; service metadata (WSDL) is exposed via <code>httpGetEnabled=true</code>.</li>
+<li><strong>Direct ADO.NET data access</strong>: No ORM or repository abstraction is used; raw <code>SqlCommand</code> queries are executed inline within the service implementation, coupling business logic and data access in <code>CurrencyService</code>.</li>
+<li><strong>Environment-variable-first configuration</strong>: <code>DbConfig</code> prefers environment variables for the database connection string over <code>web.config</code>, enabling containerized deployment (see <code>Dockerfile</code>).</li>
+</ul>
+<h2 id="component-relationships">Component Relationships</h2>
+<div class="mermaid">
+flowchart LR
+    subgraph Presentation["Service / Endpoint Layer"]
+        SVCEndpoint["CurrencyService.svc (WCF Endpoint)"]
+        HealthEndpoint["Health.ashx (HTTP Handler)"]
+    end
+    subgraph Business["Business Logic"]
+        IContract["ICurrencyService (ServiceContract)"]
+        ServiceImpl["CurrencyService (Implementation)"]
+    end
+    subgraph DataModel["Data Model"]
+        DTO["CurrencyRateData (DataContract)"]
+    end
+    subgraph DataAccess["Data Access"]
+        DbConfigHelper["DbConfig (Connection String)"]
+        ADOAccess["ADO.NET SqlConnection/SqlCommand"]
+    end
+
+    SVCEndpoint -->|"implements"| IContract
+    IContract -->|"realized by"| ServiceImpl
+    ServiceImpl -->|"returns"| DTO
+    ServiceImpl -->|"calls"| DbConfigHelper
+    ServiceImpl -->|"uses"| ADOAccess
+    HealthEndpoint -.->|"independent of"| ServiceImpl
+</div>
+<h3 id="component-inventory">Component Inventory</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Component</th><th>Layer</th><th>Type</th><th>Responsibility</th></tr></thead><tbody>
+<tr><td><code>CurrencyService.svc</code></td><td>Service / Endpoint</td><td>WCF <code>.svc</code> activation file</td><td>Entry point for WCF SOAP requests; activates <code>CurrencyService</code></td></tr>
+<tr><td><code>Health.ashx</code></td><td>Service / Endpoint</td><td>ASP.NET Generic Handler</td><td>Serves liveness probe; returns HTTP 200 with &quot;OK&quot;</td></tr>
+<tr><td><code>ICurrencyService</code></td><td>Business Logic</td><td>WCF <code>[ServiceContract]</code> interface</td><td>Defines SOAP operations: <code>GetRate</code>, <code>GetSupportedCurrencies</code>, <code>ConvertAmount</code></td></tr>
+<tr><td><code>CurrencyService</code></td><td>Business Logic</td><td>WCF service implementation</td><td>Implements all three operations; contains input validation and SQL query logic</td></tr>
+<tr><td><code>CurrencyRateData</code></td><td>Data Model</td><td>WCF <code>[DataContract]</code> DTO</td><td>Serializable response model carrying rate, source, and effective date</td></tr>
+<tr><td><code>DbConfig</code></td><td>Data Access</td><td>Static helper class</td><td>Resolves database connection string from env vars or <code>web.config</code> fallback</td></tr>
+<tr><td><code>HealthHandler</code></td><td>Infrastructure</td><td><code>IHttpHandler</code> implementation</td><td>Processes <code>GET /health</code> requests independently of the WCF pipeline</td></tr>
+</tbody></table></div>
+</div>
+</div>
+<div id="tab-api" class="tab-panel">
+  <div class="fact-content"><h1 id="api-service-communication-contracts">API &amp; Service Communication Contracts</h1>
+<p>ZavaCurrencyService exposes a single SOAP/WCF endpoint with three operations for currency exchange rate lookup and amount conversion, plus one HTTP health-check endpoint — there are no REST APIs.</p>
+<h2 id="service-catalog">Service Catalog</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Port</th><th>Category</th><th>Purpose</th></tr></thead><tbody>
+<tr><td>CurrencyService (WCF)</td><td>80 (HTTP, IIS-hosted)</td><td>Business</td><td>SOAP service providing currency rate lookup (<code>GetRate</code>), supported currencies list (<code>GetSupportedCurrencies</code>), and amount conversion (<code>ConvertAmount</code>)</td></tr>
+<tr><td>Health Endpoint</td><td>80 (HTTP, shared)</td><td>Observability</td><td>Simple HTTP liveness probe at <code>/health</code> returning &quot;OK&quot;</td></tr>
+</tbody></table></div>
+<h2 id="api-endpoints-inventory">API Endpoints Inventory</h2>
+<p>&gt; Note: This is a SOAP/WCF service. There are no REST endpoints. The operations below are exposed via <code>basicHttpBinding</code> at <code>CurrencyService.svc</code> and are invoked through SOAP envelopes. A WSDL definition is served at <code>CurrencyService.svc?wsdl</code>.</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Protocol</th><th>Operation / Path</th><th>Request Parameters</th><th>Response Type</th></tr></thead><tbody>
+<tr><td>CurrencyService</td><td>SOAP (basicHttpBinding)</td><td><code>GetRate</code></td><td><code>fromCurrency: string</code>, <code>toCurrency: string</code></td><td><code>CurrencyRateData</code></td></tr>
+<tr><td>CurrencyService</td><td>SOAP (basicHttpBinding)</td><td><code>GetSupportedCurrencies</code></td><td>_(none)_</td><td><code>string[]</code></td></tr>
+<tr><td>CurrencyService</td><td>SOAP (basicHttpBinding)</td><td><code>ConvertAmount</code></td><td><code>amount: decimal</code>, <code>fromCurrency: string</code>, <code>toCurrency: string</code></td><td><code>decimal</code></td></tr>
+<tr><td>HealthHandler</td><td>HTTP GET</td><td><code>/health</code></td><td>_(none)_</td><td><code>text/plain</code> (&quot;OK&quot;)</td></tr>
+</tbody></table></div>
+<h2 id="management-observability-endpoints">Management &amp; Observability Endpoints</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Endpoint</th><th>Purpose</th><th>Custom Metrics</th></tr></thead><tbody>
+<tr><td>HealthHandler</td><td><code>GET /health</code></td><td>HTTP liveness probe; returns HTTP 200 with body &quot;OK&quot;</td><td>None</td></tr>
+<tr><td>WCF Metadata</td><td><code>GET /CurrencyService.svc?wsdl</code></td><td>WSDL/metadata discovery (enabled via <code>serviceMetadata httpGetEnabled=&quot;true&quot;</code>)</td><td>None</td></tr>
+</tbody></table></div>
+<p>No Spring Actuator, .NET health-check middleware, Prometheus scrape endpoints, or Application Insights instrumentation are present.</p>
+<h2 id="dtos-contracts">DTOs &amp; Contracts</h2>
+<p><strong><code>CurrencyRateData</code></strong> is the sole DTO in the service. It is decorated with <code>[DataContract]</code> and its fields with <code>[DataMember(Order = N)]</code>, which governs SOAP/XML serialization order. It is used exclusively as the <strong>response type</strong> for the <code>GetRate</code> operation. <code>ConvertAmount</code> returns a primitive <code>decimal</code> and <code>GetSupportedCurrencies</code> returns <code>string[]</code> — neither requires a dedicated DTO class.</p>
+<p><code>CurrencyRateData</code> is a mutable class (not a <code>record</code> or <code>readonly struct</code>). Full field details are documented in <code>data-architecture.md</code>.</p>
+<p>There is no OpenAPI/Swagger specification, no <code>.proto</code> protobuf schema, and no GraphQL schema. The authoritative contract is the WSDL served at <code>CurrencyService.svc?wsdl</code>.</p>
+<h2 id="communication-patterns">Communication Patterns</h2>
+<p><strong>Synchronous only.</strong> All client interactions are synchronous request-response over SOAP/HTTP. Clients connect directly to the <code>.svc</code> endpoint — there is no API gateway, service mesh, or load balancer defined within this repository.</p>
+<p><strong>No resilience patterns.</strong> There is no circuit breaker, retry policy, timeout configuration, or bulkhead pattern implemented in the service code (e.g., no Polly usage). Database calls use a plain <code>SqlConnection</code> without any timeout override.</p>
+<p><strong>No service discovery.</strong> Clients must address the service by a hardcoded or externally configured URL. There is no Eureka, Consul, Kubernetes DNS–based discovery, or client-side load balancing configured.</p>
+<p><strong>Security posture</strong>: No authentication or authorization is configured at the WCF transport or message layer. The health endpoint is explicitly allowed for all users (<code>&lt;allow users=&quot;*&quot; /&gt;</code>), and the WCF service does not define any <code>&lt;serviceCredentials&gt;</code> or security behavior. Transport security (HTTPS/TLS) is not configured in <code>web.config</code> — the binding uses plain HTTP. All SOAP operations and the WSDL metadata endpoint are publicly accessible with no authentication or authorization checks.</p>
+<p><strong>Startup order</strong>: The service has no startup dependency chain management. If SQL Server is unavailable at request time, operations throw a <code>FaultException</code> without retry.</p>
+<h2 id="service-technology-matrix">Service Technology Matrix</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Web Framework</th><th>Data Access</th><th>Discovery</th><th>Gateway</th><th>Health Check</th><th>Cache</th><th>Metrics</th></tr></thead><tbody>
+<tr><td>CurrencyService</td><td>WCF / System.ServiceModel (basicHttpBinding)</td><td>ADO.NET (System.Data.SqlClient)</td><td>None</td><td>None</td><td>Custom IHttpHandler (/health)</td><td>None</td><td>None</td></tr>
+</tbody></table></div>
+<h2 id="service-communication-sequence">Service Communication Sequence</h2>
+<div class="mermaid">
+sequenceDiagram
+    participant Client as "SOAP Client"
+    participant SVC as "CurrencyService.svc (WCF)"
+    participant DB as "SQL Server (ZavaBankDB)"
+
+    Client->>SVC: SOAP Request: GetRate(fromCurrency, toCurrency)
+    SVC->>SVC: NormalizeCurrency(from), NormalizeCurrency(to)
+    SVC->>DB: SELECT TOP 1 ... FROM CurrencyPairs JOIN ExchangeRates WHERE ...
+    alt Rate found
+        DB-->>SVC: BaseCurrency, QuoteCurrency, MidRate, Source, EffectiveDate
+        SVC-->>Client: SOAP Response: CurrencyRateData
+    else No rate found
+        DB-->>SVC: Empty result set
+        SVC-->>Client: SOAP Fault: "No exchange rate found for X/Y."
+    end
+
+    Client->>SVC: SOAP Request: ConvertAmount(amount, fromCurrency, toCurrency)
+    alt amount < 0
+        SVC-->>Client: SOAP Fault: "Amount must be non-negative."
+    else amount valid
+        SVC->>DB: SELECT TOP 1 ... (same rate query via GetRate)
+        DB-->>SVC: MidRate
+        SVC->>SVC: Round(amount * rate, 4, AwayFromZero)
+        SVC-->>Client: SOAP Response: decimal result
+    end
+
+    Client->>SVC: SOAP Request: GetSupportedCurrencies()
+    SVC->>DB: SELECT DISTINCT CurrencyCode FROM CurrencyPairs WHERE IsActive=1
+    DB-->>SVC: List of currency codes
+    SVC-->>Client: SOAP Response: string[]
+
+    participant HC as "HTTP Client"
+    HC->>SVC: GET /health
+    SVC-->>HC: 200 OK "OK"
+</div>
+</div>
+</div>
+<div id="tab-config" class="tab-panel">
+  <div class="fact-content"><h1 id="configuration-externalized-settings-inventory">Configuration &amp; Externalized Settings Inventory</h1>
+<p>ZavaCurrencyService uses a single <code>web.config</code> file as its primary configuration source, with environment variable overrides for database credentials; there are no runtime profiles, feature flags, or external config servers.</p>
+<h2 id="configuration-sources">Configuration Sources</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Source</th><th>Type</th><th>Path/Location</th><th>Notes</th></tr></thead><tbody>
+<tr><td><code>web.config</code></td><td>XML Application Config</td><td><code>/web.config</code> (repo root)</td><td>Primary config for ASP.NET/WCF; contains connection string, WCF service model, HTTP handlers, and authorization rules</td></tr>
+<tr><td>Environment Variables</td><td>OS-level env vars</td><td>Runtime (container / host)</td><td><code>DB_HOST</code>, <code>DB_PORT</code>, <code>DB_NAME</code>, <code>DB_USER</code>, <code>DB_PASSWORD</code> — override the <code>web.config</code> connection string when all five are set</td></tr>
+<tr><td><code>Dockerfile</code></td><td>Container build &amp; runtime</td><td><code>/Dockerfile</code></td><td>Defines base image (<code>mono:6.12</code>), build steps (<code>mcs</code> compiler), exposed port (<code>8080</code>), and startup command (<code>xsp4</code>)</td></tr>
+</tbody></table></div>
+<p>No Spring Cloud Config server, Azure App Configuration, AWS AppConfig, Consul KV, HashiCorp Vault, or Kubernetes ConfigMap/Secret is referenced.</p>
+<h2 id="build-profiles">Build Profiles</h2>
+<p>The project uses a legacy MSBuild-format <code>.csproj</code> (ToolsVersion 4.0) with two standard build configurations and no custom profiles:</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Profile</th><th>Activation</th><th>Purpose</th><th>Key Dependencies/Plugins</th></tr></thead><tbody>
+<tr><td>Debug</td><td>Default (IDE / <code>msbuild /p:Configuration=Debug</code>)</td><td>Local development; includes debug symbols</td><td><code>&lt;compilation debug=&quot;true&quot; /&gt;</code> in <code>web.config</code></td></tr>
+<tr><td>Release</td><td>Manual (<code>msbuild /p:Configuration=Release</code>)</td><td>Production packaging</td><td>No additional plugins; <code>web.config</code> is not transformed automatically</td></tr>
+<tr><td>Docker (Mono/mcs)</td><td><code>docker build</code></td><td>Containerized build using Mono compiler (<code>mcs</code>) instead of MSBuild</td><td><code>mono:6.12</code> base image; <code>mono-xsp4</code> runtime; <code>mcs</code> compiler with explicit assembly references</td></tr>
+</tbody></table></div>
+<p>&gt; Note: No Directory.Build.props, Directory.Packages.props, or NuGet central package management is present.</p>
+<h2 id="runtime-profiles">Runtime Profiles</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Profile</th><th>Activation Method</th><th>Config Files</th><th>Key Overrides</th></tr></thead><tbody>
+<tr><td>IIS/Windows</td><td>Default (no env var needed)</td><td><code>web.config</code></td><td>Uses <code>ZavaBankDb</code> connection string from <code>web.config</code></td></tr>
+<tr><td>Docker/Container</td><td>Environment variables set at <code>docker run</code> time</td><td><code>web.config</code> (embedded in image)</td><td><code>DB_HOST</code>, <code>DB_PORT</code>, <code>DB_NAME</code>, <code>DB_USER</code>, <code>DB_PASSWORD</code> override the hardcoded connection string</td></tr>
+</tbody></table></div>
+<p>There is no <code>ASPNETCORE_ENVIRONMENT</code> or <code>appsettings.{env}.json</code> mechanism — this is a .NET Framework 4.8 WCF project, not ASP.NET Core.</p>
+<h2 id="properties-inventory">Properties Inventory</h2>
+<h3 id="zavacurrencyservice">ZavaCurrencyService</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Property Key</th><th>Default Value</th><th>Source</th><th>Notes</th></tr></thead><tbody>
+<tr><td><code>connectionStrings/ZavaBankDb</code></td><td><code>Server=sqlserver,1433;Database=ZavaBankDB;User Id=sa;Password=Zava123!;TrustServerCertificate=true;</code></td><td><code>web.config</code></td><td>Fallback connection string; overridden by env vars when all five DB env vars are set</td></tr>
+<tr><td><code>DB_HOST</code></td><td>_(not set)_</td><td>Environment variable</td><td>SQL Server host; required for env-var override path</td></tr>
+<tr><td><code>DB_PORT</code></td><td>_(not set)_</td><td>Environment variable</td><td>SQL Server port (typically <code>1433</code>)</td></tr>
+<tr><td><code>DB_NAME</code></td><td>_(not set)_</td><td>Environment variable</td><td>Database name</td></tr>
+<tr><td><code>DB_USER</code></td><td>_(not set)_</td><td>Environment variable</td><td>SQL Server login username</td></tr>
+<tr><td><code>DB_PASSWORD</code></td><td>_(not set)_</td><td>Environment variable</td><td>SQL Server login password</td></tr>
+<tr><td><code>system.web/compilation[@debug]</code></td><td><code>true</code></td><td><code>web.config</code></td><td>Debug compilation enabled in the checked-in config; should be <code>false</code> in production</td></tr>
+<tr><td><code>system.web/compilation[@targetFramework]</code></td><td><code>4.8</code></td><td><code>web.config</code></td><td>ASP.NET target framework</td></tr>
+<tr><td><code>system.web/httpRuntime[@targetFramework]</code></td><td><code>4.8</code></td><td><code>web.config</code></td><td>HTTP runtime target framework</td></tr>
+<tr><td><code>system.web/customErrors[@mode]</code></td><td><code>Off</code></td><td><code>web.config</code></td><td>Error detail disclosure; should be <code>RemoteOnly</code> or <code>On</code> in production</td></tr>
+<tr><td><code>system.serviceModel/services/service[@behaviorConfiguration]</code></td><td><code>CurrencyServiceBehavior</code></td><td><code>web.config</code></td><td>Points to behavior enabling WSDL metadata and exception detail in faults</td></tr>
+<tr><td><code>serviceDebug[@includeExceptionDetailInFaults]</code></td><td><code>true</code></td><td><code>web.config</code></td><td>Exposes exception stack traces in SOAP faults; should be <code>false</code> in production</td></tr>
+<tr><td><code>serviceMetadata[@httpGetEnabled]</code></td><td><code>true</code></td><td><code>web.config</code></td><td>WSDL metadata endpoint enabled over plain HTTP (no HTTPS)</td></tr>
+<tr><td><code>serviceHostingEnvironment[@multipleSiteBindingsEnabled]</code></td><td><code>true</code></td><td><code>web.config</code></td><td>Allows hosting on multiple IIS site bindings</td></tr>
+<tr><td>Exposed port (Docker)</td><td><code>8080</code></td><td><code>Dockerfile</code></td><td>xsp4 listens on <code>0.0.0.0:8080</code></td></tr>
+</tbody></table></div>
+<h2 id="startup-parameters-resource-requirements">Startup Parameters &amp; Resource Requirements</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Runtime Options</th><th>Memory</th><th>CPU</th><th>Instance Count</th><th>Notes</th></tr></thead><tbody>
+<tr><td>ZavaCurrencyService (IIS)</td><td>Standard ASP.NET worker process (<code>w3wp.exe</code>); no custom heap/startup parameters</td><td>Not specified</td><td>Not specified</td><td>1 (IIS app pool)</td><td>Configuration managed via IIS application pool settings</td></tr>
+<tr><td>ZavaCurrencyService (Docker/Mono)</td><td><code>xsp4 --port 8080 --address 0.0.0.0 --nonstop</code></td><td>Not specified in <code>Dockerfile</code></td><td>Not specified</td><td>1</td><td>No <code>--mem-limit</code>, no Kubernetes resource requests/limits defined</td></tr>
+</tbody></table></div>
+<p>No JVM heap settings, <code>-D</code> system properties, or resource limits are configured in the repository.</p>
+<h2 id="startup-dependency-chain">Startup Dependency Chain</h2>
+<p>ZavaCurrencyService has no managed startup dependency chain. There is no Docker Compose file, Kubernetes manifest, Helm chart, or readiness probe configuration in the repository.</p>
+<p><strong>Implicit dependency</strong>: The service requires SQL Server (<code>ZavaBankDB</code>) to be reachable at the first request. There is no retry mechanism, circuit breaker, or readiness probe — if SQL Server is unavailable, <code>GetRate</code> and other operations will throw a <code>SqlException</code> wrapped in a <code>FaultException</code>.</p>
+<p><strong>Health check</strong>: <code>GET /health</code> returns HTTP 200 + &quot;OK&quot; immediately without checking database connectivity. It cannot be used as a true readiness probe.</p>
+<h2 id="secrets-sensitive-configuration">Secrets &amp; Sensitive Configuration</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Secret Reference</th><th>Type</th><th>Storage</th></tr></thead><tbody>
+<tr><td><code>web.config</code> → <code>connectionStrings/ZavaBankDb</code> → <code>User Id</code></td><td>SQL Server username</td><td>Hardcoded in <code>web.config</code> (<code>sa</code>) — [MASKED source file value]</td></tr>
+<tr><td><code>web.config</code> → <code>connectionStrings/ZavaBankDb</code> → <code>Password</code></td><td>SQL Server password</td><td>Hardcoded in <code>web.config</code> — [MASKED]</td></tr>
+<tr><td><code>DB_USER</code></td><td>SQL Server username (env override)</td><td>Environment variable (container runtime)</td></tr>
+<tr><td><code>DB_PASSWORD</code></td><td>SQL Server password (env override)</td><td>Environment variable (container runtime)</td></tr>
+</tbody></table></div>
+<h3 id="secrets-provisioning-workflow">Secrets Provisioning Workflow</h3>
+<p>There is no formal secrets management workflow. In the current configuration:</p>
+<ol>
+<li><strong>Development / IIS hosting</strong>: The SQL Server <code>sa</code> credentials are hardcoded in <code>web.config</code> and committed to the repository. This is a security risk (credential exposure in source control).</li>
+<li><strong>Container / Docker hosting</strong>: The five <code>DB_*</code> environment variables are expected to be injected at <code>docker run</code> time (e.g., via <code>-e</code> flags, Docker Compose <code>environment:</code> section, or Kubernetes Secret-backed <code>envFrom</code>). No secret store (Key Vault, Vault, AWS Secrets Manager) or managed identity is configured.</li>
+</ol>
+<p>There is no credential rotation, Jasypt encryption, DPAPI protection, or secrets injection via a sidecar or init container.</p>
+<h2 id="feature-flags">Feature Flags</h2>
+<p>No feature flag framework is present. There are no <code>@ConditionalOnProperty</code> annotations, <code>IFeatureManager</code> usage, LaunchDarkly/Unleash clients, or custom toggle mechanisms.</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Flag Name</th><th>Default</th><th>Controlled By</th></tr></thead><tbody>
+<tr><td>_(none detected)_</td><td>—</td><td>—</td></tr>
+</tbody></table></div>
+<h2 id="framework-runtime-versions">Framework &amp; Runtime Versions</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Component</th><th>Version</th><th>Source</th></tr></thead><tbody>
+<tr><td>Target Framework</td><td>.NET Framework 4.8</td><td><code>ZavaCurrencyService.csproj</code> (<code>&lt;TargetFrameworkVersion&gt;v4.8&lt;/TargetFrameworkVersion&gt;</code>)</td></tr>
+<tr><td>ASP.NET (HTTP Runtime)</td><td>4.8</td><td><code>web.config</code> (<code>httpRuntime targetFramework=&quot;4.8&quot;</code>)</td></tr>
+<tr><td>WCF (System.ServiceModel)</td><td>Built-in (.NET Framework 4.8)</td><td><code>ZavaCurrencyService.csproj</code> (<code>&lt;Reference Include=&quot;System.ServiceModel&quot; /&gt;</code>)</td></tr>
+<tr><td>ADO.NET (System.Data)</td><td>Built-in (.NET Framework 4.8)</td><td><code>ZavaCurrencyService.csproj</code> (<code>&lt;Reference Include=&quot;System.Data&quot; /&gt;</code>)</td></tr>
+<tr><td>Mono Runtime (Docker)</td><td>6.12</td><td><code>Dockerfile</code> (<code>FROM mono:6.12</code>)</td></tr>
+<tr><td>XSP4 Web Server (Docker)</td><td>Installed via apt (<code>mono-xsp4</code>)</td><td><code>Dockerfile</code></td></tr>
+<tr><td>Mono C# Compiler (<code>mcs</code>)</td><td>Bundled with Mono 6.12</td><td><code>Dockerfile</code> (<code>RUN mcs ...</code>)</td></tr>
+<tr><td>MSBuild ToolsVersion</td><td>4.0</td><td><code>ZavaCurrencyService.csproj</code> (<code>ToolsVersion=&quot;4.0&quot;</code>)</td></tr>
+<tr><td>Debian (Docker base OS)</td><td>Buster (Debian 10, EOL)</td><td><code>Dockerfile</code> (sed commands patch <code>buster-updates</code> and <code>security.debian.org</code> to archive mirrors)</td></tr>
+</tbody></table></div>
+</div>
+</div>
+<div id="tab-workflows" class="tab-panel">
+  <div class="fact-content"><h1 id="core-business-workflows">Core Business Workflows</h1>
+<p>ZavaCurrencyService enables financial applications and clients at Zava Bank to retrieve live exchange rates, list supported currencies, and convert monetary amounts between currency pairs stored in the bank&#39;s internal SQL Server database.</p>
+<h2 id="domain-entities">Domain Entities</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Entity</th><th>Service / Bounded Context</th><th>Description</th><th>Key Relationships</th></tr></thead><tbody>
+<tr><td><code>CurrencyPairs</code></td><td>Currency Rate Management</td><td>Represents an active or inactive tradeable pair of currencies (e.g., USD/EUR) identified by a base and quote currency code</td><td>Has many <code>ExchangeRates</code>; active pairs (<code>IsActive=1</code>) are the authoritative set of supported conversions</td></tr>
+<tr><td><code>ExchangeRates</code></td><td>Currency Rate Management</td><td>A point-in-time mid-rate snapshot for a given currency pair, with an effective date and optional expiry date</td><td>Belongs to one <code>CurrencyPairs</code>; the most recent non-expired rate is authoritative for conversions</td></tr>
+<tr><td><code>CurrencyRateData</code></td><td>Currency Rate Management (DTO)</td><td>The response contract returned to clients for a rate lookup — carries the base/quote currencies, mid-rate, data source label, and effective date</td><td>Constructed from <code>CurrencyPairs</code> + <code>ExchangeRates</code>; not persisted</td></tr>
+</tbody></table></div>
+<h2 id="service-to-domain-mapping">Service-to-Domain Mapping</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Domain Context</th><th>Owned Entities</th><th>External Dependencies</th></tr></thead><tbody>
+<tr><td><code>ZavaCurrencyService</code></td><td>Currency Rate Management</td><td><code>CurrencyPairs</code>, <code>ExchangeRates</code> (read-only access)</td><td>SQL Server (<code>ZavaBankDB</code>) — all data originates from this database; no downstream services</td></tr>
+</tbody></table></div>
+<p>This is a single-service application. There are no microservice boundaries, no event-driven cross-service flows, and no gateway aggregation layer.</p>
+<h2 id="primary-workflows">Primary Workflows</h2>
+<h3 id="workflow-1-exchange-rate-lookup-getrate">Workflow 1: Exchange Rate Lookup (<code>GetRate</code>)</h3>
+<p>A client requests the current mid-rate for a currency pair (e.g., USD → EUR).</p>
+<p><strong>Steps:</strong></p>
+<ol>
+<li>Client sends a SOAP request with <code>fromCurrency</code> and <code>toCurrency</code> string values.</li>
+<li>The service normalises both codes (trims whitespace, uppercases) and validates that each is exactly 3 characters.</li>
+<li>A parameterised SQL query selects the most recent, non-expired rate from <code>ExchangeRates</code> joined to the active <code>CurrencyPairs</code> record matching the requested pair.</li>
+<li>If a row is returned, the service constructs and returns a <code>CurrencyRateData</code> response.</li>
+<li>If no row is returned (pair not supported or all rates expired), the service raises a SOAP fault: <code>&quot;No exchange rate found for X/Y.&quot;</code>.</li>
+</ol>
+<p><strong>Business rules involved:</strong> Currency code normalisation, 3-letter code validation, active pair filter (<code>IsActive=1</code>), expiry filter (<code>ExpiryDate IS NULL OR ExpiryDate &gt; GETDATE()</code>), most-recent-first ordering.</p>
+<hr/>
+<h3 id="workflow-2-amount-conversion-convertamount">Workflow 2: Amount Conversion (<code>ConvertAmount</code>)</h3>
+<p>A client requests conversion of a monetary amount from one currency to another.</p>
+<p><strong>Steps:</strong></p>
+<ol>
+<li>Client sends a SOAP request with <code>amount</code> (decimal), <code>fromCurrency</code>, and <code>toCurrency</code>.</li>
+<li>The service validates that <code>amount</code> is non-negative; if negative, it raises a SOAP fault: <code>&quot;Amount must be non-negative.&quot;</code>.</li>
+<li>The service delegates to <code>GetRate</code> to retrieve the current mid-rate (see Workflow 1), inheriting all its validation and database lookup steps.</li>
+<li>The converted amount is calculated as <code>amount &#215; rate</code>, rounded to <strong>4 decimal places</strong> using <code>MidpointRounding.AwayFromZero</code>.</li>
+<li>The rounded result is returned as a plain <code>decimal</code>.</li>
+</ol>
+<p><strong>Business rules involved:</strong> Non-negative amount constraint, delegated rate lookup (currency validation + rate fetch), 4-decimal-place rounding with banker&#39;s rounding avoided (AwayFromZero).</p>
+<hr/>
+<h3 id="workflow-3-supported-currency-discovery-getsupportedcurrencies">Workflow 3: Supported Currency Discovery (<code>GetSupportedCurrencies</code>)</h3>
+<p>A client requests the list of all currency codes the service can handle.</p>
+<p><strong>Steps:</strong></p>
+<ol>
+<li>Client sends a SOAP request with no parameters.</li>
+<li>The service queries <code>CurrencyPairs</code> for all distinct currency codes (both <code>BaseCurrency</code> and <code>QuoteCurrency</code> columns) where <code>IsActive=1</code>.</li>
+<li>The merged, deduplicated, alphabetically sorted list is returned as <code>string[]</code>.</li>
+</ol>
+<p><strong>Business rules involved:</strong> Active pair filter (<code>IsActive=1</code>), union of base and quote sides, alphabetical ordering.</p>
+<hr/>
+<h3 id="workflow-4-liveness-check-get-health">Workflow 4: Liveness Check (<code>GET /health</code>)</h3>
+<p>An infrastructure or orchestration system checks whether the service process is alive.</p>
+<p><strong>Steps:</strong></p>
+<ol>
+<li>An HTTP client sends <code>GET /health</code>.</li>
+<li><code>HealthHandler</code> returns HTTP 200 with body <code>&quot;OK&quot;</code> immediately — no database check is performed.</li>
+</ol>
+<p><strong>Note:</strong> This is a <strong>process liveness</strong> check only, not a readiness probe. A healthy response does not guarantee that SQL Server is reachable.</p>
+<h2 id="cross-service-data-flows">Cross-Service Data Flows</h2>
+<p>ZavaCurrencyService is a standalone service with no upstream or downstream service dependencies beyond SQL Server. There are no API gateway aggregation patterns, no event-driven flows, no message broker integrations, and no circuit breaker fallback paths to document.</p>
+<p>All data originates from the <code>ZavaBankDB</code> SQL Server database. The service has no write paths — it performs read-only queries only. If the database is unavailable, all operations (except <code>/health</code>) fail immediately with a <code>SqlException</code> propagated as a SOAP fault.</p>
+<h2 id="business-workflow-sequence">Business Workflow Sequence</h2>
+<div class="mermaid">
+sequenceDiagram
+    participant Client as "SOAP Client"
+    participant Svc as "CurrencyService"
+    participant DB as "SQL Server (ZavaBankDB)"
+
+    Note over Client,Svc: Workflow: ConvertAmount (covers GetRate internally)
+
+    Client->>Svc: ConvertAmount(amount, fromCurrency, toCurrency)
+
+    alt amount < 0
+        Svc-->>Client: SOAP Fault: "Amount must be non-negative."
+    else amount valid
+        Svc->>Svc: NormalizeCurrency(fromCurrency)
+        Svc->>Svc: NormalizeCurrency(toCurrency)
+
+        alt currency code not 3 letters
+            Svc-->>Client: SOAP Fault: "Currency code must be exactly 3 letters."
+        else codes valid
+            Svc->>DB: SELECT TOP 1 MidRate WHERE BaseCurrency=from AND QuoteCurrency=to AND IsActive=1 AND not expired ORDER BY EffectiveDate DESC
+            alt rate found
+                DB-->>Svc: MidRate, Source, EffectiveDate
+                Svc->>Svc: Round(amount x MidRate, 4, AwayFromZero)
+                Svc-->>Client: SOAP Response: converted decimal
+            else no rate found
+                DB-->>Svc: empty result
+                Svc-->>Client: SOAP Fault: "No exchange rate found for X/Y."
+            end
+        end
+    end
+</div>
+<h2 id="business-rules-decision-logic">Business Rules &amp; Decision Logic</h2>
+<h3 id="validation-rules">Validation Rules</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Rule</th><th>Applied In</th><th>Behaviour on Violation</th></tr></thead><tbody>
+<tr><td>Currency code must be non-empty and exactly 3 characters (after trim)</td><td><code>GetRate</code>, <code>ConvertAmount</code> (via <code>NormalizeCurrency</code>)</td><td>SOAP fault: <code>&quot;Currency code must be exactly 3 letters.&quot;</code></td></tr>
+<tr><td>Currency code is normalised to uppercase</td><td><code>GetRate</code>, <code>ConvertAmount</code></td><td>Silent normalisation — <code>usd</code> becomes <code>USD</code></td></tr>
+<tr><td>Amount must be non-negative (<code>&gt;= 0</code>)</td><td><code>ConvertAmount</code></td><td>SOAP fault: <code>&quot;Amount must be non-negative.&quot;</code></td></tr>
+</tbody></table></div>
+<h3 id="decision-logic">Decision Logic</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Decision Point</th><th>Logic</th></tr></thead><tbody>
+<tr><td>Rate selection</td><td><code>SELECT TOP 1 … ORDER BY er.EffectiveDate DESC</code> — the most recently effective, non-expired rate wins</td></tr>
+<tr><td>Rate expiry</td><td>Rates with <code>ExpiryDate IS NULL</code> are treated as perpetually valid; rates past their <code>ExpiryDate</code> are excluded</td></tr>
+<tr><td>Active pair filter</td><td>Only <code>CurrencyPairs</code> rows with <code>IsActive = 1</code> are considered</td></tr>
+<tr><td>Supported currency union</td><td>Both <code>BaseCurrency</code> and <code>QuoteCurrency</code> sides of active pairs contribute to the supported list</td></tr>
+</tbody></table></div>
+<h3 id="computed-values">Computed Values</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Value</th><th>Formula</th><th>Where Used</th></tr></thead><tbody>
+<tr><td>Converted amount</td><td><code>Round(amount &#215; MidRate, 4, MidpointRounding.AwayFromZero)</code></td><td><code>ConvertAmount</code> return value</td></tr>
+</tbody></table></div>
+<h3 id="transactions-error-handling">Transactions &amp; Error Handling</h3>
+<ul>
+<li><strong>No explicit transactions</strong>: Each database call opens its own <code>SqlConnection</code> with <code>using</code> disposal. There are no <code>SqlTransaction</code> or <code>TransactionScope</code> wrappings — operations are single-query reads and do not require atomicity.</li>
+<li><strong>SOAP faults</strong>: Business validation errors are surfaced as WCF <code>FaultException</code> (unmapped fault), which serialises to a SOAP 1.1 Fault envelope. Clients must handle <code>FaultException</code> to distinguish business errors from transport errors.</li>
+<li><strong>No retry logic</strong>: Database failures propagate immediately as unhandled exceptions, resulting in a generic SOAP fault visible to the client.</li>
+</ul>
+<h3 id="authorization">Authorization</h3>
+<p>No authentication or authorization is enforced at the business logic layer. All three service operations are publicly accessible to any caller that can reach the SOAP endpoint. See <code>api-service-contracts.md</code> for the security posture assessment.</p>
+</div>
+</div>
+<div id="tab-deps" class="tab-panel">
+  <div class="fact-content"><h1 id="dependency-map">Dependency Map</h1>
+<p>ZavaCurrencyService is a .NET Framework 4.8 WCF project with no external NuGet packages — it relies entirely on 7 built-in .NET Framework assemblies declared as framework references in the <code>.csproj</code>.</p>
+<h2 id="dependencies">Dependencies</h2>
+<div class="mermaid">
+flowchart LR
+    App["ZavaCurrencyService (.NET Framework 4.8)"]
+
+    subgraph WCF["WCF / Service Model"]
+        ServiceModel["System.ServiceModel (built-in)"]
+        RuntimeSerialization["System.Runtime.Serialization (built-in)"]
+    end
+    subgraph Web["Web / HTTP"]
+        SystemWeb["System.Web (built-in)"]
+    end
+    subgraph DB["Database / ADO.NET"]
+        SystemData["System.Data (built-in)"]
+    end
+    subgraph Core["Core Framework"]
+        System["System (built-in)"]
+        SystemCore["System.Core (built-in)"]
+        SystemConfiguration["System.Configuration (built-in)"]
+    end
+
+    App -->|"SOAP service hosting"| WCF
+    App -->|"HTTP handling"| Web
+    App -->|"ADO.NET data access"| DB
+    App -->|"core runtime"| Core
+</div>
+<h3 id="dependency-summary">Dependency Summary</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Category</th><th>Count</th><th>Key Libraries</th><th>Notes</th></tr></thead><tbody>
+<tr><td>WCF / Service Model</td><td>2</td><td>System.ServiceModel, System.Runtime.Serialization</td><td>Legacy SOAP/WCF stack — not supported on .NET Core/5+ without CoreWCF</td></tr>
+<tr><td>Web / HTTP</td><td>1</td><td>System.Web</td><td>ASP.NET WebForms/classic pipeline; no equivalent on .NET Core/5+</td></tr>
+<tr><td>Database / ADO.NET</td><td>1</td><td>System.Data</td><td>Raw ADO.NET; SqlClient moved to <code>Microsoft.Data.SqlClient</code> NuGet on .NET Core</td></tr>
+<tr><td>Core Framework</td><td>3</td><td>System, System.Core, System.Configuration</td><td>Base runtime assemblies; ConfigurationManager moved to NuGet on .NET Core</td></tr>
+</tbody></table></div>
+<h3 id="version-compatibility-risks">Version &amp; Compatibility Risks</h3>
+<p>All dependencies are built-in .NET Framework 4.8 assemblies — there are no third-party NuGet packages to version or patch independently. However, several assemblies represent the most significant migration risks: <strong>System.ServiceModel</strong> (WCF) and <strong>System.Web</strong> (classic ASP.NET) are not available in .NET Core, .NET 5+, or .NET 10. Migrating to modern .NET would require replacing WCF with CoreWCF (a community-maintained port), gRPC, or REST APIs, and replacing the <code>System.Web</code> HTTP pipeline with ASP.NET Core middleware. Additionally, <strong>System.Configuration</strong>&#39;s <code>ConfigurationManager</code> is available as a NuGet package (<code>System.Configuration.ConfigurationManager</code>) on .NET Core but the preferred approach is <code>Microsoft.Extensions.Configuration</code>.</p>
+<h3 id="notable-observations">Notable Observations</h3>
+<ul>
+<li><strong>No external NuGet packages</strong>: The project has an empty <code>packages.config</code> — all dependencies are .NET Framework built-in assemblies. This eliminates NuGet vulnerability surface but also means the entire dependency risk is in the framework itself.</li>
+<li><strong>WCF lock-in</strong>: <code>System.ServiceModel</code> is the core transport; migrating away from .NET Framework 4.8 requires either adopting <a href="https://github.com/CoreWCF/CoreWCF" target="_blank" rel="noopener noreferrer">CoreWCF</a> (SOAP compatibility) or re-architecting the service interface entirely.</li>
+<li><strong>System.Web dependency</strong>: The use of <code>IHttpHandler</code> (<code>Health.ashx</code>) pulls in <code>System.Web</code>, which is one of the most significant blockers for .NET modernization — it cannot be directly ported and must be replaced with ASP.NET Core middleware/minimal API endpoints.</li>
+<li><strong>Direct ADO.NET without SqlClient NuGet</strong>: SQL Server access uses the framework-bundled <code>System.Data.SqlClient</code>. On .NET Core, this should be replaced with the <code>Microsoft.Data.SqlClient</code> NuGet package, which receives active security patches.</li>
+</ul>
+<h2 id="test-dependencies">Test Dependencies</h2>
+<p>No test-scope dependencies detected.</p>
+<p>Total test-scope dependencies: 0</p>
+<p>The project contains no dedicated test project or test framework references. There is no unit test, integration test, or contract-test infrastructure present in the repository.</p>
+</div>
+</div>
+<div id="tab-data" class="tab-panel">
+  <div class="fact-content"><h1 id="data-architecture-persistence-layer">Data Architecture &amp; Persistence Layer</h1>
+<p>ZavaCurrencyService accesses a single SQL Server database (<code>ZavaBankDB</code>) using raw ADO.NET — there is no ORM, no entity framework, and no migration tooling; database schema is managed externally.</p>
+<h2 id="database-configuration">Database Configuration</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service/Module</th><th>DB Type</th><th>Profile</th><th>Driver</th><th>Connection</th><th>Migration Tool</th></tr></thead><tbody>
+<tr><td>ZavaCurrencyService</td><td>SQL Server</td><td>All (single config)</td><td><code>System.Data.SqlClient</code> (built-in, .NET Framework 4.8)</td><td><code>Server=sqlserver,1433;Database=ZavaBankDB</code> (via <code>web.config</code>) or env vars <code>DB_HOST</code>/<code>DB_PORT</code>/<code>DB_NAME</code>/<code>DB_USER</code>/<code>DB_PASSWORD</code></td><td>None — schema is managed externally</td></tr>
+</tbody></table></div>
+<p>There is no per-environment profile switching (e.g., Flyway, Liquibase, EF Migrations). The <code>DbConfig</code> helper selects environment-variable connection settings at runtime and falls back to the <code>web.config</code> <code>ZavaBankDb</code> entry. See <code>configuration-inventory.md</code> for the full property inventory.</p>
+<h2 id="data-ownership-per-service">Data Ownership per Service</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Tables Owned</th><th>ORM Framework</th><th>Caching</th><th>Notes</th></tr></thead><tbody>
+<tr><td>ZavaCurrencyService</td><td><code>CurrencyPairs</code>, <code>ExchangeRates</code></td><td>None (raw ADO.NET)</td><td>None</td><td>Schema assumed to be pre-provisioned externally; no DDL in repository</td></tr>
+</tbody></table></div>
+<h2 id="entity-model">Entity Model</h2>
+<p>&gt; Note: No ORM entity classes exist. The tables below are inferred from inline SQL queries in <code>CurrencyService.cs</code>. Column types and constraints are approximated from query usage.</p>
+<div class="mermaid">
+erDiagram
+    CurrencyPairs ||--o{ ExchangeRates : "has rates"
+    CurrencyPairs {
+        int PairID PK
+        string BaseCurrency
+        string QuoteCurrency
+        bit IsActive
+    }
+    ExchangeRates {
+        int RateID PK
+        int PairID FK
+        decimal MidRate
+        string Source
+        datetime EffectiveDate
+        datetime ExpiryDate
+    }
+</div>
+<p><strong><code>CurrencyRateData</code></strong> (DTO — not a persisted entity):</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Field</th><th>Type</th><th>Notes</th></tr></thead><tbody>
+<tr><td><code>FromCurrency</code></td><td><code>string</code></td><td><code>[DataMember(Order=1)]</code></td></tr>
+<tr><td><code>ToCurrency</code></td><td><code>string</code></td><td><code>[DataMember(Order=2)]</code></td></tr>
+<tr><td><code>Rate</code></td><td><code>decimal</code></td><td><code>[DataMember(Order=3)]</code></td></tr>
+<tr><td><code>Source</code></td><td><code>string</code></td><td><code>[DataMember(Order=4)]</code></td></tr>
+<tr><td><code>EffectiveDate</code></td><td><code>DateTime</code></td><td><code>[DataMember(Order=5)]</code></td></tr>
+</tbody></table></div>
+<p>This class is the WCF response DTO returned by <code>GetRate</code>; it is not persisted.</p>
+<h2 id="key-repository-methods">Key Repository Methods</h2>
+<p>There is no repository interface or data-access abstraction layer. All database calls are inline within <code>CurrencyService.cs</code> using <code>SqlConnection</code> / <code>SqlCommand</code>.</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Method</th><th>SQL / Purpose</th></tr></thead><tbody>
+<tr><td><code>CurrencyService.GetRate</code></td><td><code>SqlCommand</code> (SELECT)</td><td><code>SELECT TOP 1 cp.BaseCurrency, cp.QuoteCurrency, er.MidRate, er.Source, er.EffectiveDate FROM CurrencyPairs cp INNER JOIN ExchangeRates er ON er.PairID = cp.PairID WHERE cp.BaseCurrency = @FromCurrency AND cp.QuoteCurrency = @ToCurrency AND cp.IsActive = 1 AND (er.ExpiryDate IS NULL OR er.ExpiryDate &gt; GETDATE()) ORDER BY er.EffectiveDate DESC</code></td></tr>
+<tr><td><code>CurrencyService.GetSupportedCurrencies</code></td><td><code>SqlCommand</code> (SELECT DISTINCT)</td><td><code>SELECT DISTINCT BaseCurrency / QuoteCurrency AS CurrencyCode FROM CurrencyPairs WHERE IsActive = 1 UNION … ORDER BY CurrencyCode</code></td></tr>
+<tr><td><code>CurrencyService.ConvertAmount</code></td><td>Delegates to <code>GetRate</code></td><td>Calls <code>GetRate</code> then multiplies and rounds to 4 decimal places</td></tr>
+</tbody></table></div>
+<p>No transaction management is applied (no <code>TransactionScope</code>, no <code>SqlTransaction</code>). Each operation opens its own connection.</p>
+<h2 id="caching-strategy">Caching Strategy</h2>
+<p>No caching layer is implemented. Every call to <code>GetRate</code>, <code>GetSupportedCurrencies</code>, or <code>ConvertAmount</code> issues a live database query against SQL Server. There is no in-memory cache, distributed cache (Redis, Memcached), or output cache configured.</p>
+<p>Given that exchange rates change infrequently, a short-TTL cache on <code>GetRate</code> and <code>GetSupportedCurrencies</code> results would be a straightforward performance improvement opportunity during modernization.</p>
+<h2 id="data-ownership-boundaries">Data Ownership Boundaries</h2>
+<p>ZavaCurrencyService is the sole consumer of <code>ZavaBankDB</code> within this repository. There is no multi-service architecture, no database-per-service pattern, and no evidence of cross-service data access. Data ownership is entirely monolithic within this single service.</p>
+<p>All reads are simple point queries or aggregation queries on two tables. There are no write operations (INSERT/UPDATE/DELETE) in the service code — the database is treated as read-only from the service&#39;s perspective.</p>
+<h3 id="data-classification-sensitivity">Data Classification &amp; Sensitivity</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Entity / Table</th><th>Sensitive Fields</th><th>Classification</th><th>Controls in Place</th></tr></thead><tbody>
+<tr><td><code>CurrencyPairs</code></td><td>None — currency codes (e.g., USD, EUR) are public financial identifiers</td><td>None (Public)</td><td>N/A</td></tr>
+<tr><td><code>ExchangeRates</code></td><td>None — mid-rates, source labels, and dates are non-personal financial market data</td><td>None (Public)</td><td>N/A</td></tr>
+<tr><td><code>CurrencyRateData</code> (DTO)</td><td>None</td><td>None (Public)</td><td>N/A</td></tr>
+</tbody></table></div>
+<p>No PII, PHI, or PCI data detected in the entity model. The database credentials stored in <code>web.config</code> (<code>User Id=sa; Password=Zava123!</code>) represent a security concern (hardcoded credentials with a default <code>sa</code> account), but they are configuration data rather than stored personal data. See <code>configuration-inventory.md</code> for configuration details.</p>
+</div>
+</div>
+<p class="footer">Your feedback is invaluable &mdash; <a href="https://aka.ms/ghcp-appmod/feedback">Share feedback</a></p>
+<script>
+function toggleRow(rowId, triggerRow) {
+  var detail = document.getElementById(rowId);
+  var btn = document.getElementById('btn-' + rowId);
+  if (!detail) return;
+  var visible = detail.style.display !== 'none';
+  detail.style.display = visible ? 'none' : 'table-row';
+  if (btn) btn.classList.toggle('open', !visible);
+}
+(function() {
+  var nav = document.querySelector('.tab-nav');
+  if (!nav) return;
+  nav.addEventListener('click', function(e) {
+    var btn = e.target.closest('.tab-btn');
+    if (!btn) return;
+    var targetId = btn.getAttribute('data-tab');
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+    btn.classList.add('active');
+    var panel = document.getElementById(targetId);
+    if (panel) {
+      panel.classList.add('active');
+      // Render any mermaid diagrams in this panel that haven't been processed yet
+      if (window.__mermaidReady) { window.__renderMermaidIn(panel); }
+    }
+  });
+})();
+
+// ── Diagram lightbox ────────────────────────────────────────
+(function() {
+  var lightbox = document.getElementById('diagram-lightbox');
+  var inner = document.getElementById('diagram-lightbox-inner');
+  var closeBtn = document.getElementById('diagram-lightbox-close');
+  if (!lightbox || !inner || !closeBtn) return;
+
+  var scale = 1;
+  var translateX = 0;
+  var translateY = 0;
+  var isDragging = false;
+  var dragStartX = 0;
+  var dragStartY = 0;
+
+  function applyTransform() {
+    var svg = inner.querySelector('svg');
+    if (svg) {
+      svg.style.transform = 'translate(' + translateX + 'px, ' + translateY + 'px) scale(' + scale + ')';
+      svg.style.transformOrigin = 'center center';
+      svg.style.transition = 'none';
+    }
+  }
+
+  function resetTransform() {
+    scale = 1; translateX = 0; translateY = 0;
+    applyTransform();
+  }
+
+  function openLightbox(svgEl) {
+    inner.innerHTML = svgEl.outerHTML;
+    var injected = inner.querySelector('svg');
+    if (injected) {
+      injected.removeAttribute('width');
+      injected.removeAttribute('height');
+      injected.style.cursor = 'grab';
+    }
+    resetTransform();
+    lightbox.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLightbox() {
+    lightbox.classList.remove('open');
+    inner.innerHTML = '';
+    document.body.style.overflow = '';
+    resetTransform();
+  }
+
+  inner.addEventListener('wheel', function(e) {
+    e.preventDefault();
+    var delta = e.deltaY > 0 ? 0.9 : 1.1;
+    scale = Math.min(Math.max(scale * delta, 0.3), 8);
+    applyTransform();
+  }, { passive: false });
+
+  inner.addEventListener('mousedown', function(e) {
+    if (e.button !== 0) return;
+    isDragging = true;
+    dragStartX = e.clientX - translateX;
+    dragStartY = e.clientY - translateY;
+    var svg = inner.querySelector('svg');
+    if (svg) { svg.style.cursor = 'grabbing'; }
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', function(e) {
+    if (!isDragging) return;
+    translateX = e.clientX - dragStartX;
+    translateY = e.clientY - dragStartY;
+    applyTransform();
+  });
+
+  document.addEventListener('mouseup', function() {
+    if (!isDragging) return;
+    isDragging = false;
+    var svg = inner.querySelector('svg');
+    if (svg) { svg.style.cursor = 'grab'; }
+  });
+
+  inner.addEventListener('dblclick', function() { resetTransform(); });
+
+  document.addEventListener('click', function(e) {
+    var card = e.target.closest('.mermaid');
+    if (!card) return;
+    if (e.target.closest('.diagram-lightbox-close')) return;
+    var svg = card.querySelector('svg');
+    if (svg) { openLightbox(svg); }
+  });
+
+  closeBtn.addEventListener('click', closeLightbox);
+
+  lightbox.addEventListener('click', function(e) {
+    if (e.target === lightbox) { closeLightbox(); }
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') { closeLightbox(); }
+  });
+})();
+
+var _currentTarget = '';
+
+function toggleMultiSelect(id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  // Close others
+  document.querySelectorAll('.multi-select.open').forEach(function(ms) { if (ms.id !== id) ms.classList.remove('open'); });
+  el.classList.toggle('open');
+}
+
+// Close dropdowns on outside click
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.multi-select')) {
+    document.querySelectorAll('.multi-select.open').forEach(function(ms) { ms.classList.remove('open'); });
+  }
+});
+
+function getMultiSelectValues(msId) {
+  var el = document.getElementById(msId);
+  if (!el) return [];
+  var checked = el.querySelectorAll('input[type=checkbox]:checked');
+  var vals = [];
+  for (var i = 0; i < checked.length; i++) vals.push(checked[i].value);
+  return vals;
+}
+
+function onMultiSelectChange(msId, label) {
+  var el = document.getElementById(msId);
+  if (!el) return;
+  var vals = getMultiSelectValues(msId);
+  var total = el.querySelectorAll('input[type=checkbox]').length;
+  var btn = el.querySelector('.multi-select-btn');
+  if (btn) {
+    btn.textContent = vals.length > 0 && vals.length < total ? label + ' (' + vals.length + ')' : label;
+  }
+  applyFilters();
+}
+
+function applyFilters() {
+  var selectedDomains = getMultiSelectValues('domain-ms');
+  var selectedCrits = getMultiSelectValues('criticality-ms');
+
+  // Domain filter: show/hide entire sections (empty = show all)
+  var sections = document.querySelectorAll('.issue-section');
+  for (var i = 0; i < sections.length; i++) {
+    var domain = sections[i].getAttribute('data-domain');
+    sections[i].style.display = (selectedDomains.length === 0 || selectedDomains.indexOf(domain) >= 0) ? '' : 'none';
+  }
+
+  // Row-level filtering: respect target + criticality
+  var rows = document.querySelectorAll('.issue-row');
+  for (var i = 0; i < rows.length; i++) {
+    var row = rows[i];
+    var section = row.closest('.issue-section');
+    if (section && section.style.display === 'none') {
+      row.style.display = 'none';
+      var next = row.nextElementSibling;
+      if (next && next.classList.contains('detail-row')) next.style.display = 'none';
+      continue;
+    }
+
+    // Check target filter
+    var show = true;
+    if (_currentTarget && row.hasAttribute('data-targets')) {
+      var targetsStr = row.getAttribute('data-targets');
+      if (targetsStr && targetsStr !== '{}') {
+        try {
+          var targets = JSON.parse(targetsStr);
+          if (Object.keys(targets).length > 0 && !targets[_currentTarget]) {
+            show = false;
+          }
+        } catch(e) {}
+      }
+    }
+
+    // Check criticality filter
+    if (show && selectedCrits.length > 0) {
+      var crit = row.getAttribute('data-criticality');
+      if (selectedCrits.indexOf(crit) < 0) show = false;
+    }
+
+    row.style.display = show ? '' : 'none';
+    var nextRow = row.nextElementSibling;
+    if (nextRow && nextRow.classList.contains('detail-row')) {
+      if (!show) nextRow.style.display = 'none';
+    }
+  }
+}
+
+function clearAllFilters() {
+  document.querySelectorAll('.multi-select input[type=checkbox]').forEach(function(cb) { cb.checked = false; });
+  var domainBtn = document.querySelector('#domain-ms .multi-select-btn');
+  if (domainBtn) domainBtn.textContent = 'Domain';
+  var critBtn = document.querySelector('#criticality-ms .multi-select-btn');
+  if (critBtn) critBtn.textContent = 'Criticality';
+  applyFilters();
+}
+
+function onTargetChange(targetId) {
+  _currentTarget = targetId;
+  var rows = document.querySelectorAll('.issue-row[data-targets]');
+  var totalEffort = 0;
+  var domainCrits = {}; // domain -> {mandatory:0, potential:0, optional:0}
+
+  for (var i = 0; i < rows.length; i++) {
+    var row = rows[i];
+    var targets = JSON.parse(row.getAttribute('data-targets'));
+    var section = row.closest('.issue-section');
+    var domain = section ? section.getAttribute('data-domain') : '';
+
+    if (!targets || Object.keys(targets).length === 0) {
+      // No target data (e.g. security) — always show
+      var sp = parseFloat(row.querySelector('.sp-cell').textContent) || 0;
+      totalEffort += sp;
+      if (!domainCrits[domain]) domainCrits[domain] = {mandatory:0,potential:0,optional:0};
+      var crit = row.getAttribute('data-criticality') || 'optional';
+      domainCrits[domain][crit] = (domainCrits[domain][crit] || 0) + 1;
+      continue;
+    }
+
+    var override = targets[targetId];
+    if (!override) {
+      // Issue doesn't apply to this target
+      continue;
+    }
+
+    // Apply severity override
+    var newSeverity = (override.severity || row.getAttribute('data-default-severity') || '').toLowerCase();
+    row.setAttribute('data-criticality', newSeverity);
+    var critCell = row.querySelector('.crit-cell');
+    if (critCell) {
+      var critText = newSeverity === 'mandatory' ? 'Mandatory' : newSeverity === 'potential' ? 'Potential' : 'Optional';
+      var cssClass = newSeverity === 'mandatory' ? 'crit-square-mandatory' : newSeverity === 'potential' ? 'crit-square-potential' : 'crit-square-optional';
+      critCell.innerHTML = '<span class="crit-label"><span class="crit-square ' + cssClass + '"></span>' + critText + '</span>';
+    }
+
+    // Apply effort override
+    var newEffort = override.effort !== undefined ? override.effort : parseFloat(row.getAttribute('data-default-effort')) || 0;
+    var spCell = row.querySelector('.sp-cell');
+    if (spCell) spCell.textContent = newEffort;
+    totalEffort += newEffort;
+
+    if (!domainCrits[domain]) domainCrits[domain] = {mandatory:0,potential:0,optional:0};
+    domainCrits[domain][newSeverity] = (domainCrits[domain][newSeverity] || 0) + 1;
+  }
+
+  // Also add security findings effort (they don't have per-target data)
+  var secSection = document.querySelector('.issue-section[data-domain="security"]');
+  if (secSection) {
+    var secRows = secSection.querySelectorAll('.issue-row');
+    for (var j = 0; j < secRows.length; j++) {
+      if (!secRows[j].hasAttribute('data-targets') || secRows[j].getAttribute('data-targets') === '') {
+        var sp = parseFloat(secRows[j].querySelector('.sp-cell').textContent) || 0;
+        totalEffort += sp;
+        if (!domainCrits['security']) domainCrits['security'] = {mandatory:0,potential:0,optional:0};
+        var sc = secRows[j].getAttribute('data-criticality') || 'optional';
+        domainCrits['security'][sc] = (domainCrits['security'][sc] || 0) + 1;
+      }
+    }
+  }
+
+  // Update effort display
+  var label = totalEffort < 20 ? 'S' : totalEffort < 50 ? 'M' : totalEffort < 100 ? 'L' : 'XL';
+  var effortEl = document.getElementById('effort-display');
+  if (effortEl) effortEl.textContent = label + ' (total story points: ' + totalEffort + ')';
+
+  // Update donut charts
+  updateDonuts(domainCrits);
+
+  // Re-apply domain/criticality filters
+  applyFilters();
+}
+
+function updateDonuts(domainCrits) {
+  var container = document.getElementById('donut-container');
+  if (!container) return;
+  container.innerHTML = '';
+  var domainNames = {'cloud-readiness':'Cloud Readiness','java-upgrade':'Java Upgrade','dotnet-upgrade':'DotNET Upgrade','security':'Security'};
+  var domainOrder = ['cloud-readiness','java-upgrade','dotnet-upgrade','security'];
+  for (var d = 0; d < domainOrder.length; d++) {
+    var key = domainOrder[d];
+    var c = domainCrits[key];
+    if (!c || (c.mandatory + c.potential + c.optional) === 0) continue;
+    var total = c.mandatory + c.potential + c.optional;
+    var div = document.createElement('div');
+    div.className = 'domain-summary-item';
+    div.innerHTML = buildDonutSvg(c.mandatory, c.potential, c.optional) +
+      '<h3>' + domainNames[key] + '</h3>' +
+      '<div class="count">' + total + ' issue' + (total !== 1 ? 's' : '') + '</div>';
+    container.appendChild(div);
+  }
+}
+
+function buildDonutSvg(m, p, o) {
+  var total = m + p + o;
+  if (total === 0) return '<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;"><circle cx="50" cy="50" r="35" fill="none" stroke="#d0d7de" stroke-width="15" opacity="0.5"/></svg>';
+  var r = 35, circ = 2 * Math.PI * r, offset = 0;
+  var svg = '<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;transform:rotate(-90deg);">';
+  var segs = [{c:m,color:'var(--color-mandatory)'},{c:p,color:'var(--color-potential)'},{c:o,color:'var(--color-optional)'}];
+  for (var i = 0; i < segs.length; i++) {
+    if (segs[i].c === 0) continue;
+    var segLen = (segs[i].c / total) * circ;
+    var gap = total > segs[i].c ? 1.5 : 0;
+    var drawLen = Math.max(segLen - gap, 0.5);
+    svg += '<circle cx="50" cy="50" r="' + r + '" fill="none" stroke="' + segs[i].color + '" stroke-width="15" stroke-dasharray="' + drawLen.toFixed(2) + ' ' + circ.toFixed(2) + '" stroke-dashoffset="' + (-offset).toFixed(2) + '"/>';
+    offset += segLen;
+  }
+  svg += '</svg>';
+  return svg;
+}
+</script>
+<script>document.addEventListener('DOMContentLoaded', function() { onTargetChange('AppService.Windows'); });</script>
+</div></body></html>

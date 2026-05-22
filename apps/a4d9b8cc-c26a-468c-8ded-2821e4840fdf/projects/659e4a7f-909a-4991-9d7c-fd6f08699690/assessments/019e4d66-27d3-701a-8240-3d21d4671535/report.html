@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Assessment - ZavaDocVault</title>
+<style>
+:root {
+  --bg-primary: #ffffff;
+  --bg-card: #f8f9fa;
+  --bg-page: #f0f1f3;
+  --text-primary: #24292f;
+  --text-secondary: #57606a;
+  --text-muted: #6b7280;
+  --border-color: #d0d7de;
+  --border-light: #e1e4e8;
+  --link-color: #2563eb;
+  --color-mandatory: #E3008C;
+  --color-potential: #637CEF;
+  --color-optional: #A19F9D;
+  --font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  --font-mono: 'Cascadia Code', 'Consolas', 'Courier New', monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-family); font-size: 13px; color: var(--text-primary); background: var(--bg-primary); line-height: 1.5; margin: 0; padding: 0; }
+a { color: var(--link-color); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Page layout ───────────────────────────────────────────── */
+.main { margin: 0; padding: 24px 32px; background: var(--bg-primary); }
+.back-link { color: var(--text-muted); font-size: 13px; margin-bottom: 16px; display: block; }
+h1 { font-weight: 600; font-size: 20px; color: var(--text-primary); margin-bottom: 20px; }
+
+/* ── Report cards (matches VS Code .vscode-report-card) ──── */
+.report-card { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 4px; padding: 12px; margin-bottom: 20px; }
+.report-card h2 { font-size: 14px; font-weight: 600; margin: 0; color: var(--text-primary); }
+.report-card-body { margin-top: 16px; }
+
+/* ── Application Information (two-column) ────────────────── */
+.app-info-container { display: flex; gap: 8px; flex-wrap: wrap; }
+.app-info-column { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 8px; }
+.app-info-row { display: flex; align-items: baseline; }
+.app-info-label { width: 136px; flex-shrink: 0; font-weight: 600; color: var(--text-primary); }
+.app-info-value { flex: 1; color: var(--text-primary); }
+
+/* ── Issue Summary (pie charts + legend) ─────────────────── */
+.cards-container { display: flex; align-items: stretch; gap: 20px; flex-wrap: wrap; }
+.issue-summary-card { flex: 2; }
+.domain-summary-container { display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-around; }
+.domain-summary-item { flex: 1; min-width: 120px; text-align: center; padding: 0 16px; border-right: 1px solid var(--border-light); }
+.domain-summary-item:last-child { border-right: none; }
+.domain-summary-item h3 { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-top: 8px; }
+.domain-summary-item .count { font-size: 12px; color: var(--text-secondary); }
+.criticality-legend { display: flex; flex-wrap: wrap; gap: 15px; padding-top: 12px; justify-content: center; }
+.criticality-legend .legend-item { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-secondary); }
+.legend-swatch { display: inline-block; width: 1em; height: 1em; border-radius: 2px; }
+
+/* ── Issue list tables ───────────────────────────────────── */
+.issue-section { margin-top: 20px; }
+.issue-section h2 { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+.issue-table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 600px; }
+.issue-table th { text-align: left; text-transform: uppercase; font-weight: 600; font-size: calc(13px * 0.875); padding: 6px 8px; background: var(--bg-card); border-bottom: 1px solid var(--border-color); color: var(--text-secondary); position: sticky; top: 0; z-index: 1; }
+.issue-table td { padding: 12px 8px; border-bottom: 1px solid var(--border-light); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
+.col-issue { width: 55%; }
+.col-criticality { width: 25%; }
+.col-storypoint { width: 20%; }
+
+/* ── Target dropdown ─────────────────────────────────────── */
+.target-select-container { margin: 4px 0 16px 0; display: flex; align-items: center; gap: 8px; }
+.target-select-container label { font-weight: 600; color: var(--text-primary); font-size: 14px; }
+.target-select-container select { font-family: var(--font-family); font-size: 13px; padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer; }
+
+/* ── Filter bar ──────────────────────────────────────────── */
+.filter-bar { display: flex; flex-wrap: wrap; gap: 16px; margin: 16px 0 8px 0; align-items: center; }
+.multi-select { position: relative; display: inline-block; min-width: 140px; }
+.multi-select-btn { font-family: var(--font-family); font-size: 13px; padding: 4px 24px 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer; width: 100%; text-align: left; position: relative; white-space: nowrap; }
+.multi-select-btn::after { content: '\25BE'; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--text-secondary); }
+.multi-select-dropdown { display: none; position: absolute; top: 100%; left: 0; min-width: 100%; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 100; margin-top: 2px; }
+.multi-select.open .multi-select-dropdown { display: block; }
+.multi-select-option { display: flex; align-items: center; gap: 6px; padding: 5px 10px; cursor: pointer; font-size: 13px; white-space: nowrap; }
+.multi-select-option:hover { background: var(--bg-secondary); }
+.multi-select-option input[type=checkbox] { margin: 0; cursor: pointer; }
+.clear-filters { font-size: 12px; color: var(--link-color); cursor: pointer; margin-left: 4px; }
+
+/* ── Criticality labels (colored square + text) ──────────── */
+.crit-label { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; white-space: nowrap; }
+.crit-square { display: inline-block; width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+.crit-square-mandatory { background: var(--color-mandatory); }
+.crit-square-potential { background: var(--color-potential); }
+.crit-square-optional { background: var(--color-optional); }
+
+/* ── Expandable rows ─────────────────────────────────────── */
+.expand-btn { background: none; border: none; cursor: pointer; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 11px; transition: transform 0.15s; padding: 0; vertical-align: middle; flex-shrink: 0; }
+.expand-btn.open { transform: rotate(90deg); }
+.issue-title-cell { display: flex; align-items: center; gap: 4px; }
+.detail-row td { padding: 0; border-bottom: 1px solid var(--border-light); white-space: normal; overflow: visible; text-overflow: clip; }
+.detail-content { display: flex; gap: 0; padding: 8px 8px 8px 32px; min-width: 0; }
+.file-list { flex: 0 0 50%; min-width: 0; overflow: hidden; }
+.file-list table { width: 100%; border-collapse: collapse; }
+.file-list th { font-size: calc(13px * 0.875); text-transform: uppercase; font-weight: 600; color: var(--text-secondary); padding: 6px 8px; border-bottom: 1px solid var(--border-color); text-align: left; height: 32px; }
+.file-list td { font-size: 13px; padding: 6px 8px; border-bottom: 1px solid var(--border-light); color: var(--text-primary); }
+.file-list .file-path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 300px; display: block; }
+.file-list .position { font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary); }
+.explanation-panel { flex: 1; padding-left: 16px; min-width: 0; overflow-wrap: break-word; word-wrap: break-word; }
+.explanation-panel h4 { font-size: calc(13px * 0.875); text-transform: uppercase; font-weight: 600; color: var(--text-secondary); padding: 6px 0; border-bottom: 1px solid var(--border-color); height: 32px; margin: 0; }
+.explanation-panel p { font-size: 13px; padding: 8px 0; color: var(--text-primary); line-height: 1.6; white-space: normal; word-break: break-word; }
+
+/* ── Experimental badge ──────────────────────────────────── */
+.badge-experimental { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; background: #fef9c3; color: #854d0e; vertical-align: middle; margin-left: 8px; cursor: default; }
+
+/* ── Footer ──────────────────────────────────────────────── */
+.footer { text-align: center; margin-top: 24px; color: var(--text-muted); font-size: 13px; }
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 800px) {
+  .main { padding: 16px; }
+  .app-info-container { flex-direction: column; }
+  .domain-summary-container { flex-direction: column; }
+  .domain-summary-item { border-right: none; border-bottom: 1px solid var(--border-light); padding-bottom: 12px; }
+  .detail-content { flex-direction: column; }
+  .file-list { flex: none; width: 100%; }
+  .explanation-panel { padding-left: 0; padding-top: 8px; }
+}
+/* ── Tab navigation ──────────────────────────────────────── */
+.tab-nav { display: flex; gap: 0; border-bottom: 1px solid var(--border-color); margin-bottom: 28px; flex-wrap: wrap; }
+.tab-btn { background: none; border: none; border-bottom: 2px solid transparent; padding: 10px 18px; font-size: 13px; font-family: var(--font-family); color: var(--text-secondary); cursor: pointer; margin-bottom: -1px; white-space: nowrap; position: relative; }
+.tab-btn:hover { color: var(--text-primary); }
+.tab-btn.active { color: var(--link-color); border-bottom-color: var(--link-color); font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ── Tooltip on tab ──────────────────────────────────────── */
+.tab-btn[data-tooltip]::after { content: attr(data-tooltip); position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); background: #24292f; color: #ffffff; font-size: 12px; font-weight: 400; padding: 6px 10px; border-radius: 4px; white-space: normal; width: max-content; max-width: 260px; text-align: center; pointer-events: none; opacity: 0; transition: opacity 0.15s; z-index: 100; }
+.tab-btn[data-tooltip]:hover::after { opacity: 1; }
+
+/* ── Fact content — prose column ─────────────────────────── */
+.fact-content { max-width: 860px; margin: 0 auto; line-height: 1.75; color: var(--text-primary); font-size: 14px; }
+.fact-content h1 { font-size: 22px; font-weight: 700; margin: 0 0 6px 0; color: var(--text-primary); letter-spacing: -0.01em; }
+.fact-content h1 + p { margin-top: 6px; color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
+.fact-content h2 { font-size: 17px; font-weight: 700; margin: 36px 0 12px 0; padding-bottom: 6px; border-bottom: 1px solid var(--border-color); color: var(--text-primary); letter-spacing: -0.01em; }
+.fact-content h3 { font-size: 14px; font-weight: 700; margin: 24px 0 8px 0; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.04em; font-size: 12px; color: var(--text-secondary); }
+.fact-content p { margin: 10px 0; color: var(--text-primary); }
+.fact-content ul, .fact-content ol { margin: 10px 0 10px 22px; }
+.fact-content li { margin: 5px 0; }
+.fact-content a { color: var(--link-color); }
+.fact-content a:hover { text-decoration: underline; }
+
+/* ── Fact tables ─────────────────────────────────────────── */
+.table-wrap { overflow-x: auto; margin: 16px 0; }
+.fact-content table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 13px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); }
+.fact-content thead { background: var(--bg-card); }
+.fact-content th { text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; padding: 8px 14px; border-bottom: 1px solid var(--border-color); color: var(--text-secondary); }
+.fact-content td { padding: 9px 14px; border-bottom: 1px solid var(--border-light); vertical-align: top; color: var(--text-primary); }
+.fact-content tr:last-child td { border-bottom: none; }
+.fact-content tbody tr:hover { background: #f6f8fa; }
+
+/* ── Fact code ───────────────────────────────────────────── */
+.fact-content code { font-family: var(--font-mono); font-size: 12px; background: #f0f1f3; padding: 2px 6px; border-radius: 4px; color: #c7254e; }
+.fact-content pre { background: #f6f8fa; border: 1px solid var(--border-light); border-radius: 6px; padding: 14px 16px; overflow-x: auto; margin: 14px 0; }
+.fact-content pre code { background: none; color: var(--text-primary); padding: 0; border-radius: 0; }
+.fact-content hr { border: none; border-top: 1px solid var(--border-light); margin: 28px 0; }
+.fact-content strong { font-weight: 600; }
+.fact-content em { font-style: italic; }
+.fact-content blockquote { border-left: 3px solid var(--border-color); margin: 12px 0; padding: 4px 16px; color: var(--text-secondary); }
+.fact-unavailable { padding: 32px 0; }
+.fact-unavailable h3 { font-size: 16px; font-weight: 600; color: var(--text-primary); text-transform: none; letter-spacing: 0; margin: 0 0 12px 0; }
+.fact-unavailable p { margin: 0 0 8px 0; color: var(--text-secondary); }
+.fact-unavailable ol, .fact-unavailable ul { margin: 0 0 0 22px; color: var(--text-primary); }
+.fact-unavailable li { margin: 6px 0; }
+
+/* ── Mermaid diagram card ─────────────────────────────────── */
+.mermaid { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 8px; padding: 24px 16px; margin: 20px 0; overflow-x: auto; text-align: center; cursor: pointer; position: relative; }
+.mermaid:hover { border-color: var(--border-color); }
+.mermaid svg { max-width: 100%; height: auto !important; display: inline-block; }
+.mermaid-zoom-hint { position: absolute; top: 8px; right: 10px; font-size: 11px; color: var(--text-muted); opacity: 0; transition: opacity 0.15s; pointer-events: none; }
+.mermaid:hover .mermaid-zoom-hint { opacity: 1; }
+
+/* ── Diagram lightbox ────────────────────────────────────── */
+.diagram-lightbox { display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.7); backdrop-filter: blur(2px); align-items: center; justify-content: center; cursor: zoom-out; padding: 48px 32px; }
+.diagram-lightbox.open { display: flex; }
+.diagram-lightbox-inner { background: #ffffff; border-radius: 10px; padding: 32px; width: 88vw; max-height: 88vh; overflow: hidden; cursor: default; box-shadow: 0 24px 64px rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; }
+.diagram-lightbox-inner svg { width: 100% !important; height: auto !important; max-height: 76vh; display: block; }
+.diagram-lightbox-close { position: fixed; top: 20px; right: 24px; background: #ffffff; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-primary); box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 1001; }
+.diagram-lightbox-close:hover { background: var(--bg-card); }
+.diagram-lightbox-hint { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.55); color: #ffffff; font-size: 12px; padding: 6px 14px; border-radius: 20px; pointer-events: none; white-space: nowrap; z-index: 1001; }
+</style>
+<script>
+window.__mermaidPending = [];
+window.__mermaidReady = false;
+window.__renderMermaidIn = function(container) {
+  // Until the real implementation overrides this (after the ES module import
+  // resolves), just queue the container so we can render it later.
+  if (container) { window.__mermaidPending.push(container); }
+};
+</script>
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+mermaid.initialize({ startOnLoad: false, theme: 'default', flowchart: { useMaxWidth: true }, sequence: { useMaxWidth: true } });
+
+// Real implementation: actually run mermaid on the unprocessed diagrams in the
+// given container (only ones not already rendered). Adds a "Click to expand"
+// hint span after each successful render so the lightbox affordance is
+// discoverable.
+window.__renderMermaidIn = function(container) {
+  var nodes = container ? container.querySelectorAll('.mermaid:not([data-processed])') : [];
+  if (nodes.length > 0) {
+    mermaid.run({ nodes: Array.from(nodes) }).then(function() {
+      nodes.forEach(function(node) {
+        if (!node.querySelector('.mermaid-zoom-hint')) {
+          var hint = document.createElement('span');
+          hint.className = 'mermaid-zoom-hint';
+          hint.textContent = 'Click to expand';
+          node.appendChild(hint);
+        }
+      });
+    });
+  }
+};
+
+// Drain any containers that were queued by the shim while mermaid was loading.
+// Use a Set to dedupe in case a container was both queued and is also the
+// initial-active panel below.
+var drained = new Set();
+(window.__mermaidPending || []).forEach(function(c) {
+  if (!drained.has(c)) { drained.add(c); window.__renderMermaidIn(c); }
+});
+window.__mermaidPending = [];
+window.__mermaidReady = true;
+
+// Render diagrams visible on initial load (the active tab panel(s) may not have
+// been queued by anyone — DOMContentLoaded handlers run before this if the
+// module is cached, after this if it's not, so handle both cases here).
+function renderActivePanels() {
+  document.querySelectorAll('.tab-panel.active').forEach(function(p) {
+    if (!drained.has(p)) { drained.add(p); window.__renderMermaidIn(p); }
+  });
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', renderActivePanels);
+} else {
+  renderActivePanels();
+}
+</script>
+</head><body>
+<div id="diagram-lightbox" class="diagram-lightbox" role="dialog" aria-modal="true">
+  <button class="diagram-lightbox-close" id="diagram-lightbox-close" aria-label="Close">&#x2715;</button>
+  <div class="diagram-lightbox-hint">Scroll to zoom &nbsp;·&nbsp; Drag to pan &nbsp;·&nbsp; Double-click to reset</div>
+  <div class="diagram-lightbox-inner" id="diagram-lightbox-inner"></div>
+</div>
+<div class="main">
+<a class="back-link" href="../../index.html">&#8592; Back to aggregate dashboard</a>
+<h1>ZavaDocVault</h1>
+<div class="report-card">
+  <h2>Application Information</h2>
+  <div class="report-card-body">
+    <div class="app-info-container">
+      <div class="app-info-column">
+        <div class="app-info-row"><span class="app-info-label">Application Name</span><span class="app-info-value">ZavaDocVault</span></div>
+        <div class="app-info-row"><span class="app-info-label">Java Version</span><span class="app-info-value">Unknown</span></div>
+        <div class="app-info-row"><span class="app-info-label">Effort</span><span class="app-info-value" id="effort-display">S (total story points: 8)</span></div>
+      </div>
+      <div class="app-info-column">
+        <div class="app-info-row"><span class="app-info-label">Build Tools</span><span class="app-info-value">Gradle</span></div>
+        <div class="app-info-row"><span class="app-info-label">Frameworks</span><span class="app-info-value">N/A</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+<nav class="tab-nav">
+  <button class="tab-btn active" data-tab="tab-issues" data-tooltip="Issues detected in the source code">Issues</button>
+  <button class="tab-btn" data-tab="tab-arch" data-tooltip="How the app&#39;s layers connect — from UI to data.">Architecture</button>
+  <button class="tab-btn" data-tab="tab-api" data-tooltip="Endpoints exposed by this app and how services communicate.">API Contracts</button>
+  <button class="tab-btn" data-tab="tab-config" data-tooltip="Environment settings, runtime profiles, and deployment manifests.">Configuration</button>
+  <button class="tab-btn" data-tab="tab-workflows" data-tooltip="Domain entities and the core flows users move through.">Business Workflows</button>
+  <button class="tab-btn" data-tab="tab-deps" data-tooltip="Libraries and frameworks this app depends on, grouped by category.">Dependencies</button>
+  <button class="tab-btn" data-tab="tab-data" data-tooltip="Database schema, entity relationships, and persistence behavior.">Data Model</button>
+</nav>
+<div id="tab-issues" class="tab-panel active">
+<div class="target-select-container">
+  <label for="target-select">Target Compute Service:</label>
+  <select id="target-select" onchange="onTargetChange(this.value)">
+    <option value="azure-aks">Azure Kubernetes Service</option>
+    <option value="azure-appservice">Azure App Service</option>
+    <option value="azure-container-apps">Azure Container Apps</option>
+  </select>
+</div>
+<div class="report-card">
+  <h2>Issue Summary</h2>
+  <div class="report-card-body">
+    <div class="domain-summary-container" id="donut-container">
+      <div class="domain-summary-item">
+<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;transform:rotate(-90deg);">
+  <circle cx="50" cy="50" r="35" fill="none" stroke="var(--color-mandatory)" stroke-width="15" stroke-dasharray="219.91 219.91" stroke-dashoffset="-0.00"/>
+</svg>
+
+        <h3>Java Upgrade</h3>
+        <div class="count">1 issue</div>
+      </div>
+    </div>
+    <div class="criticality-legend">
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--color-mandatory)"></span>Mandatory</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--color-potential)"></span>Potential</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--color-optional)"></span>Optional</div>
+    </div>
+  </div>
+</div>
+<div class="filter-bar" id="filter-bar">
+  <a class="clear-filters" href="javascript:void(0)" onclick="clearAllFilters()">Clear all</a>
+</div>
+<div class="issue-section" data-domain="java-upgrade">
+  <h2>Java Upgrade</h2>
+  <table class="issue-table">
+    <colgroup><col class="col-issue"/><col class="col-criticality"/><col class="col-storypoint"/></colgroup>
+    <thead><tr><th>Issue Category</th><th>Criticality</th><th>Story Point</th></tr></thead>
+    <tbody>
+    <tr class="issue-row" data-criticality="mandatory" data-targets='{"azure-aks":{"effort":8,"severity":"mandatory"},"azure-appservice":{"effort":8,"severity":"mandatory"},"azure-container-apps":{"effort":8,"severity":"mandatory"}}' data-default-effort="8" data-default-severity="mandatory" data-rule="azure-java-version-01000" onclick="toggleRow('row-javaupgrade-0', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-javaupgrade-0">&#x276F;</button> Java Version Has Reached the End of Support</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-mandatory"></span>Mandatory</span></td>
+      <td class="sp-cell">8</td>
+    </tr>
+    <tr class="detail-row" id="row-javaupgrade-0" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="build.gradle">build.gradle</span></td><td><span class="position">Line 7, Col 0</span></td></tr>
+            <tr><td><span class="file-path" title="build.gradle">build.gradle</span></td><td><span class="position">Line 8, Col 0</span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>The application is using a Java version that has reached the end of support. It is strongly recommended to plan and execute a migration strategy to upgrade your application to a supported Java version.<br/>Supported Java versions receive long-term support (LTS) from the Java community, including bug fixes and updates. Migrating to a supported version provides you with a stable and well-maintained platform for your application.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+</div>
+</div><!-- #tab-issues -->
+<div id="tab-arch" class="tab-panel">
+  <div class="fact-content"><h1 id="architecture-diagram">Architecture Diagram</h1>
+<p>ZavaDocVault is a Java Servlet–based document storage and retrieval service that runs on Apache Tomcat and stores binary documents in a SQL Server database using plain JDBC.</p>
+<h2 id="application-architecture">Application Architecture</h2>
+<div class="mermaid">
+flowchart TD
+    subgraph Client["Client Layer"]
+        Browser["Web Browser"]
+        APIClient["API Client"]
+    end
+    subgraph App["Application Layer - Java 8 / Tomcat 9"]
+        Health["HealthServlet"]
+        Bootstrap["DocVaultBootstrapServlet"]
+        Upload["DocumentUploadServlet"]
+        CustomerDocs["CustomerDocumentsServlet"]
+        Download["DocumentDownloadServlet"]
+        JSP["JSP Views (index, upload)"]
+    end
+    subgraph Infra["Infrastructure Layer"]
+        Config["DocVaultConfig"]
+        ConnFactory["DocVaultConnectionFactory"]
+    end
+    subgraph Data["Data Layer"]
+        JDBC["JDBC (mssql-jdbc 12.6)"]
+        DB[("SQL Server")]
+    end
+
+    Browser -->|"HTTP GET / POST"| JSP
+    Browser -->|"HTTP requests"| Health
+    APIClient -->|"POST multipart/form-data"| Upload
+    APIClient -->|"GET /api/documents/customer/id"| CustomerDocs
+    APIClient -->|"GET /api/documents/id"| Download
+    Bootstrap -->|"schema init on startup"| ConnFactory
+    Upload -->|"reads config"| Config
+    CustomerDocs -->|"reads config"| Config
+    Download -->|"reads config"| Config
+    Config -->|"provides credentials"| ConnFactory
+    ConnFactory -->|"opens connection"| JDBC
+    Upload -->|"INSERT document"| JDBC
+    CustomerDocs -->|"SELECT documents"| JDBC
+    Download -->|"SELECT binary"| JDBC
+    Bootstrap -->|"CREATE TABLE"| JDBC
+    JDBC -->|"SQL queries"| DB
+</div>
+<h3 id="technology-stack-summary">Technology Stack Summary</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Layer</th><th>Technology</th><th>Version</th><th>Purpose</th></tr></thead><tbody>
+<tr><td>Presentation</td><td>JSP (JavaServer Pages)</td><td>3.1</td><td>Simple HTML upload form and status page</td></tr>
+<tr><td>Application</td><td>Java Servlet (javax.servlet)</td><td>3.1</td><td>HTTP request handling for document CRUD</td></tr>
+<tr><td>Runtime</td><td>Apache Tomcat</td><td>9 (JDK 8)</td><td>Servlet container and WAR host</td></tr>
+<tr><td>Language</td><td>Java</td><td>8 (1.8)</td><td>Application development language</td></tr>
+<tr><td>Data Access</td><td>JDBC (Microsoft SQL Server Driver)</td><td>12.6.3.jre8</td><td>Direct database connectivity</td></tr>
+<tr><td>Serialization</td><td>org.json</td><td>20140107</td><td>JSON response building</td></tr>
+<tr><td>Database</td><td>SQL Server</td><td>configured via env</td><td>Persistent document and binary storage</td></tr>
+<tr><td>Build</td><td>Gradle</td><td>7.6</td><td>Build tooling and WAR packaging</td></tr>
+<tr><td>Containerization</td><td>Docker (multi-stage)</td><td>tomcat:9-jdk8</td><td>Container image for deployment</td></tr>
+</tbody></table></div>
+<h3 id="data-storage-external-services">Data Storage &amp; External Services</h3>
+<p>ZavaDocVault stores all document data — including binary file contents — in a single SQL Server database table (<code>Documents</code>). The schema is bootstrapped automatically at startup via <code>DocVaultBootstrapServlet</code>. Connection parameters (host, port, database name, user, password) are read from environment variables (<code>DB_HOST</code>, <code>DB_PORT</code>, <code>DB_NAME</code>, <code>DB_USER</code>, <code>DB_PASSWORD</code>) with fallback to a bundled <code>doc-vault.properties</code> file. There are no caches, message brokers, or other external services.</p>
+<h3 id="key-architectural-decisions">Key Architectural Decisions</h3>
+<ul>
+<li><strong>Plain JDBC over ORM</strong>: The application uses raw JDBC with <code>PreparedStatement</code> and <code>ResultSet</code> rather than any ORM framework (JPA/Hibernate), keeping the dependency set minimal but requiring manual SQL and resource management.</li>
+<li><strong>Binary storage in SQL Server</strong>: Document file contents are stored as <code>VARBINARY(MAX)</code> in the database rather than a dedicated blob/object store, making the service fully self-contained at the cost of database size growth.</li>
+<li><strong>Schema self-bootstrapping</strong>: <code>DocVaultBootstrapServlet</code> runs at startup (<code>load-on-startup=1</code>) and issues a conditional DDL statement (<code>IF OBJECT_ID ... IS NULL CREATE TABLE</code>) to create the <code>Documents</code> table when it doesn&#39;t exist, eliminating the need for external migration tooling.</li>
+</ul>
+<h2 id="component-relationships">Component Relationships</h2>
+<div class="mermaid">
+flowchart LR
+    subgraph Presentation["Presentation"]
+        IndexJSP["index.jsp"]
+        UploadJSP["upload.jsp"]
+        HealthSvlt["HealthServlet"]
+    end
+    subgraph Servlets["Servlet Layer"]
+        BootstrapSvlt["DocVaultBootstrapServlet"]
+        UploadSvlt["DocumentUploadServlet"]
+        CustomerSvlt["CustomerDocumentsServlet"]
+        DownloadSvlt["DocumentDownloadServlet"]
+    end
+    subgraph Infrastructure["Infrastructure"]
+        DocConfig["DocVaultConfig"]
+        ConnFactory["DocVaultConnectionFactory"]
+    end
+    subgraph DataAccess["Data Access"]
+        JDBC["JDBC / PreparedStatement"]
+    end
+
+    UploadJSP -->|"submits form to"| UploadSvlt
+    BootstrapSvlt -->|"uses"| ConnFactory
+    UploadSvlt -->|"uses"| ConnFactory
+    CustomerSvlt -->|"uses"| ConnFactory
+    DownloadSvlt -->|"uses"| ConnFactory
+    DocConfig -->|"supplies credentials to"| ConnFactory
+    ConnFactory -->|"opens connection via"| JDBC
+    UploadSvlt -->|"INSERT via"| JDBC
+    CustomerSvlt -->|"SELECT via"| JDBC
+    DownloadSvlt -->|"SELECT via"| JDBC
+    BootstrapSvlt -->|"DDL via"| JDBC
+</div>
+<h3 id="component-inventory">Component Inventory</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Component</th><th>Layer</th><th>Type</th><th>Responsibility</th></tr></thead><tbody>
+<tr><td>index.jsp</td><td>Presentation</td><td>JSP View</td><td>Landing page confirming service is online</td></tr>
+<tr><td>upload.jsp</td><td>Presentation</td><td>JSP View</td><td>HTML form for document file upload</td></tr>
+<tr><td>HealthServlet</td><td>Presentation</td><td>Servlet</td><td>Responds to <code>/health</code> with a plain-text online status</td></tr>
+<tr><td>DocVaultBootstrapServlet</td><td>Servlet Layer</td><td>Servlet (init)</td><td>Creates the <code>Documents</code> table in SQL Server at startup</td></tr>
+<tr><td>DocumentUploadServlet</td><td>Servlet Layer</td><td>Servlet (POST)</td><td>Accepts multipart uploads and inserts document records into SQL Server</td></tr>
+<tr><td>CustomerDocumentsServlet</td><td>Servlet Layer</td><td>Servlet (GET)</td><td>Lists all documents for a given customer ID as JSON</td></tr>
+<tr><td>DocumentDownloadServlet</td><td>Servlet Layer</td><td>Servlet (GET)</td><td>Retrieves and streams a document&#39;s binary content by document ID</td></tr>
+<tr><td>DocVaultConfig</td><td>Infrastructure</td><td>Configuration</td><td>Reads DB connection settings from environment variables or properties file</td></tr>
+<tr><td>DocVaultConnectionFactory</td><td>Infrastructure</td><td>Factory</td><td>Registers the JDBC driver and opens SQL Server connections</td></tr>
+</tbody></table></div>
+</div>
+</div>
+<div id="tab-api" class="tab-panel">
+  <div class="fact-content"><h1 id="api-service-communication-contracts">API &amp; Service Communication Contracts</h1>
+<p>ZavaDocVault exposes 5 synchronous HTTP endpoints across 4 servlet handlers for document upload, retrieval, listing, and health checking — all served from a single WAR deployment with no API gateway or inter-service calls.</p>
+<h2 id="service-catalog">Service Catalog</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Port</th><th>Category</th><th>Purpose</th></tr></thead><tbody>
+<tr><td>ZavaDocVault (ROOT.war on Tomcat)</td><td>8080</td><td>Business</td><td>Document storage and retrieval for bank customers</td></tr>
+</tbody></table></div>
+<h2 id="api-endpoints-inventory">API Endpoints Inventory</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Method</th><th>Path</th><th>Request Type</th><th>Response Type</th></tr></thead><tbody>
+<tr><td>HealthServlet</td><td>GET</td><td>/health</td><td>None</td><td>HTML text — <code>200 OK</code> always</td></tr>
+<tr><td>DocVaultBootstrapServlet</td><td>GET</td><td>/internal/bootstrap</td><td>None</td><td>None (side-effect only: creates DB schema)</td></tr>
+<tr><td>DocumentUploadServlet</td><td>POST</td><td>/api/documents/upload</td><td>multipart/form-data (<code>customerId</code> integer, <code>documentType</code> string, <code>file</code> binary part)</td><td>JSON <code>{&quot;status&quot;,&quot;documentId&quot;,&quot;customerId&quot;,&quot;documentType&quot;,&quot;fileName&quot;}</code> — <code>200</code> success, <code>400</code> validation error, <code>500</code> DB error</td></tr>
+<tr><td>CustomerDocumentsServlet</td><td>GET</td><td>/api/documents/customer/{customerId}</td><td>Path param: <code>customerId</code> (integer)</td><td>JSON <code>{&quot;customerId&quot;,&quot;count&quot;,&quot;documents&quot;:[...]}</code> — <code>200</code> success, <code>400</code> invalid id, <code>500</code> DB error</td></tr>
+<tr><td>DocumentDownloadServlet</td><td>GET</td><td>/api/documents/{id}</td><td>Path param: <code>id</code> (long)</td><td>Binary file stream with <code>Content-Disposition: attachment</code> — <code>200</code> success, <code>400</code> invalid id, <code>404</code> not found, <code>500</code> DB error</td></tr>
+</tbody></table></div>
+<p>&gt; Note: There is no API versioning scheme. All paths are unversioned and served under the root context path.</p>
+<h2 id="management-observability-endpoints">Management &amp; Observability Endpoints</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Endpoint</th><th>Custom Metrics</th></tr></thead><tbody>
+<tr><td>ZavaDocVault</td><td>GET /health</td><td>None — returns a static HTML page; no health indicators, no DB connectivity check</td></tr>
+</tbody></table></div>
+<p>No Spring Boot Actuator, Micrometer, Prometheus scrape endpoint, or structured health check is configured. The <code>/health</code> endpoint simply returns a hard-coded HTML response regardless of application state.</p>
+<h2 id="dtos-contracts">DTOs &amp; Contracts</h2>
+<p>ZavaDocVault has no formal DTO or contract classes. All response bodies are built inline using <code>org.json.JSONObject</code> and <code>org.json.JSONArray</code> directly inside servlet handler methods. There are no Java records, POJOs, or request-model classes.</p>
+<p><strong>Response shapes by endpoint:</strong></p>
+<ul>
+<li><strong>Upload response</strong> (<code>DocumentUploadServlet</code>): Inline JSON with fields <code>status</code>, <code>documentId</code>, <code>customerId</code>, <code>documentType</code>, <code>fileName</code>. Mutable, built per-request, not shared.</li>
+<li><strong>Document list response</strong> (<code>CustomerDocumentsServlet</code>): Inline JSON with <code>customerId</code>, <code>count</code>, and a <code>documents</code> array. Each array element contains document metadata (id, type, filename, content type, upload date).</li>
+<li><strong>Download response</strong> (<code>DocumentDownloadServlet</code>): Raw binary stream; metadata provided via HTTP headers (<code>Content-Type</code>, <code>Content-Disposition</code>, <code>Content-Length</code>).</li>
+<li><strong>Error responses</strong>: Inline JSON string literals (<code>{&quot;status&quot;:&quot;ERROR&quot;,&quot;message&quot;:&quot;...&quot;}</code>) embedded directly in handler code, not shared through a common error model.</li>
+</ul>
+<p>No OpenAPI/Swagger specification, protobuf schemas, or GraphQL schema exist. There is no serialization framework — all JSON is produced by string concatenation via <code>org.json</code>.</p>
+<h2 id="communication-patterns">Communication Patterns</h2>
+<p><strong>Synchronous only.</strong> ZavaDocVault is a standalone service with no outbound HTTP calls, no message queue consumers or producers, and no inter-service dependencies at runtime.</p>
+<p><strong>Resilience patterns</strong>: None. There are no circuit breakers, retry policies, timeouts, or bulkhead patterns configured at any layer. If a JDBC call to SQL Server hangs, the servlet thread blocks indefinitely.</p>
+<p><strong>Service discovery</strong>: None. The application does not register with any service registry (Eureka, Consul, Kubernetes DNS). Callers connect to it by direct hostname and port.</p>
+<p><strong>API gateway</strong>: None. The service is accessed directly; no gateway, BFF, or reverse proxy is declared in the project.</p>
+<p><strong>Startup dependency chain</strong>: <code>DocVaultBootstrapServlet</code> is configured with <code>load-on-startup=1</code>, meaning it attempts to connect to SQL Server and create the <code>Documents</code> table before any API endpoint becomes available. If the database is unreachable at startup, the servlet container will fail initialization. See <code>configuration-inventory.md</code> for full details.</p>
+<p><strong>Security posture</strong>: No authentication, no authorization, and no TLS are configured at the application level. All 5 endpoints — including document upload, list, and download — are publicly accessible with no credential checks, no role validation, and no session management. HTTP is the only transport.</p>
+<h2 id="service-technology-matrix">Service Technology Matrix</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Web</th><th>Data Access</th><th>Discovery</th><th>Gateway</th><th>Health Check</th><th>Cache</th><th>Metrics</th></tr></thead><tbody>
+<tr><td>ZavaDocVault</td><td>Raw Servlet API (javax.servlet 3.1)</td><td>JDBC (mssql-jdbc 12.6)</td><td>None</td><td>None</td><td>Custom <code>/health</code> (static HTML)</td><td>None</td><td>None</td></tr>
+</tbody></table></div>
+<h2 id="service-communication-sequence">Service Communication Sequence</h2>
+<div class="mermaid">
+sequenceDiagram
+    participant Client
+    participant UploadSvlt as "DocumentUploadServlet"
+    participant CustomerSvlt as "CustomerDocumentsServlet"
+    participant DownloadSvlt as "DocumentDownloadServlet"
+    participant DB as "SQL Server"
+
+    Note over Client,DB: Document Upload Flow
+    Client->>UploadSvlt: POST /api/documents/upload (multipart: customerId, documentType, file)
+    alt Validation Passes
+        UploadSvlt->>DB: INSERT INTO Documents (CustomerID, DocumentType, FileName, ContentType, DocumentData)
+        DB-->>UploadSvlt: Generated DocumentID
+        UploadSvlt-->>Client: 200 JSON (status=UPLOADED, documentId, fileName)
+    else Validation Fails (missing customerId or empty file)
+        UploadSvlt-->>Client: 400 JSON (status=ERROR, message)
+    else Database Error
+        UploadSvlt-->>Client: 500 JSON (status=ERROR, message)
+    end
+
+    Note over Client,DB: List Documents Flow
+    Client->>CustomerSvlt: GET /api/documents/customer/42
+    alt Valid Customer ID
+        CustomerSvlt->>DB: SELECT DocumentID, DocumentType, FileName ... WHERE CustomerID=42
+        DB-->>CustomerSvlt: Result rows
+        CustomerSvlt-->>Client: 200 JSON (customerId, count, documents array)
+    else Invalid ID Format
+        CustomerSvlt-->>Client: 400 JSON (status=ERROR, message)
+    end
+
+    Note over Client,DB: Download Document Flow
+    Client->>DownloadSvlt: GET /api/documents/7
+    alt Document Found
+        DownloadSvlt->>DB: SELECT FileName, ContentType, DocumentData WHERE DocumentID=7
+        DB-->>DownloadSvlt: Binary row
+        DownloadSvlt-->>Client: 200 Binary stream (Content-Disposition: attachment)
+    else Not Found
+        DownloadSvlt-->>Client: 404 JSON (status=NOT_FOUND)
+    end
+</div>
+</div>
+</div>
+<div id="tab-config" class="tab-panel">
+  <div class="fact-content"><h1 id="configuration-externalized-settings-inventory">Configuration &amp; Externalized Settings Inventory</h1>
+<p>ZavaDocVault has a minimal configuration landscape consisting of two configuration sources — a bundled properties file and Docker image environment variables — with no profile system, no external config server, and no secret store integration.</p>
+<h2 id="configuration-sources">Configuration Sources</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Source</th><th>Type</th><th>Path/Location</th><th>Notes</th></tr></thead><tbody>
+<tr><td><code>doc-vault.properties</code></td><td>Java properties file</td><td><code>src/main/resources/doc-vault.properties</code></td><td>Bundled inside the WAR; provides DB connection defaults that are overridden by environment variables at runtime</td></tr>
+<tr><td><code>web.xml</code></td><td>Servlet deployment descriptor</td><td><code>src/main/webapp/WEB-INF/web.xml</code></td><td>Declares servlet mappings, multipart upload limits, and startup order</td></tr>
+<tr><td><code>Dockerfile</code> ENV instructions</td><td>Container image environment</td><td><code>Dockerfile</code> (lines 7–11)</td><td>Bakes default DB connection values and credentials into the Docker image layer</td></tr>
+<tr><td><code>assessment-config.yaml</code></td><td>AppCAT assessment config</td><td><code>.github/modernize/appcat/assessment-config.yaml</code></td><td>Assessment tooling configuration only; not used by the application at runtime</td></tr>
+</tbody></table></div>
+<p>No Spring Cloud Config, Azure App Configuration, AWS AppConfig, Consul, HashiCorp Vault, or any other external configuration server is referenced.</p>
+<h2 id="build-profiles">Build Profiles</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Profile</th><th>Activation</th><th>Purpose</th><th>Key Dependencies/Plugins</th></tr></thead><tbody>
+<tr><td>(default, single build)</td><td>Automatic — no profiles declared</td><td>Compiles Java 8 source and packages a WAR named <code>ROOT.war</code></td><td><code>java</code> plugin, <code>war</code> plugin; <code>sourceCompatibility = 1.8</code>, <code>targetCompatibility = 1.8</code></td></tr>
+</tbody></table></div>
+<p>No additional Gradle build types, flavors, or conditional compilation are configured. The project produces a single artifact regardless of environment.</p>
+<h2 id="runtime-profiles">Runtime Profiles</h2>
+<p>No runtime profile system is configured. There are no Spring <code>application-{profile}.*</code> files, no <code>@Profile</code> annotations, no <code>SPRING_PROFILES_ACTIVE</code> variable, and no equivalent profile mechanism. All environments (development, staging, production) use the same application configuration; only the environment variable values differ.</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Profile</th><th>Activation Method</th><th>Config Files</th><th>Key Overrides</th></tr></thead><tbody>
+<tr><td>(none — single profile)</td><td>N/A</td><td><code>doc-vault.properties</code> (bundled defaults)</td><td><code>DB_HOST</code>, <code>DB_PORT</code>, <code>DB_NAME</code>, <code>DB_USER</code>, <code>DB_PASSWORD</code> env vars override the bundled defaults at runtime</td></tr>
+</tbody></table></div>
+<h2 id="properties-inventory">Properties Inventory</h2>
+<p><strong>ZavaDocVault — Database Connection Properties</strong></p>
+<div class="table-wrap"><table><thead><tr>
+<th>Property Key</th><th>Default Value (properties file)</th><th>Docker Image Default</th><th>Source</th><th>Override Mechanism</th></tr></thead><tbody>
+<tr><td><code>db.host</code> / <code>DB_HOST</code></td><td><code>sqlserver</code></td><td><code>sqlserver</code></td><td><code>doc-vault.properties</code> / Dockerfile ENV</td><td><code>DB_HOST</code> environment variable at container runtime</td></tr>
+<tr><td><code>db.port</code> / <code>DB_PORT</code></td><td><code>1433</code></td><td><code>1433</code></td><td><code>doc-vault.properties</code> / Dockerfile ENV</td><td><code>DB_PORT</code> environment variable at container runtime</td></tr>
+<tr><td><code>db.name</code> / <code>DB_NAME</code></td><td><code>ZavaBankDB</code></td><td><code>ZavaBankDB</code></td><td><code>doc-vault.properties</code> / Dockerfile ENV</td><td><code>DB_NAME</code> environment variable at container runtime</td></tr>
+<tr><td><code>db.user</code> / <code>DB_USER</code></td><td><code>sa</code></td><td><code>sa</code></td><td><code>doc-vault.properties</code> / Dockerfile ENV</td><td><code>DB_USER</code> environment variable at container runtime</td></tr>
+<tr><td><code>db.password</code> / <code>DB_PASSWORD</code></td><td>[MASKED]</td><td>[MASKED]</td><td><code>doc-vault.properties</code> / Dockerfile ENV</td><td><code>DB_PASSWORD</code> environment variable at container runtime</td></tr>
+</tbody></table></div>
+<p><strong>ZavaDocVault — Multipart Upload Limits (web.xml)</strong></p>
+<div class="table-wrap"><table><thead><tr>
+<th>Property Key</th><th>Value</th><th>Source</th><th>Override Mechanism</th></tr></thead><tbody>
+<tr><td><code>max-file-size</code></td><td><code>10485760</code> (10 MB)</td><td><code>web.xml</code> <code>&lt;multipart-config&gt;</code></td><td>Requires WAR rebuild; not externalized</td></tr>
+<tr><td><code>max-request-size</code></td><td><code>12582912</code> (12 MB)</td><td><code>web.xml</code> <code>&lt;multipart-config&gt;</code></td><td>Requires WAR rebuild; not externalized</td></tr>
+<tr><td><code>file-size-threshold</code></td><td><code>0</code> (no disk buffering)</td><td><code>web.xml</code> <code>&lt;multipart-config&gt;</code></td><td>Requires WAR rebuild; not externalized</td></tr>
+</tbody></table></div>
+<p>The property resolution chain is: environment variable (highest priority) → <code>doc-vault.properties</code> (fallback). This is implemented manually in <code>DocVaultConfig.read()</code> — there is no framework-provided property resolution (e.g., Spring&#39;s <code>@Value</code> or <code>Environment</code>).</p>
+<h2 id="startup-parameters-resource-requirements">Startup Parameters &amp; Resource Requirements</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>JVM/Runtime Options</th><th>Memory</th><th>Instance Count</th></tr></thead><tbody>
+<tr><td>ZavaDocVault (Tomcat container)</td><td>None specified — Tomcat defaults apply; no <code>-Xms</code>/<code>-Xmx</code> declared in Dockerfile or any startup script</td><td>Not constrained — depends on host/orchestrator configuration</td><td>1 (no scaling configuration present)</td></tr>
+</tbody></table></div>
+<p>No JVM heap tuning, GC configuration, <code>-D</code> system properties, or Tomcat connector tuning (<code>server.xml</code>) is specified in the project.</p>
+<h2 id="startup-dependency-chain">Startup Dependency Chain</h2>
+<ol>
+<li><strong>SQL Server</strong> must be reachable → <strong>ZavaDocVault</strong> (Tomcat startup)</li>
+</ol>
+<p>   At Tomcat startup, <code>DocVaultBootstrapServlet</code> is loaded with <code>load-on-startup=1</code>. It opens a JDBC connection to SQL Server and executes a conditional <code>CREATE TABLE</code> DDL. If SQL Server is unreachable, the servlet <code>init()</code> throws a <code>ServletException</code>, causing Tomcat to mark the servlet as unavailable and preventing API endpoints from becoming active.</p>
+<p>No <code>dockerize</code>, Docker Compose <code>depends_on</code>, Kubernetes readiness probe, or any other wait mechanism is configured in the project. Database availability is assumed at startup time; the service will fail to start if the database is not ready. See <code>api-service-contracts.md</code> for the health endpoint details.</p>
+<h2 id="secrets-sensitive-configuration">Secrets &amp; Sensitive Configuration</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Secret Reference</th><th>Type</th><th>Default Storage</th><th>Risk</th></tr></thead><tbody>
+<tr><td><code>db.password</code> / <code>DB_PASSWORD</code></td><td>Database password</td><td>[MASKED] — hardcoded as a plaintext default in <code>doc-vault.properties</code> AND baked into the Docker image via <code>ENV DB_PASSWORD=...</code> in Dockerfile</td><td><strong>Critical</strong> — plaintext credential baked into the container image layer; visible in <code>docker history</code> and image manifests</td></tr>
+<tr><td><code>db.user</code> / <code>DB_USER</code></td><td>Database username</td><td><code>sa</code> (SQL Server system administrator)</td><td><strong>High</strong> — uses the <code>sa</code> superuser account with no least-privilege principle applied</td></tr>
+</tbody></table></div>
+<p>No secret management system (HashiCorp Vault, Azure Key Vault, AWS Secrets Manager, Kubernetes Secrets, sealed secrets) is referenced. No encryption at the property level (Jasypt, DPAPI) is applied.</p>
+<h3 id="secrets-provisioning-workflow">Secrets Provisioning Workflow</h3>
+<p>The current secrets provisioning workflow is entirely manual and insecure:</p>
+<ol>
+<li><strong>Source</strong>: Credentials are embedded directly in <code>doc-vault.properties</code> (bundled in the WAR) and repeated in the <code>Dockerfile</code> as <code>ENV</code> instructions.</li>
+<li><strong>Override mechanism</strong>: At container runtime, the caller is expected to pass <code>DB_PASSWORD</code> (and other DB env vars) as container environment variables to override the baked-in defaults. This requires the orchestrator or deployment pipeline to inject the correct values.</li>
+<li><strong>Identity/access model</strong>: None. There is no managed identity, service principal, or RBAC-based secret retrieval. Credentials are passed as plain environment variables.</li>
+<li><strong>No rotation support</strong>: Because credentials are embedded in the image and properties file, rotating the database password requires rebuilding the WAR/image or redeploying the container with new environment variable values.</li>
+</ol>
+<h2 id="feature-flags">Feature Flags</h2>
+<p>No feature flag framework or custom feature toggle mechanism is present. There are no <code>@ConditionalOnProperty</code>, LaunchDarkly, Unleash, or equivalent constructs.</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Flag Name</th><th>Default</th><th>Controlled By</th></tr></thead><tbody>
+<tr><td>(none detected)</td><td>N/A</td><td>N/A</td></tr>
+</tbody></table></div>
+<h2 id="framework-runtime-versions">Framework &amp; Runtime Versions</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Component</th><th>Version</th><th>Source</th></tr></thead><tbody>
+<tr><td>Java (source/target compatibility)</td><td>8 (1.8)</td><td><code>build.gradle</code> (<code>sourceCompatibility</code>, <code>targetCompatibility</code>)</td></tr>
+<tr><td>javax.servlet-api</td><td>3.1.0</td><td><code>build.gradle</code> (<code>compileOnly</code> dependency)</td></tr>
+<tr><td>mssql-jdbc</td><td>12.6.3.jre8</td><td><code>build.gradle</code> (<code>implementation</code> dependency)</td></tr>
+<tr><td>org.json</td><td>20140107</td><td><code>build.gradle</code> (<code>implementation</code> dependency)</td></tr>
+<tr><td>Gradle (build tool, Docker build stage)</td><td>7.6</td><td><code>Dockerfile</code> (<code>FROM gradle:7.6-jdk8</code>)</td></tr>
+<tr><td>Apache Tomcat (runtime container)</td><td>9</td><td><code>Dockerfile</code> (<code>FROM tomcat:9-jdk8</code>)</td></tr>
+<tr><td>JDK (build stage)</td><td>8</td><td><code>Dockerfile</code> (<code>FROM gradle:7.6-jdk8</code>)</td></tr>
+<tr><td>JDK (runtime stage)</td><td>8</td><td><code>Dockerfile</code> (<code>FROM tomcat:9-jdk8</code>)</td></tr>
+<tr><td>Docker base image (build)</td><td>gradle:7.6-jdk8</td><td><code>Dockerfile</code> line 1</td></tr>
+<tr><td>Docker base image (runtime)</td><td>tomcat:9-jdk8</td><td><code>Dockerfile</code> line 5</td></tr>
+</tbody></table></div>
+</div>
+</div>
+<div id="tab-workflows" class="tab-panel">
+  <div class="fact-content"><h1 id="core-business-workflows">Core Business Workflows</h1>
+<p>ZavaDocVault is the document storage and retrieval service for Zava Bank, allowing bank systems and staff to securely store, list, and retrieve customer documents such as bank statements, identity records, and financial reports.</p>
+<h2 id="domain-entities">Domain Entities</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Entity</th><th>Service / Bounded Context</th><th>Description</th><th>Key Relationships</th></tr></thead><tbody>
+<tr><td>Document</td><td>ZavaDocVault / Document Management</td><td>A binary file uploaded on behalf of a bank customer, identified by document type (e.g., &quot;Statement&quot;, &quot;General&quot;) and associated metadata (filename, content type, upload date)</td><td>Belongs to a Customer (by opaque <code>CustomerID</code> reference)</td></tr>
+<tr><td>Customer (external reference)</td><td>External — Zava Bank customer service</td><td>A bank customer identified by an integer ID; ZavaDocVault stores the ID as a foreign reference but does not own or validate the customer record</td><td>Has zero or more Documents in ZavaDocVault</td></tr>
+</tbody></table></div>
+<h2 id="service-to-domain-mapping">Service-to-Domain Mapping</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Domain Context</th><th>Owned Entities</th><th>External Dependencies</th></tr></thead><tbody>
+<tr><td>ZavaDocVault</td><td>Document Management</td><td>Document</td><td>CustomerID — an integer reference to a customer record owned by another Zava Bank service; no validation or lookup is performed against that service; the caller is responsible for passing a valid customer ID</td></tr>
+</tbody></table></div>
+<p>ZavaDocVault is a leaf service with no outbound service calls. It owns the Document entity fully and exposes its data only through its own API endpoints.</p>
+<h2 id="primary-workflows">Primary Workflows</h2>
+<h3 id="workflow-1-document-upload">Workflow 1: Document Upload</h3>
+<p>A caller (bank system, staff tool, or API consumer) submits a file for a specific customer. The service validates the request inputs, sanitizes the filename, stores the binary content in SQL Server, and returns the assigned document ID.</p>
+<p><strong>Steps:</strong></p>
+<ol>
+<li>Caller submits <code>POST /api/documents/upload</code> with a multipart form containing <code>customerId</code>, an optional <code>documentType</code>, and the file binary.</li>
+<li><strong>Validation</strong>: <code>customerId</code> must be present and parseable as an integer; if not, the request is rejected with a 400 error.</li>
+<li><strong>Default assignment</strong>: If <code>documentType</code> is absent or blank, it is set to <code>&quot;General&quot;</code>.</li>
+<li><strong>Validation</strong>: The uploaded file part must be present and non-empty (size &gt; 0); an empty or missing file is rejected with a 400 error.</li>
+<li><strong>Filename sanitization</strong>: The submitted filename has all <code>\</code> and <code>/</code> characters replaced with <code>_</code> to prevent path-separator injection; if the filename is blank, it defaults to <code>upload.bin</code>.</li>
+<li><strong>Persistence</strong>: The sanitized filename, content type, document type, customer ID, and raw binary content are written as a new row in the <code>Documents</code> table.</li>
+<li>The service returns the generated <code>DocumentID</code> along with the submission metadata.</li>
+</ol>
+<h3 id="workflow-2-list-customer-documents">Workflow 2: List Customer Documents</h3>
+<p>A caller retrieves a metadata list of all documents belonging to a specific customer, ordered by most recently uploaded first.</p>
+<p><strong>Steps:</strong></p>
+<ol>
+<li>Caller submits <code>GET /api/documents/customer/{customerId}</code>.</li>
+<li><strong>Validation</strong>: The <code>{customerId}</code> path segment must be parseable as an integer; non-numeric values are rejected with a 400 error.</li>
+<li><strong>Query</strong>: All document metadata rows for the customer are retrieved (document ID, type, filename, content type, upload date). Binary content is NOT retrieved in this query.</li>
+<li>The service returns a JSON object with the customer ID, count of documents, and an array of document metadata records.</li>
+</ol>
+<h3 id="workflow-3-document-download">Workflow 3: Document Download</h3>
+<p>A caller retrieves the full binary content of a specific document by its ID, which is streamed back as a file attachment.</p>
+<p><strong>Steps:</strong></p>
+<ol>
+<li>Caller submits <code>GET /api/documents/{id}</code>.</li>
+<li><strong>Validation</strong>: The <code>{id}</code> path segment must be parseable as a <code>long</code> integer; non-numeric values are rejected with a 400 error.</li>
+<li><strong>Lookup</strong>: The document row (filename, content type, binary data) is retrieved. If no matching document is found, a 404 response is returned.</li>
+<li>The binary content is written to the HTTP response stream with appropriate <code>Content-Type</code> and <code>Content-Disposition: attachment</code> headers.</li>
+</ol>
+<h3 id="workflow-4-schema-bootstrap-startup">Workflow 4: Schema Bootstrap (Startup)</h3>
+<p>At application startup, before any API request is served, the service ensures the <code>Documents</code> table exists in SQL Server.</p>
+<p><strong>Steps:</strong></p>
+<ol>
+<li>Tomcat initializes <code>DocVaultBootstrapServlet</code> with <code>load-on-startup=1</code>.</li>
+<li>The servlet opens a database connection and executes a conditional DDL statement: create the <code>Documents</code> table only if it does not already exist.</li>
+<li>If the database is unreachable, initialization fails and Tomcat marks the servlet container as unavailable; no API endpoints become active until this step succeeds.</li>
+</ol>
+<h2 id="cross-service-data-flows">Cross-Service Data Flows</h2>
+<p>ZavaDocVault has no outbound calls to other services. It is a terminal service in the Zava Bank platform — it receives requests from callers and responds with its own data.</p>
+<p>The <code>CustomerID</code> value is passed in by the caller and stored verbatim. ZavaDocVault does not validate it against a customer registry, does not look up customer names or contact details, and does not emit events to other services when a document is uploaded or downloaded. Any business logic that links documents to specific customer profiles must be implemented by the calling service.</p>
+<p>There are no circuit breakers, fallback flows, or partial-result behaviors — if the database is unavailable, all API operations return a 500 error with no degraded response.</p>
+<h2 id="business-workflow-sequence">Business Workflow Sequence</h2>
+<div class="mermaid">
+sequenceDiagram
+    participant Caller
+    participant UploadSvlt as "Document Upload Handler"
+    participant DB as "SQL Server"
+
+    Note over Caller,DB: Primary Workflow: Document Upload
+    Caller->>UploadSvlt: Submit file for customer (customerId, documentType, file)
+
+    alt customerId is missing or non-numeric
+        UploadSvlt-->>Caller: 400 Bad Request (customerId is required)
+    else file part is missing or empty
+        UploadSvlt-->>Caller: 400 Bad Request (non-empty file required)
+    else All inputs valid
+        Note over UploadSvlt: Set documentType to "General" if blank
+        Note over UploadSvlt: Sanitize filename (replace \ and / with _)
+        UploadSvlt->>DB: INSERT Document row (customerId, type, filename, contentType, binaryData)
+        alt Database write succeeds
+            DB-->>UploadSvlt: Generated DocumentID
+            UploadSvlt-->>Caller: 200 OK (status=UPLOADED, documentId, fileName)
+        else Database error
+            UploadSvlt-->>Caller: 500 Internal Server Error
+        end
+    end
+
+    Note over Caller,DB: Secondary Workflow: List and Download
+    Caller->>DB: GET documents for customer 42 (via CustomerDocumentsServlet)
+    DB-->>Caller: Metadata list (no binary content)
+    Caller->>DB: GET document binary by ID (via DocumentDownloadServlet)
+    alt Document found
+        DB-->>Caller: Binary stream with Content-Disposition attachment
+    else Document not found
+        DB-->>Caller: 404 Not Found
+    end
+</div>
+<h2 id="business-rules-decision-logic">Business Rules &amp; Decision Logic</h2>
+<p><strong>Validation Rules:</strong></p>
+<div class="table-wrap"><table><thead><tr>
+<th>Rule</th><th>Location</th><th>Behavior on Failure</th></tr></thead><tbody>
+<tr><td><code>customerId</code> must be a non-null, non-empty integer</td><td>Upload and List endpoints</td><td>400 Bad Request</td></tr>
+<tr><td>File part must be present and non-empty (size &gt; 0)</td><td>Upload endpoint</td><td>400 Bad Request</td></tr>
+<tr><td><code>{id}</code> path parameter must be parseable as a <code>long</code></td><td>Download endpoint</td><td>400 Bad Request</td></tr>
+<tr><td><code>{customerId}</code> path parameter must be parseable as an <code>int</code></td><td>List endpoint</td><td>400 Bad Request</td></tr>
+</tbody></table></div>
+<p><strong>Default Values &amp; Computed Fields:</strong></p>
+<ul>
+<li><code>documentType</code> defaults to <code>&quot;General&quot;</code> when the submitted value is absent or blank.</li>
+<li><code>uploadedDate</code> is set server-side by SQL Server&#39;s <code>GETDATE()</code> function at INSERT time; the caller cannot supply or override it.</li>
+<li><code>documentId</code> is assigned by the SQL Server <code>IDENTITY</code> column; the caller has no influence over its value.</li>
+<li>Filename defaults to <code>&quot;upload.bin&quot;</code> if the submitted filename is blank.</li>
+</ul>
+<p><strong>Data Integrity Rules:</strong></p>
+<ul>
+<li>Filename sanitization replaces <code>\</code> and <code>/</code> with <code>_</code> before persistence, preventing path-separator characters from reaching the stored filename.</li>
+<li>No uniqueness constraint is enforced on filename or <code>(CustomerID, FileName)</code> — duplicate uploads are permitted without conflict detection.</li>
+<li>No document size enforcement beyond the Tomcat multipart limits declared in <code>web.xml</code> (10 MB per file, 12 MB per request).</li>
+</ul>
+<p><strong>Transactions:</strong></p>
+<p>No explicit transaction management is used. Each JDBC operation is executed in its own auto-commit connection. Upload operations are single-statement INSERT statements — partial write failures are not possible at the SQL level, but JDBC connection failures mid-request will result in a 500 error with no compensating action.</p>
+<p><strong>Error Handling:</strong></p>
+<p>Business exceptions are surfaced as HTTP status codes with inline JSON error bodies (<code>{&quot;status&quot;:&quot;ERROR&quot;,&quot;message&quot;:&quot;...&quot;}</code>). There are no typed business exception classes, no dead-letter queues, and no compensating transactions.</p>
+<p><strong>Audit &amp; Logging:</strong></p>
+<p>No application-level audit trail, business event log, or change tracking is implemented. <code>UploadedDate</code> in the <code>Documents</code> table provides a basic timestamp of when each document was stored, but there is no record of read operations (list or download), no access log per customer, and no change history for updates or deletions (neither operation is currently supported by the API).</p>
+<p><strong>Authorization:</strong></p>
+<p>No authorization rules are enforced. Any caller that can reach the network endpoint can upload documents for any customer ID, list documents for any customer, or download any document by ID. There is no concept of document ownership enforcement, role-based access, or customer-scoped access control.</p>
+</div>
+</div>
+<div id="tab-deps" class="tab-panel">
+  <div class="fact-content"><h1 id="dependency-map">Dependency Map</h1>
+<p>ZavaDocVault declares 3 external dependencies in its Gradle build file — a minimal dependency footprint reflecting its plain-Java-Servlet architecture with no framework stack.</p>
+<h2 id="dependencies">Dependencies</h2>
+<div class="mermaid">
+flowchart LR
+    App["ZavaDocVault"]
+
+    subgraph Web["Web / Servlet API"]
+        ServletAPI["javax.servlet-api v3.1.0 (compileOnly)"]
+    end
+    subgraph DB["Database / JDBC"]
+        MSSQLDriver["mssql-jdbc v12.6.3.jre8"]
+    end
+    subgraph Util["Utilities"]
+        OrgJSON["org.json v20140107"]
+    end
+
+    App -->|"servlet container"| Web
+    App -->|"persistence"| DB
+    App -->|"JSON serialization"| Util
+</div>
+<h3 id="dependency-summary">Dependency Summary</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Category</th><th>Count</th><th>Key Libraries</th><th>Notes</th></tr></thead><tbody>
+<tr><td>Web / Servlet API</td><td>1</td><td>javax.servlet-api 3.1.0</td><td><code>compileOnly</code> — provided by Tomcat 9 at runtime; uses legacy <code>javax.*</code> namespace</td></tr>
+<tr><td>Database / JDBC</td><td>1</td><td>mssql-jdbc 12.6.3.jre8</td><td>Microsoft JDBC driver for SQL Server; JRE 8 variant</td></tr>
+<tr><td>Utilities</td><td>1</td><td>org.json 20140107</td><td>JSON object builder for HTTP responses; dated 2014 artifact</td></tr>
+</tbody></table></div>
+<h3 id="version-compatibility-risks">Version &amp; Compatibility Risks</h3>
+<p><code>javax.servlet-api 3.1.0</code> uses the legacy <code>javax.<em></code> namespace (Java EE), which is incompatible with Jakarta EE 9+ tooling that uses <code>jakarta.</em></code>. Migrating to a modern Tomcat 10+ or any Jakarta EE-compatible container would require a namespace migration across all source files. <code>org.json:json:20140107</code> is pinned to a 2014 snapshot artifact; current releases are versioned by date (e.g., <code>20240303</code>) and include security and correctness fixes accumulated over a decade. The <code>mssql-jdbc 12.6.3.jre8</code> JRE 8 variant is the latest stable release line, but the <code>.jre8</code> suffix ties the application to Java 8; upgrading to a newer LTS Java would allow switching to the <code>.jre11</code> or <code>.jre17</code> classifier.</p>
+<h3 id="notable-observations">Notable Observations</h3>
+<ul>
+<li><strong>No web framework</strong>: The application uses the raw Servlet API with no Spring, Jakarta RESTful, or any other web framework. All routing, parameter parsing, JSON building, and error handling are hand-coded in servlet classes.</li>
+<li><strong>Extremely small dependency tree</strong>: With only 3 declared dependencies and no BOM or dependency management block, transitive dependency exposure is minimal, which is positive from a security surface standpoint.</li>
+<li><strong>org.json is heavily outdated</strong>: The declared version (<code>20140107</code>) is over 10 years old. The Maven Central groupId <code>org.json:json</code> does not follow semantic versioning, and the 2014 snapshot predates several correctness and security fixes.</li>
+<li><strong>No logging framework declared</strong>: The application has no SLF4J, Log4j, Logback, or JUL bridge declared. Logging infrastructure is inherited entirely from Tomcat&#39;s container logging, making structured or application-level log control impossible without adding a dependency.</li>
+</ul>
+<h2 id="test-dependencies">Test Dependencies</h2>
+<p>No test-scoped dependencies detected.</p>
+<p>Total test-scope dependencies: 0</p>
+<p>No test framework (JUnit, Mockito, TestNG, etc.) is declared in <code>build.gradle</code>. The project has no automated test infrastructure configured.</p>
+</div>
+</div>
+<div id="tab-data" class="tab-panel">
+  <div class="fact-content"><h1 id="data-architecture-persistence-layer">Data Architecture &amp; Persistence Layer</h1>
+<p>ZavaDocVault persists all data in a single SQL Server table (<code>Documents</code>) accessed exclusively via raw JDBC with no ORM framework; the schema is a single-entity model managed by an application-level bootstrap routine rather than a migration tool.</p>
+<h2 id="database-configuration">Database Configuration</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service/Module</th><th>DB Type</th><th>Profile</th><th>Driver</th><th>Connection</th><th>Migration Tool</th></tr></thead><tbody>
+<tr><td>ZavaDocVault</td><td>SQL Server</td><td>All (no profile separation)</td><td>mssql-jdbc 12.6.3.jre8</td><td><code>jdbc:sqlserver://{host}:{port};databaseName={name};encrypt=false;trustServerCertificate=true</code> — host, port, name, user, and password read from environment variables or <code>doc-vault.properties</code></td><td>None — schema created programmatically at startup via <code>DocVaultBootstrapServlet</code> using a conditional DDL statement</td></tr>
+</tbody></table></div>
+<p>No connection pooling is configured. Each database operation opens a new connection via <code>DriverManager.getConnection()</code> and closes it in a <code>finally</code> block. No Flyway, Liquibase, or other migration tooling is present. The JDBC URL has <code>encrypt=false</code>, meaning data in transit between the application and SQL Server is not encrypted.</p>
+<h2 id="data-ownership-per-service">Data Ownership per Service</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Tables Owned</th><th>ORM Framework</th><th>Caching</th><th>Notes</th></tr></thead><tbody>
+<tr><td>ZavaDocVault</td><td>Documents</td><td>None (raw JDBC)</td><td>None</td><td>Schema is bootstrapped at Tomcat startup via a conditional <code>IF OBJECT_ID ... IS NULL CREATE TABLE</code> DDL statement; no versioned migration history is maintained</td></tr>
+</tbody></table></div>
+<h2 id="entity-model">Entity Model</h2>
+<div class="mermaid">
+erDiagram
+    Documents {
+        bigint DocumentID PK
+        int CustomerID
+        nvarchar DocumentType
+        nvarchar FileName
+        nvarchar ContentType
+        varbinary DocumentData
+        datetime UploadedDate
+    }
+</div>
+<p>&gt; Note: There are no JPA/Hibernate entity classes. The <code>Documents</code> table schema is inferred from the conditional DDL executed by <code>DocVaultBootstrapServlet</code> at startup. <code>CustomerID</code> is an opaque foreign reference to a customer record owned by another service in the Zava Bank platform — no enforced foreign-key constraint exists within this database.</p>
+<p>No transaction management annotations or APIs are used. Each JDBC operation is executed within its own auto-commit connection; there are no multi-statement transactions.</p>
+<h2 id="key-repository-methods">Key Repository Methods</h2>
+<p>ZavaDocVault has no formal repository interfaces. All data access logic is embedded inline within servlet handler methods using <code>PreparedStatement</code> and <code>ResultSet</code>. The following table documents the four SQL operations by their owning class:</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Service Class</th><th>Operation</th><th>SQL Summary</th><th>Purpose</th></tr></thead><tbody>
+<tr><td>DocVaultBootstrapServlet</td><td>DDL</td><td><code>IF OBJECT_ID(&#39;Documents&#39;,&#39;U&#39;) IS NULL CREATE TABLE Documents (...)</code></td><td>Idempotent schema creation at startup</td></tr>
+<tr><td>DocumentUploadServlet</td><td>INSERT</td><td><code>INSERT INTO Documents (CustomerID, DocumentType, FileName, ContentType, DocumentData, UploadedDate) VALUES (?,?,?,?,?,GETDATE())</code> with <code>RETURN_GENERATED_KEYS</code></td><td>Persist uploaded binary document and retrieve generated <code>DocumentID</code></td></tr>
+<tr><td>CustomerDocumentsServlet</td><td>SELECT (list)</td><td><code>SELECT DocumentID, DocumentType, FileName, ContentType, UploadedDate FROM Documents WHERE CustomerID=? ORDER BY UploadedDate DESC, DocumentID DESC</code></td><td>List document metadata for a given customer, newest first; <code>DocumentData</code> is NOT retrieved in this query</td></tr>
+<tr><td>DocumentDownloadServlet</td><td>SELECT (single)</td><td><code>SELECT FileName, ContentType, DocumentData FROM Documents WHERE DocumentID=?</code></td><td>Retrieve binary document content and headers for a specific document ID</td></tr>
+</tbody></table></div>
+<p>All queries use <code>PreparedStatement</code> with positional parameters, preventing SQL injection via parameter binding. No stored procedures, views, named queries, or bulk/batch operations are used.</p>
+<h2 id="caching-strategy">Caching Strategy</h2>
+<p>No caching is configured at any layer. Every read request — including the customer document list — executes a live SQL query against SQL Server. There is no second-level cache, query result cache, session cache, or application-level cache (EhCache, Redis, Caffeine, Spring Cache, etc.).</p>
+<h2 id="data-ownership-boundaries">Data Ownership Boundaries</h2>
+<p>ZavaDocVault is the sole owner of the SQL Server database it connects to and of the single <code>Documents</code> table within it. There is no shared database with other Zava Bank services. <code>CustomerID</code> is stored as a plain integer reference — no foreign-key relationship, no join query, and no cross-service database access exists; the link to customer records in other services is maintained purely by convention at the application level.</p>
+<p>The data access pattern is simple read/write with no CQRS separation: the same database instance and table serve both write operations (upload) and read operations (list, download).</p>
+<h3 id="data-classification-sensitivity">Data Classification &amp; Sensitivity</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Table</th><th>Sensitive Fields</th><th>Classification</th><th>Controls in Place</th></tr></thead><tbody>
+<tr><td>Documents</td><td><code>DocumentData</code> (binary file content — may contain bank statements, identity documents, financial records)</td><td>Confidential / potentially PHI or PCI depending on document type</td><td>None — no encryption at rest, no field-level access control, no content inspection</td></tr>
+<tr><td>Documents</td><td><code>FileName</code> (may reflect customer identity or document category)</td><td>PII (indirect)</td><td>None — stored as plain text with no masking</td></tr>
+<tr><td>Documents</td><td><code>CustomerID</code> (opaque integer linking to customer record in another service)</td><td>PII (indirect reference)</td><td>None — no encryption, no obfuscation</td></tr>
+<tr><td>Documents</td><td><code>DocumentType</code>, <code>ContentType</code>, <code>UploadedDate</code></td><td>Internal metadata</td><td>None</td></tr>
+</tbody></table></div>
+<p>The <code>Documents</code> table stores arbitrary binary files submitted by the application. For a banking document vault, these files will typically include sensitive financial documents (statements, tax records) and identity documents (passports, utility bills). No encryption at rest is configured in the database or at the JDBC layer. The JDBC connection explicitly sets <code>encrypt=false</code>, meaning data in transit is also unencrypted. No field-level masking, access control list, or audit trail is implemented within the application.</p>
+</div>
+</div>
+<p class="footer">Your feedback is invaluable &mdash; <a href="https://aka.ms/ghcp-appmod/feedback">Share feedback</a></p>
+<script>
+function toggleRow(rowId, triggerRow) {
+  var detail = document.getElementById(rowId);
+  var btn = document.getElementById('btn-' + rowId);
+  if (!detail) return;
+  var visible = detail.style.display !== 'none';
+  detail.style.display = visible ? 'none' : 'table-row';
+  if (btn) btn.classList.toggle('open', !visible);
+}
+(function() {
+  var nav = document.querySelector('.tab-nav');
+  if (!nav) return;
+  nav.addEventListener('click', function(e) {
+    var btn = e.target.closest('.tab-btn');
+    if (!btn) return;
+    var targetId = btn.getAttribute('data-tab');
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+    btn.classList.add('active');
+    var panel = document.getElementById(targetId);
+    if (panel) {
+      panel.classList.add('active');
+      // Render any mermaid diagrams in this panel that haven't been processed yet
+      if (window.__mermaidReady) { window.__renderMermaidIn(panel); }
+    }
+  });
+})();
+
+// ── Diagram lightbox ────────────────────────────────────────
+(function() {
+  var lightbox = document.getElementById('diagram-lightbox');
+  var inner = document.getElementById('diagram-lightbox-inner');
+  var closeBtn = document.getElementById('diagram-lightbox-close');
+  if (!lightbox || !inner || !closeBtn) return;
+
+  var scale = 1;
+  var translateX = 0;
+  var translateY = 0;
+  var isDragging = false;
+  var dragStartX = 0;
+  var dragStartY = 0;
+
+  function applyTransform() {
+    var svg = inner.querySelector('svg');
+    if (svg) {
+      svg.style.transform = 'translate(' + translateX + 'px, ' + translateY + 'px) scale(' + scale + ')';
+      svg.style.transformOrigin = 'center center';
+      svg.style.transition = 'none';
+    }
+  }
+
+  function resetTransform() {
+    scale = 1; translateX = 0; translateY = 0;
+    applyTransform();
+  }
+
+  function openLightbox(svgEl) {
+    inner.innerHTML = svgEl.outerHTML;
+    var injected = inner.querySelector('svg');
+    if (injected) {
+      injected.removeAttribute('width');
+      injected.removeAttribute('height');
+      injected.style.cursor = 'grab';
+    }
+    resetTransform();
+    lightbox.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLightbox() {
+    lightbox.classList.remove('open');
+    inner.innerHTML = '';
+    document.body.style.overflow = '';
+    resetTransform();
+  }
+
+  inner.addEventListener('wheel', function(e) {
+    e.preventDefault();
+    var delta = e.deltaY > 0 ? 0.9 : 1.1;
+    scale = Math.min(Math.max(scale * delta, 0.3), 8);
+    applyTransform();
+  }, { passive: false });
+
+  inner.addEventListener('mousedown', function(e) {
+    if (e.button !== 0) return;
+    isDragging = true;
+    dragStartX = e.clientX - translateX;
+    dragStartY = e.clientY - translateY;
+    var svg = inner.querySelector('svg');
+    if (svg) { svg.style.cursor = 'grabbing'; }
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', function(e) {
+    if (!isDragging) return;
+    translateX = e.clientX - dragStartX;
+    translateY = e.clientY - dragStartY;
+    applyTransform();
+  });
+
+  document.addEventListener('mouseup', function() {
+    if (!isDragging) return;
+    isDragging = false;
+    var svg = inner.querySelector('svg');
+    if (svg) { svg.style.cursor = 'grab'; }
+  });
+
+  inner.addEventListener('dblclick', function() { resetTransform(); });
+
+  document.addEventListener('click', function(e) {
+    var card = e.target.closest('.mermaid');
+    if (!card) return;
+    if (e.target.closest('.diagram-lightbox-close')) return;
+    var svg = card.querySelector('svg');
+    if (svg) { openLightbox(svg); }
+  });
+
+  closeBtn.addEventListener('click', closeLightbox);
+
+  lightbox.addEventListener('click', function(e) {
+    if (e.target === lightbox) { closeLightbox(); }
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') { closeLightbox(); }
+  });
+})();
+
+var _currentTarget = '';
+
+function toggleMultiSelect(id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  // Close others
+  document.querySelectorAll('.multi-select.open').forEach(function(ms) { if (ms.id !== id) ms.classList.remove('open'); });
+  el.classList.toggle('open');
+}
+
+// Close dropdowns on outside click
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.multi-select')) {
+    document.querySelectorAll('.multi-select.open').forEach(function(ms) { ms.classList.remove('open'); });
+  }
+});
+
+function getMultiSelectValues(msId) {
+  var el = document.getElementById(msId);
+  if (!el) return [];
+  var checked = el.querySelectorAll('input[type=checkbox]:checked');
+  var vals = [];
+  for (var i = 0; i < checked.length; i++) vals.push(checked[i].value);
+  return vals;
+}
+
+function onMultiSelectChange(msId, label) {
+  var el = document.getElementById(msId);
+  if (!el) return;
+  var vals = getMultiSelectValues(msId);
+  var total = el.querySelectorAll('input[type=checkbox]').length;
+  var btn = el.querySelector('.multi-select-btn');
+  if (btn) {
+    btn.textContent = vals.length > 0 && vals.length < total ? label + ' (' + vals.length + ')' : label;
+  }
+  applyFilters();
+}
+
+function applyFilters() {
+  var selectedDomains = getMultiSelectValues('domain-ms');
+  var selectedCrits = getMultiSelectValues('criticality-ms');
+
+  // Domain filter: show/hide entire sections (empty = show all)
+  var sections = document.querySelectorAll('.issue-section');
+  for (var i = 0; i < sections.length; i++) {
+    var domain = sections[i].getAttribute('data-domain');
+    sections[i].style.display = (selectedDomains.length === 0 || selectedDomains.indexOf(domain) >= 0) ? '' : 'none';
+  }
+
+  // Row-level filtering: respect target + criticality
+  var rows = document.querySelectorAll('.issue-row');
+  for (var i = 0; i < rows.length; i++) {
+    var row = rows[i];
+    var section = row.closest('.issue-section');
+    if (section && section.style.display === 'none') {
+      row.style.display = 'none';
+      var next = row.nextElementSibling;
+      if (next && next.classList.contains('detail-row')) next.style.display = 'none';
+      continue;
+    }
+
+    // Check target filter
+    var show = true;
+    if (_currentTarget && row.hasAttribute('data-targets')) {
+      var targetsStr = row.getAttribute('data-targets');
+      if (targetsStr && targetsStr !== '{}') {
+        try {
+          var targets = JSON.parse(targetsStr);
+          if (Object.keys(targets).length > 0 && !targets[_currentTarget]) {
+            show = false;
+          }
+        } catch(e) {}
+      }
+    }
+
+    // Check criticality filter
+    if (show && selectedCrits.length > 0) {
+      var crit = row.getAttribute('data-criticality');
+      if (selectedCrits.indexOf(crit) < 0) show = false;
+    }
+
+    row.style.display = show ? '' : 'none';
+    var nextRow = row.nextElementSibling;
+    if (nextRow && nextRow.classList.contains('detail-row')) {
+      if (!show) nextRow.style.display = 'none';
+    }
+  }
+}
+
+function clearAllFilters() {
+  document.querySelectorAll('.multi-select input[type=checkbox]').forEach(function(cb) { cb.checked = false; });
+  var domainBtn = document.querySelector('#domain-ms .multi-select-btn');
+  if (domainBtn) domainBtn.textContent = 'Domain';
+  var critBtn = document.querySelector('#criticality-ms .multi-select-btn');
+  if (critBtn) critBtn.textContent = 'Criticality';
+  applyFilters();
+}
+
+function onTargetChange(targetId) {
+  _currentTarget = targetId;
+  var rows = document.querySelectorAll('.issue-row[data-targets]');
+  var totalEffort = 0;
+  var domainCrits = {}; // domain -> {mandatory:0, potential:0, optional:0}
+
+  for (var i = 0; i < rows.length; i++) {
+    var row = rows[i];
+    var targets = JSON.parse(row.getAttribute('data-targets'));
+    var section = row.closest('.issue-section');
+    var domain = section ? section.getAttribute('data-domain') : '';
+
+    if (!targets || Object.keys(targets).length === 0) {
+      // No target data (e.g. security) — always show
+      var sp = parseFloat(row.querySelector('.sp-cell').textContent) || 0;
+      totalEffort += sp;
+      if (!domainCrits[domain]) domainCrits[domain] = {mandatory:0,potential:0,optional:0};
+      var crit = row.getAttribute('data-criticality') || 'optional';
+      domainCrits[domain][crit] = (domainCrits[domain][crit] || 0) + 1;
+      continue;
+    }
+
+    var override = targets[targetId];
+    if (!override) {
+      // Issue doesn't apply to this target
+      continue;
+    }
+
+    // Apply severity override
+    var newSeverity = (override.severity || row.getAttribute('data-default-severity') || '').toLowerCase();
+    row.setAttribute('data-criticality', newSeverity);
+    var critCell = row.querySelector('.crit-cell');
+    if (critCell) {
+      var critText = newSeverity === 'mandatory' ? 'Mandatory' : newSeverity === 'potential' ? 'Potential' : 'Optional';
+      var cssClass = newSeverity === 'mandatory' ? 'crit-square-mandatory' : newSeverity === 'potential' ? 'crit-square-potential' : 'crit-square-optional';
+      critCell.innerHTML = '<span class="crit-label"><span class="crit-square ' + cssClass + '"></span>' + critText + '</span>';
+    }
+
+    // Apply effort override
+    var newEffort = override.effort !== undefined ? override.effort : parseFloat(row.getAttribute('data-default-effort')) || 0;
+    var spCell = row.querySelector('.sp-cell');
+    if (spCell) spCell.textContent = newEffort;
+    totalEffort += newEffort;
+
+    if (!domainCrits[domain]) domainCrits[domain] = {mandatory:0,potential:0,optional:0};
+    domainCrits[domain][newSeverity] = (domainCrits[domain][newSeverity] || 0) + 1;
+  }
+
+  // Also add security findings effort (they don't have per-target data)
+  var secSection = document.querySelector('.issue-section[data-domain="security"]');
+  if (secSection) {
+    var secRows = secSection.querySelectorAll('.issue-row');
+    for (var j = 0; j < secRows.length; j++) {
+      if (!secRows[j].hasAttribute('data-targets') || secRows[j].getAttribute('data-targets') === '') {
+        var sp = parseFloat(secRows[j].querySelector('.sp-cell').textContent) || 0;
+        totalEffort += sp;
+        if (!domainCrits['security']) domainCrits['security'] = {mandatory:0,potential:0,optional:0};
+        var sc = secRows[j].getAttribute('data-criticality') || 'optional';
+        domainCrits['security'][sc] = (domainCrits['security'][sc] || 0) + 1;
+      }
+    }
+  }
+
+  // Update effort display
+  var label = totalEffort < 20 ? 'S' : totalEffort < 50 ? 'M' : totalEffort < 100 ? 'L' : 'XL';
+  var effortEl = document.getElementById('effort-display');
+  if (effortEl) effortEl.textContent = label + ' (total story points: ' + totalEffort + ')';
+
+  // Update donut charts
+  updateDonuts(domainCrits);
+
+  // Re-apply domain/criticality filters
+  applyFilters();
+}
+
+function updateDonuts(domainCrits) {
+  var container = document.getElementById('donut-container');
+  if (!container) return;
+  container.innerHTML = '';
+  var domainNames = {'cloud-readiness':'Cloud Readiness','java-upgrade':'Java Upgrade','dotnet-upgrade':'DotNET Upgrade','security':'Security'};
+  var domainOrder = ['cloud-readiness','java-upgrade','dotnet-upgrade','security'];
+  for (var d = 0; d < domainOrder.length; d++) {
+    var key = domainOrder[d];
+    var c = domainCrits[key];
+    if (!c || (c.mandatory + c.potential + c.optional) === 0) continue;
+    var total = c.mandatory + c.potential + c.optional;
+    var div = document.createElement('div');
+    div.className = 'domain-summary-item';
+    div.innerHTML = buildDonutSvg(c.mandatory, c.potential, c.optional) +
+      '<h3>' + domainNames[key] + '</h3>' +
+      '<div class="count">' + total + ' issue' + (total !== 1 ? 's' : '') + '</div>';
+    container.appendChild(div);
+  }
+}
+
+function buildDonutSvg(m, p, o) {
+  var total = m + p + o;
+  if (total === 0) return '<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;"><circle cx="50" cy="50" r="35" fill="none" stroke="#d0d7de" stroke-width="15" opacity="0.5"/></svg>';
+  var r = 35, circ = 2 * Math.PI * r, offset = 0;
+  var svg = '<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;transform:rotate(-90deg);">';
+  var segs = [{c:m,color:'var(--color-mandatory)'},{c:p,color:'var(--color-potential)'},{c:o,color:'var(--color-optional)'}];
+  for (var i = 0; i < segs.length; i++) {
+    if (segs[i].c === 0) continue;
+    var segLen = (segs[i].c / total) * circ;
+    var gap = total > segs[i].c ? 1.5 : 0;
+    var drawLen = Math.max(segLen - gap, 0.5);
+    svg += '<circle cx="50" cy="50" r="' + r + '" fill="none" stroke="' + segs[i].color + '" stroke-width="15" stroke-dasharray="' + drawLen.toFixed(2) + ' ' + circ.toFixed(2) + '" stroke-dashoffset="' + (-offset).toFixed(2) + '"/>';
+    offset += segLen;
+  }
+  svg += '</svg>';
+  return svg;
+}
+</script>
+<script>document.addEventListener('DOMContentLoaded', function() { onTargetChange('azure-aks'); });</script>
+</div></body></html>

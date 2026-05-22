@@ -1,0 +1,1321 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Assessment - ZavaWireTransferService</title>
+<style>
+:root {
+  --bg-primary: #ffffff;
+  --bg-card: #f8f9fa;
+  --bg-page: #f0f1f3;
+  --text-primary: #24292f;
+  --text-secondary: #57606a;
+  --text-muted: #6b7280;
+  --border-color: #d0d7de;
+  --border-light: #e1e4e8;
+  --link-color: #2563eb;
+  --color-mandatory: #E3008C;
+  --color-potential: #637CEF;
+  --color-optional: #A19F9D;
+  --font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  --font-mono: 'Cascadia Code', 'Consolas', 'Courier New', monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-family); font-size: 13px; color: var(--text-primary); background: var(--bg-primary); line-height: 1.5; margin: 0; padding: 0; }
+a { color: var(--link-color); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Page layout ───────────────────────────────────────────── */
+.main { margin: 0; padding: 24px 32px; background: var(--bg-primary); }
+.back-link { color: var(--text-muted); font-size: 13px; margin-bottom: 16px; display: block; }
+h1 { font-weight: 600; font-size: 20px; color: var(--text-primary); margin-bottom: 20px; }
+
+/* ── Report cards (matches VS Code .vscode-report-card) ──── */
+.report-card { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 4px; padding: 12px; margin-bottom: 20px; }
+.report-card h2 { font-size: 14px; font-weight: 600; margin: 0; color: var(--text-primary); }
+.report-card-body { margin-top: 16px; }
+
+/* ── Application Information (two-column) ────────────────── */
+.app-info-container { display: flex; gap: 8px; flex-wrap: wrap; }
+.app-info-column { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 8px; }
+.app-info-row { display: flex; align-items: baseline; }
+.app-info-label { width: 136px; flex-shrink: 0; font-weight: 600; color: var(--text-primary); }
+.app-info-value { flex: 1; color: var(--text-primary); }
+
+/* ── Issue Summary (pie charts + legend) ─────────────────── */
+.cards-container { display: flex; align-items: stretch; gap: 20px; flex-wrap: wrap; }
+.issue-summary-card { flex: 2; }
+.domain-summary-container { display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-around; }
+.domain-summary-item { flex: 1; min-width: 120px; text-align: center; padding: 0 16px; border-right: 1px solid var(--border-light); }
+.domain-summary-item:last-child { border-right: none; }
+.domain-summary-item h3 { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-top: 8px; }
+.domain-summary-item .count { font-size: 12px; color: var(--text-secondary); }
+.criticality-legend { display: flex; flex-wrap: wrap; gap: 15px; padding-top: 12px; justify-content: center; }
+.criticality-legend .legend-item { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-secondary); }
+.legend-swatch { display: inline-block; width: 1em; height: 1em; border-radius: 2px; }
+
+/* ── Issue list tables ───────────────────────────────────── */
+.issue-section { margin-top: 20px; }
+.issue-section h2 { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+.issue-table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 600px; }
+.issue-table th { text-align: left; text-transform: uppercase; font-weight: 600; font-size: calc(13px * 0.875); padding: 6px 8px; background: var(--bg-card); border-bottom: 1px solid var(--border-color); color: var(--text-secondary); position: sticky; top: 0; z-index: 1; }
+.issue-table td { padding: 12px 8px; border-bottom: 1px solid var(--border-light); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
+.col-issue { width: 55%; }
+.col-criticality { width: 25%; }
+.col-storypoint { width: 20%; }
+
+/* ── Target dropdown ─────────────────────────────────────── */
+.target-select-container { margin: 4px 0 16px 0; display: flex; align-items: center; gap: 8px; }
+.target-select-container label { font-weight: 600; color: var(--text-primary); font-size: 14px; }
+.target-select-container select { font-family: var(--font-family); font-size: 13px; padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer; }
+
+/* ── Filter bar ──────────────────────────────────────────── */
+.filter-bar { display: flex; flex-wrap: wrap; gap: 16px; margin: 16px 0 8px 0; align-items: center; }
+.multi-select { position: relative; display: inline-block; min-width: 140px; }
+.multi-select-btn { font-family: var(--font-family); font-size: 13px; padding: 4px 24px 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer; width: 100%; text-align: left; position: relative; white-space: nowrap; }
+.multi-select-btn::after { content: '\25BE'; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--text-secondary); }
+.multi-select-dropdown { display: none; position: absolute; top: 100%; left: 0; min-width: 100%; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 100; margin-top: 2px; }
+.multi-select.open .multi-select-dropdown { display: block; }
+.multi-select-option { display: flex; align-items: center; gap: 6px; padding: 5px 10px; cursor: pointer; font-size: 13px; white-space: nowrap; }
+.multi-select-option:hover { background: var(--bg-secondary); }
+.multi-select-option input[type=checkbox] { margin: 0; cursor: pointer; }
+.clear-filters { font-size: 12px; color: var(--link-color); cursor: pointer; margin-left: 4px; }
+
+/* ── Criticality labels (colored square + text) ──────────── */
+.crit-label { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; white-space: nowrap; }
+.crit-square { display: inline-block; width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+.crit-square-mandatory { background: var(--color-mandatory); }
+.crit-square-potential { background: var(--color-potential); }
+.crit-square-optional { background: var(--color-optional); }
+
+/* ── Expandable rows ─────────────────────────────────────── */
+.expand-btn { background: none; border: none; cursor: pointer; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 11px; transition: transform 0.15s; padding: 0; vertical-align: middle; flex-shrink: 0; }
+.expand-btn.open { transform: rotate(90deg); }
+.issue-title-cell { display: flex; align-items: center; gap: 4px; }
+.detail-row td { padding: 0; border-bottom: 1px solid var(--border-light); white-space: normal; overflow: visible; text-overflow: clip; }
+.detail-content { display: flex; gap: 0; padding: 8px 8px 8px 32px; min-width: 0; }
+.file-list { flex: 0 0 50%; min-width: 0; overflow: hidden; }
+.file-list table { width: 100%; border-collapse: collapse; }
+.file-list th { font-size: calc(13px * 0.875); text-transform: uppercase; font-weight: 600; color: var(--text-secondary); padding: 6px 8px; border-bottom: 1px solid var(--border-color); text-align: left; height: 32px; }
+.file-list td { font-size: 13px; padding: 6px 8px; border-bottom: 1px solid var(--border-light); color: var(--text-primary); }
+.file-list .file-path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 300px; display: block; }
+.file-list .position { font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary); }
+.explanation-panel { flex: 1; padding-left: 16px; min-width: 0; overflow-wrap: break-word; word-wrap: break-word; }
+.explanation-panel h4 { font-size: calc(13px * 0.875); text-transform: uppercase; font-weight: 600; color: var(--text-secondary); padding: 6px 0; border-bottom: 1px solid var(--border-color); height: 32px; margin: 0; }
+.explanation-panel p { font-size: 13px; padding: 8px 0; color: var(--text-primary); line-height: 1.6; white-space: normal; word-break: break-word; }
+
+/* ── Experimental badge ──────────────────────────────────── */
+.badge-experimental { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; background: #fef9c3; color: #854d0e; vertical-align: middle; margin-left: 8px; cursor: default; }
+
+/* ── Footer ──────────────────────────────────────────────── */
+.footer { text-align: center; margin-top: 24px; color: var(--text-muted); font-size: 13px; }
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 800px) {
+  .main { padding: 16px; }
+  .app-info-container { flex-direction: column; }
+  .domain-summary-container { flex-direction: column; }
+  .domain-summary-item { border-right: none; border-bottom: 1px solid var(--border-light); padding-bottom: 12px; }
+  .detail-content { flex-direction: column; }
+  .file-list { flex: none; width: 100%; }
+  .explanation-panel { padding-left: 0; padding-top: 8px; }
+}
+/* ── Tab navigation ──────────────────────────────────────── */
+.tab-nav { display: flex; gap: 0; border-bottom: 1px solid var(--border-color); margin-bottom: 28px; flex-wrap: wrap; }
+.tab-btn { background: none; border: none; border-bottom: 2px solid transparent; padding: 10px 18px; font-size: 13px; font-family: var(--font-family); color: var(--text-secondary); cursor: pointer; margin-bottom: -1px; white-space: nowrap; position: relative; }
+.tab-btn:hover { color: var(--text-primary); }
+.tab-btn.active { color: var(--link-color); border-bottom-color: var(--link-color); font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ── Tooltip on tab ──────────────────────────────────────── */
+.tab-btn[data-tooltip]::after { content: attr(data-tooltip); position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); background: #24292f; color: #ffffff; font-size: 12px; font-weight: 400; padding: 6px 10px; border-radius: 4px; white-space: normal; width: max-content; max-width: 260px; text-align: center; pointer-events: none; opacity: 0; transition: opacity 0.15s; z-index: 100; }
+.tab-btn[data-tooltip]:hover::after { opacity: 1; }
+
+/* ── Fact content — prose column ─────────────────────────── */
+.fact-content { max-width: 860px; margin: 0 auto; line-height: 1.75; color: var(--text-primary); font-size: 14px; }
+.fact-content h1 { font-size: 22px; font-weight: 700; margin: 0 0 6px 0; color: var(--text-primary); letter-spacing: -0.01em; }
+.fact-content h1 + p { margin-top: 6px; color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
+.fact-content h2 { font-size: 17px; font-weight: 700; margin: 36px 0 12px 0; padding-bottom: 6px; border-bottom: 1px solid var(--border-color); color: var(--text-primary); letter-spacing: -0.01em; }
+.fact-content h3 { font-size: 14px; font-weight: 700; margin: 24px 0 8px 0; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.04em; font-size: 12px; color: var(--text-secondary); }
+.fact-content p { margin: 10px 0; color: var(--text-primary); }
+.fact-content ul, .fact-content ol { margin: 10px 0 10px 22px; }
+.fact-content li { margin: 5px 0; }
+.fact-content a { color: var(--link-color); }
+.fact-content a:hover { text-decoration: underline; }
+
+/* ── Fact tables ─────────────────────────────────────────── */
+.table-wrap { overflow-x: auto; margin: 16px 0; }
+.fact-content table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 13px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); }
+.fact-content thead { background: var(--bg-card); }
+.fact-content th { text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; padding: 8px 14px; border-bottom: 1px solid var(--border-color); color: var(--text-secondary); }
+.fact-content td { padding: 9px 14px; border-bottom: 1px solid var(--border-light); vertical-align: top; color: var(--text-primary); }
+.fact-content tr:last-child td { border-bottom: none; }
+.fact-content tbody tr:hover { background: #f6f8fa; }
+
+/* ── Fact code ───────────────────────────────────────────── */
+.fact-content code { font-family: var(--font-mono); font-size: 12px; background: #f0f1f3; padding: 2px 6px; border-radius: 4px; color: #c7254e; }
+.fact-content pre { background: #f6f8fa; border: 1px solid var(--border-light); border-radius: 6px; padding: 14px 16px; overflow-x: auto; margin: 14px 0; }
+.fact-content pre code { background: none; color: var(--text-primary); padding: 0; border-radius: 0; }
+.fact-content hr { border: none; border-top: 1px solid var(--border-light); margin: 28px 0; }
+.fact-content strong { font-weight: 600; }
+.fact-content em { font-style: italic; }
+.fact-content blockquote { border-left: 3px solid var(--border-color); margin: 12px 0; padding: 4px 16px; color: var(--text-secondary); }
+.fact-unavailable { padding: 32px 0; }
+.fact-unavailable h3 { font-size: 16px; font-weight: 600; color: var(--text-primary); text-transform: none; letter-spacing: 0; margin: 0 0 12px 0; }
+.fact-unavailable p { margin: 0 0 8px 0; color: var(--text-secondary); }
+.fact-unavailable ol, .fact-unavailable ul { margin: 0 0 0 22px; color: var(--text-primary); }
+.fact-unavailable li { margin: 6px 0; }
+
+/* ── Mermaid diagram card ─────────────────────────────────── */
+.mermaid { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 8px; padding: 24px 16px; margin: 20px 0; overflow-x: auto; text-align: center; cursor: pointer; position: relative; }
+.mermaid:hover { border-color: var(--border-color); }
+.mermaid svg { max-width: 100%; height: auto !important; display: inline-block; }
+.mermaid-zoom-hint { position: absolute; top: 8px; right: 10px; font-size: 11px; color: var(--text-muted); opacity: 0; transition: opacity 0.15s; pointer-events: none; }
+.mermaid:hover .mermaid-zoom-hint { opacity: 1; }
+
+/* ── Diagram lightbox ────────────────────────────────────── */
+.diagram-lightbox { display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.7); backdrop-filter: blur(2px); align-items: center; justify-content: center; cursor: zoom-out; padding: 48px 32px; }
+.diagram-lightbox.open { display: flex; }
+.diagram-lightbox-inner { background: #ffffff; border-radius: 10px; padding: 32px; width: 88vw; max-height: 88vh; overflow: hidden; cursor: default; box-shadow: 0 24px 64px rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; }
+.diagram-lightbox-inner svg { width: 100% !important; height: auto !important; max-height: 76vh; display: block; }
+.diagram-lightbox-close { position: fixed; top: 20px; right: 24px; background: #ffffff; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-primary); box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 1001; }
+.diagram-lightbox-close:hover { background: var(--bg-card); }
+.diagram-lightbox-hint { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.55); color: #ffffff; font-size: 12px; padding: 6px 14px; border-radius: 20px; pointer-events: none; white-space: nowrap; z-index: 1001; }
+</style>
+<script>
+window.__mermaidPending = [];
+window.__mermaidReady = false;
+window.__renderMermaidIn = function(container) {
+  // Until the real implementation overrides this (after the ES module import
+  // resolves), just queue the container so we can render it later.
+  if (container) { window.__mermaidPending.push(container); }
+};
+</script>
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+mermaid.initialize({ startOnLoad: false, theme: 'default', flowchart: { useMaxWidth: true }, sequence: { useMaxWidth: true } });
+
+// Real implementation: actually run mermaid on the unprocessed diagrams in the
+// given container (only ones not already rendered). Adds a "Click to expand"
+// hint span after each successful render so the lightbox affordance is
+// discoverable.
+window.__renderMermaidIn = function(container) {
+  var nodes = container ? container.querySelectorAll('.mermaid:not([data-processed])') : [];
+  if (nodes.length > 0) {
+    mermaid.run({ nodes: Array.from(nodes) }).then(function() {
+      nodes.forEach(function(node) {
+        if (!node.querySelector('.mermaid-zoom-hint')) {
+          var hint = document.createElement('span');
+          hint.className = 'mermaid-zoom-hint';
+          hint.textContent = 'Click to expand';
+          node.appendChild(hint);
+        }
+      });
+    });
+  }
+};
+
+// Drain any containers that were queued by the shim while mermaid was loading.
+// Use a Set to dedupe in case a container was both queued and is also the
+// initial-active panel below.
+var drained = new Set();
+(window.__mermaidPending || []).forEach(function(c) {
+  if (!drained.has(c)) { drained.add(c); window.__renderMermaidIn(c); }
+});
+window.__mermaidPending = [];
+window.__mermaidReady = true;
+
+// Render diagrams visible on initial load (the active tab panel(s) may not have
+// been queued by anyone — DOMContentLoaded handlers run before this if the
+// module is cached, after this if it's not, so handle both cases here).
+function renderActivePanels() {
+  document.querySelectorAll('.tab-panel.active').forEach(function(p) {
+    if (!drained.has(p)) { drained.add(p); window.__renderMermaidIn(p); }
+  });
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', renderActivePanels);
+} else {
+  renderActivePanels();
+}
+</script>
+</head><body>
+<div id="diagram-lightbox" class="diagram-lightbox" role="dialog" aria-modal="true">
+  <button class="diagram-lightbox-close" id="diagram-lightbox-close" aria-label="Close">&#x2715;</button>
+  <div class="diagram-lightbox-hint">Scroll to zoom &nbsp;·&nbsp; Drag to pan &nbsp;·&nbsp; Double-click to reset</div>
+  <div class="diagram-lightbox-inner" id="diagram-lightbox-inner"></div>
+</div>
+<div class="main">
+<a class="back-link" href="../../index.html">&#8592; Back to aggregate dashboard</a>
+<h1>ZavaWireTransferService</h1>
+<div class="report-card">
+  <h2>Application Information</h2>
+  <div class="report-card-body">
+    <div class="app-info-container">
+      <div class="app-info-column">
+        <div class="app-info-row"><span class="app-info-label">Application Name</span><span class="app-info-value">ZavaWireTransferService</span></div>
+        <div class="app-info-row"><span class="app-info-label">Java Version</span><span class="app-info-value">Unknown</span></div>
+        <div class="app-info-row"><span class="app-info-label">Effort</span><span class="app-info-value" id="effort-display">S (total story points: 17)</span></div>
+      </div>
+      <div class="app-info-column">
+        <div class="app-info-row"><span class="app-info-label">Build Tools</span><span class="app-info-value">Gradle</span></div>
+        <div class="app-info-row"><span class="app-info-label">Frameworks</span><span class="app-info-value">N/A</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+<nav class="tab-nav">
+  <button class="tab-btn active" data-tab="tab-issues" data-tooltip="Issues detected in the source code">Issues</button>
+  <button class="tab-btn" data-tab="tab-arch" data-tooltip="How the app&#39;s layers connect — from UI to data.">Architecture</button>
+  <button class="tab-btn" data-tab="tab-api" data-tooltip="Endpoints exposed by this app and how services communicate.">API Contracts</button>
+  <button class="tab-btn" data-tab="tab-config" data-tooltip="Environment settings, runtime profiles, and deployment manifests.">Configuration</button>
+  <button class="tab-btn" data-tab="tab-workflows" data-tooltip="Domain entities and the core flows users move through.">Business Workflows</button>
+  <button class="tab-btn" data-tab="tab-deps" data-tooltip="Libraries and frameworks this app depends on, grouped by category.">Dependencies</button>
+  <button class="tab-btn" data-tab="tab-data" data-tooltip="Database schema, entity relationships, and persistence behavior.">Data Model</button>
+</nav>
+<div id="tab-issues" class="tab-panel active">
+<div class="target-select-container">
+  <label for="target-select">Target Compute Service:</label>
+  <select id="target-select" onchange="onTargetChange(this.value)">
+    <option value="azure-aks">Azure Kubernetes Service</option>
+    <option value="azure-appservice">Azure App Service</option>
+    <option value="azure-container-apps">Azure Container Apps</option>
+  </select>
+</div>
+<div class="report-card">
+  <h2>Issue Summary</h2>
+  <div class="report-card-body">
+    <div class="domain-summary-container" id="donut-container">
+      <div class="domain-summary-item">
+<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;transform:rotate(-90deg);">
+  <circle cx="50" cy="50" r="35" fill="none" stroke="var(--color-mandatory)" stroke-width="15" stroke-dasharray="145.11 219.91" stroke-dashoffset="-0.00"/>
+  <circle cx="50" cy="50" r="35" fill="none" stroke="var(--color-optional)" stroke-width="15" stroke-dasharray="71.80 219.91" stroke-dashoffset="-146.61"/>
+</svg>
+
+        <h3>Cloud Readiness</h3>
+        <div class="count">3 issues</div>
+      </div>
+      <div class="domain-summary-item">
+<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;transform:rotate(-90deg);">
+  <circle cx="50" cy="50" r="35" fill="none" stroke="var(--color-optional)" stroke-width="15" stroke-dasharray="219.91 219.91" stroke-dashoffset="-0.00"/>
+</svg>
+
+        <h3>Java Upgrade</h3>
+        <div class="count">1 issue</div>
+      </div>
+    </div>
+    <div class="criticality-legend">
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--color-mandatory)"></span>Mandatory</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--color-potential)"></span>Potential</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--color-optional)"></span>Optional</div>
+    </div>
+  </div>
+</div>
+<div class="filter-bar" id="filter-bar">
+  <div class="multi-select" id="domain-ms">
+    <button class="multi-select-btn" onclick="toggleMultiSelect('domain-ms')">Domain</button>
+    <div class="multi-select-dropdown">
+      <label class="multi-select-option"><input type="checkbox" value="cloud-readiness" onchange="onMultiSelectChange('domain-ms','Domain')"/> Cloud Readiness</label>
+      <label class="multi-select-option"><input type="checkbox" value="java-upgrade" onchange="onMultiSelectChange('domain-ms','Domain')"/> Java Upgrade</label>
+    </div>
+  </div>
+  <div class="multi-select" id="criticality-ms">
+    <button class="multi-select-btn" onclick="toggleMultiSelect('criticality-ms')">Criticality</button>
+    <div class="multi-select-dropdown">
+      <label class="multi-select-option"><input type="checkbox" value="mandatory" onchange="onMultiSelectChange('criticality-ms','Criticality')"/> Mandatory</label>
+      <label class="multi-select-option"><input type="checkbox" value="optional" onchange="onMultiSelectChange('criticality-ms','Criticality')"/> Optional</label>
+    </div>
+  </div>
+  <a class="clear-filters" href="javascript:void(0)" onclick="clearAllFilters()">Clear all</a>
+</div>
+<div class="issue-section" data-domain="cloud-readiness">
+  <h2>Cloud Readiness</h2>
+  <table class="issue-table">
+    <colgroup><col class="col-issue"/><col class="col-criticality"/><col class="col-storypoint"/></colgroup>
+    <thead><tr><th>Issue Category</th><th>Criticality</th><th>Story Point</th></tr></thead>
+    <tbody>
+    <tr class="issue-row" data-criticality="mandatory" data-targets='{"azure-aks":{"effort":3,"severity":"mandatory"},"azure-appservice":{"effort":3,"severity":"mandatory"},"azure-container-apps":{"effort":3,"severity":"mandatory"}}' data-default-effort="3" data-default-severity="mandatory" data-rule="unsecure-network-protocol-00000" onclick="toggleRow('row-cloudreadiness-0', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-cloudreadiness-0">&#x276F;</button> Use of unsecured network protocols or URI libraries</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-mandatory"></span>Mandatory</span></td>
+      <td class="sp-cell">3</td>
+    </tr>
+    <tr class="detail-row" id="row-cloudreadiness-0" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="src/main/resources/wire-transfer.properties">src/main/resources/wire-transfer.properties</span></td><td><span class="position">Line 6, Col 0</span></td></tr>
+            <tr><td><span class="file-path" title="src/main/resources/wire-transfer.properties">src/main/resources/wire-transfer.properties</span></td><td><span class="position">Line 7, Col 0</span></td></tr>
+            <tr><td><span class="file-path" title="bin/main/wire-transfer.properties">bin/main/wire-transfer.properties</span></td><td><span class="position">Line 6, Col 0</span></td></tr>
+            <tr><td><span class="file-path" title="bin/main/wire-transfer.properties">bin/main/wire-transfer.properties</span></td><td><span class="position">Line 7, Col 0</span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>Using secured protocols such as HTTPS and SFTP (over HTTP and FTP) should now be the norm as applications are more and more exposed and interconnected. <br/>This CloudReady patterns looks for unescured URI in the source code or deprecated URI libraries. <br/>Ideally, URLs should be replaced in your source code by secured protocols HTTPS and SFTP (and ensure the infrastructure implements these protocols for the resources your application calls, uses or references).</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="mandatory" data-targets='{"azure-aks":{"effort":3,"severity":"mandatory"},"azure-appservice":{"effort":3,"severity":"mandatory"},"azure-container-apps":{"effort":3,"severity":"mandatory"}}' data-default-effort="3" data-default-severity="mandatory" data-rule="cra-hardcoded-credential-default-pwd-04000" onclick="toggleRow('row-cloudreadiness-1', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-cloudreadiness-1">&#x276F;</button> CRA: Default or well-known password detected</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-mandatory"></span>Mandatory</span></td>
+      <td class="sp-cell">3</td>
+    </tr>
+    <tr class="detail-row" id="row-cloudreadiness-1" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="bin/main/wire-transfer.properties">bin/main/wire-transfer.properties</span></td><td><span class="position">Line 12, Col 0</span></td></tr>
+            <tr><td><span class="file-path" title="src/main/resources/wire-transfer.properties">src/main/resources/wire-transfer.properties</span></td><td><span class="position">Line 12, Col 0</span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p><strong>EU Cyber Resilience Act (Annex I, Part I, Section 2(b))</strong> requires a <strong>secure by default configuration</strong>. The use of default, well-known, or trivial passwords violates the secure-by-default principle.</p><p>ETSI EN 303 645 (referenced standard for CRA compliance) explicitly prohibits universal default passwords in Provision 5.1-1.</p><p><strong>Recommended actions:</strong></p><ul><li>Remove all default/well-known passwords from code and configuration.</li><li>Require unique, strong passwords during initial setup.</li><li>Use generated secrets that are unique per deployment.</li><li>Implement password complexity requirements.</li></ul></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="optional" data-targets='{"azure-aks":{"effort":3,"severity":"optional"},"azure-appservice":{"effort":3,"severity":"optional"},"azure-container-apps":{"effort":3,"severity":"optional"}}' data-default-effort="3" data-default-severity="optional" data-rule="hardcoded-urls-00001" onclick="toggleRow('row-cloudreadiness-2', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-cloudreadiness-2">&#x276F;</button> Avoid using hardcoded URLs (HTTP protocol) in source code</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-optional"></span>Optional</span></td>
+      <td class="sp-cell">3</td>
+    </tr>
+    <tr class="detail-row" id="row-cloudreadiness-2" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="src/main/resources/wire-transfer.properties">src/main/resources/wire-transfer.properties</span></td><td><span class="position">Line 6, Col 0</span></td></tr>
+            <tr><td><span class="file-path" title="src/main/resources/wire-transfer.properties">src/main/resources/wire-transfer.properties</span></td><td><span class="position">Line 7, Col 0</span></td></tr>
+            <tr><td><span class="file-path" title="bin/main/wire-transfer.properties">bin/main/wire-transfer.properties</span></td><td><span class="position">Line 6, Col 0</span></td></tr>
+            <tr><td><span class="file-path" title="bin/main/wire-transfer.properties">bin/main/wire-transfer.properties</span></td><td><span class="position">Line 7, Col 0</span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>This patterns verifies in source code and configuration files the presence of hardcoded URLs using the HTTP protocol (HTTP/HTTPS). This URL would need to be replaced by the new resource&#39;s URL during the Cloud migration, if any change occured.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+</div>
+<div class="issue-section" data-domain="java-upgrade">
+  <h2>Java Upgrade</h2>
+  <table class="issue-table">
+    <colgroup><col class="col-issue"/><col class="col-criticality"/><col class="col-storypoint"/></colgroup>
+    <thead><tr><th>Issue Category</th><th>Criticality</th><th>Story Point</th></tr></thead>
+    <tbody>
+    <tr class="issue-row" data-criticality="optional" data-targets='{"azure-aks":{"effort":8,"severity":"optional"},"azure-appservice":{"effort":8,"severity":"optional"},"azure-container-apps":{"effort":8,"severity":"optional"}}' data-default-effort="8" data-default-severity="optional" data-rule="azure-java-version-02000" onclick="toggleRow('row-javaupgrade-0', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-javaupgrade-0">&#x276F;</button> Java Version is not the latest LTS</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-optional"></span>Optional</span></td>
+      <td class="sp-cell">8</td>
+    </tr>
+    <tr class="detail-row" id="row-javaupgrade-0" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="build.gradle">build.gradle</span></td><td><span class="position">Line 7, Col 0</span></td></tr>
+            <tr><td><span class="file-path" title="build.gradle">build.gradle</span></td><td><span class="position">Line 8, Col 0</span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>The application is not using the latest LTS Java version. It is recommended to consider upgrading to the latest LTS version to take advantage of the newest language features, performance improvements, and extended support timelines.<br/>Upgrading to the latest LTS version ensures your application benefits from the most recent security enhancements and a longer support lifecycle.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+</div>
+</div><!-- #tab-issues -->
+<div id="tab-arch" class="tab-panel">
+  <div class="fact-content"><h1 id="architecture-diagram">Architecture Diagram</h1>
+<p>ZavaWireTransferService is a Jakarta EE servlet-based Java 11 web application that processes domestic and international wire transfers, persisting data in SQL Server, calling external HTTP microservices for FX rates and ledger debits, and publishing events to RabbitMQ.</p>
+<h2 id="application-architecture">Application Architecture</h2>
+<div class="mermaid">
+flowchart TD
+    subgraph Client["Client Layer"]
+        Browser["HTTP Client / Consumer"]
+    end
+
+    subgraph App["Application Layer - Jakarta EE Servlet 4.0 / Java 11"]
+        Health["HealthServlet\n(GET /health)"]
+        Bootstrap["WireBootstrapServlet\n(load-on-startup)"]
+        Transfer["WireTransferServlet\n(POST /api/wire/transfer)"]
+        Status["WireStatusServlet\n(GET /api/wire/id/status)"]
+    end
+
+    subgraph Config["Configuration Layer"]
+        WireConfig["WireConfig\n(env vars + properties)"]
+        ConnFactory["WireConnectionFactory\n(JDBC)"]
+    end
+
+    subgraph Data["Data Layer"]
+        MSSQL[("SQL Server\nZavaBankDB")]
+    end
+
+    subgraph External["External Services"]
+        CurrencySvc["Currency Service\nHTTP REST"]
+        LedgerSvc["Ledger Service\nHTTP XML"]
+        RabbitMQ["RabbitMQ\nwire.events exchange"]
+    end
+
+    Browser -->|"HTTP requests"| Health
+    Browser -->|"HTTP requests"| Transfer
+    Browser -->|"HTTP requests"| Status
+    Bootstrap -->|"init schema on startup"| ConnFactory
+    Transfer -->|"reads config"| WireConfig
+    Status -->|"reads config"| WireConfig
+    WireConfig -->|"provides JDBC URL/credentials"| ConnFactory
+    ConnFactory -->|"JDBC connection"| MSSQL
+    Transfer -->|"INSERT WireTransfers"| MSSQL
+    Status -->|"SELECT WireTransfers"| MSSQL
+    Transfer -->|"GET FX rate"| CurrencySvc
+    Transfer -->|"POST XML debit"| LedgerSvc
+    Transfer -->|"publish wire event"| RabbitMQ
+</div>
+<h3 id="technology-stack-summary">Technology Stack Summary</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Layer</th><th>Technology</th><th>Version</th><th>Purpose</th></tr></thead><tbody>
+<tr><td>Presentation</td><td>Jakarta EE Servlet API</td><td>4.0</td><td>HTTP request handling (WAR deployed on servlet container)</td></tr>
+<tr><td>Runtime</td><td>Java</td><td>11</td><td>Application runtime</td></tr>
+<tr><td>Build</td><td>Gradle</td><td>9.x</td><td>Build and packaging tool</td></tr>
+<tr><td>Data Access</td><td>Microsoft SQL Server JDBC</td><td>12.6.3 (jre11)</td><td>Relational database connectivity</td></tr>
+<tr><td>Data Storage</td><td>SQL Server</td><td>(ZavaBankDB)</td><td>Persistence of wire transfer records</td></tr>
+<tr><td>Messaging</td><td>RabbitMQ AMQP Client</td><td>5.20.0</td><td>Event publishing for wire transfer status changes</td></tr>
+<tr><td>JSON</td><td>org.json</td><td>20140107</td><td>JSON serialization/deserialization</td></tr>
+</tbody></table></div>
+<h3 id="data-storage-external-services">Data Storage &amp; External Services</h3>
+<p>The application uses <strong>Microsoft SQL Server</strong> (ZavaBankDB) as its primary data store, accessed directly via JDBC without an ORM layer. Wire transfer records are stored in the <code>WireTransfers</code> table, which is created on startup by <code>WireBootstrapServlet</code>. Two external HTTP microservices are called at runtime: a <strong>Currency Service</strong> provides real-time FX exchange rates for international transfers, and a <strong>Ledger Service</strong> accepts XML-formatted debit transactions to post charges against the originating account. After persisting a transfer, the application publishes an event to a <strong>RabbitMQ</strong> topic exchange (<code>wire.events</code>) using a routing key based on the transfer status.</p>
+<h3 id="key-architectural-decisions">Key Architectural Decisions</h3>
+<ul>
+<li><strong>Direct JDBC without ORM</strong>: All database interactions use raw JDBC <code>PreparedStatement</code> calls rather than JPA/Hibernate, keeping the dependency footprint small but requiring manual SQL management.</li>
+<li><strong>Synchronous HTTP integration</strong>: FX rate lookup and ledger debit are performed inline within the transfer request, with fixed 7-second connect/read timeouts; failures are handled gracefully (FX defaults to 1.0, ledger failure sets status to <code>PENDING_LEDGER</code>).</li>
+<li><strong>Properties + environment variable configuration</strong>: <code>WireConfig</code> supports both a <code>wire-transfer.properties</code> file and environment variable overrides, enabling container-based deployment with runtime configuration injection.</li>
+</ul>
+<h2 id="component-relationships">Component Relationships</h2>
+<div class="mermaid">
+flowchart LR
+    subgraph Presentation["Presentation / API"]
+        HealthServlet["HealthServlet"]
+        WireTransferServlet["WireTransferServlet"]
+        WireStatusServlet["WireStatusServlet"]
+        WireBootstrapServlet["WireBootstrapServlet"]
+    end
+
+    subgraph Infrastructure["Infrastructure"]
+        WireConfig["WireConfig"]
+        WireConnectionFactory["WireConnectionFactory"]
+    end
+
+    WireBootstrapServlet -->|"uses"| WireConnectionFactory
+    WireTransferServlet -->|"reads config"| WireConfig
+    WireTransferServlet -->|"opens connection"| WireConnectionFactory
+    WireStatusServlet -->|"reads config"| WireConfig
+    WireStatusServlet -->|"opens connection"| WireConnectionFactory
+    WireConfig -->|"provides DB config"| WireConnectionFactory
+</div>
+<h3 id="component-inventory">Component Inventory</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Component</th><th>Layer</th><th>Type</th><th>Responsibility</th></tr></thead><tbody>
+<tr><td>HealthServlet</td><td>Presentation</td><td>HttpServlet</td><td>Returns HTML health check response at GET /health</td></tr>
+<tr><td>WireBootstrapServlet</td><td>Presentation</td><td>HttpServlet (load-on-startup)</td><td>Creates the WireTransfers table in SQL Server on application startup</td></tr>
+<tr><td>WireTransferServlet</td><td>Presentation</td><td>HttpServlet</td><td>Accepts POST requests to initiate wire transfers; validates input, calls FX and Ledger services, persists record, publishes RabbitMQ event</td></tr>
+<tr><td>WireStatusServlet</td><td>Presentation</td><td>HttpServlet</td><td>Returns wire transfer status by ID via GET /api/wire/{id}/status</td></tr>
+<tr><td>WireConfig</td><td>Infrastructure</td><td>Configuration Utility</td><td>Reads configuration from environment variables with fallback to wire-transfer.properties</td></tr>
+<tr><td>WireConnectionFactory</td><td>Infrastructure</td><td>Connection Factory</td><td>Loads SQL Server JDBC driver and provides JDBC connections using config from WireConfig</td></tr>
+</tbody></table></div>
+</div>
+</div>
+<div id="tab-api" class="tab-panel">
+  <div class="fact-content"><h1 id="api-service-communication-contracts">API &amp; Service Communication Contracts</h1>
+<p>ZavaWireTransferService exposes 3 HTTP endpoints (2 business APIs + 1 health check) and integrates synchronously with two external microservices and asynchronously with a RabbitMQ broker.</p>
+<h2 id="service-catalog">Service Catalog</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Port</th><th>Category</th><th>Purpose</th></tr></thead><tbody>
+<tr><td>ZavaWireTransferService</td><td>8080 (Tomcat default)</td><td>Business</td><td>Accepts wire transfer requests, queries transfer status, and orchestrates FX/Ledger/Messaging integrations</td></tr>
+<tr><td>Currency Service (external)</td><td>8080</td><td>Infrastructure</td><td>Provides real-time FX exchange rates via HTTP REST</td></tr>
+<tr><td>Ledger Service (external)</td><td>8080</td><td>Business</td><td>Accepts XML debit transaction requests to post charges against account balances</td></tr>
+<tr><td>RabbitMQ (external)</td><td>5672</td><td>Infrastructure</td><td>AMQP message broker; receives wire transfer status events on the <code>wire.events</code> topic exchange</td></tr>
+</tbody></table></div>
+<h2 id="api-endpoints-inventory">API Endpoints Inventory</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Method</th><th>Path</th><th>Request Type</th><th>Response Type</th><th>Notes</th></tr></thead><tbody>
+<tr><td>WireTransferServlet</td><td>POST</td><td>/api/wire/transfer</td><td>JSON body (wire transfer fields)</td><td>JSON (wireTransferId, status, referenceNumber, fxRate, debitAmountUSD, ledgerPosted)</td><td>Returns 400 on validation error, 500 on DB failure</td></tr>
+<tr><td>WireStatusServlet</td><td>GET</td><td>/api/wire/{id}/status</td><td>Path param: id (long)</td><td>JSON (wireTransferId, status, referenceNumber, amount, currencyCode, fxRate, debitAmountUSD, isInternational, failureReason, createdDate, updatedDate)</td><td>Returns 400 on invalid id format, 404 if not found, 500 on DB error</td></tr>
+<tr><td>HealthServlet</td><td>GET</td><td>/health</td><td>None</td><td>HTML (<code>ZavaWireTransferService - Online</code>)</td><td>Plain health check, always returns 200</td></tr>
+</tbody></table></div>
+<h2 id="management-observability-endpoints">Management &amp; Observability Endpoints</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Endpoint</th><th>Custom Metrics</th></tr></thead><tbody>
+<tr><td>ZavaWireTransferService</td><td>GET /health</td><td>None — response is static HTML with no metrics</td></tr>
+</tbody></table></div>
+<p>&gt; Note: No Spring Boot Actuator, Micrometer, Prometheus, or other observability framework is configured. The only observability surface is the <code>/health</code> endpoint, which returns static HTML with no structured data.</p>
+<h2 id="dtos-contracts">DTOs &amp; Contracts</h2>
+<p>No formal DTO classes or OpenAPI/Swagger specifications exist in this application. All request and response serialization is performed manually:</p>
+<ul>
+<li><strong>Wire Transfer Request</strong> (inbound): JSON body parsed inline in <code>WireTransferServlet.doPost()</code> using <code>org.json.JSONObject</code>. Fields: <code>fromAccountId</code>, <code>toAccountNumber</code>, <code>toRoutingNumber</code>, <code>beneficiaryName</code>, <code>currencyCode</code>, <code>amount</code>. No dedicated request class.</li>
+<li><strong>Wire Transfer Response</strong> (outbound): JSON object built inline using <code>org.json.JSONObject</code>. Fields: <code>wireTransferId</code>, <code>status</code>, <code>referenceNumber</code>, <code>fxRate</code>, <code>debitAmountUSD</code>, <code>ledgerPosted</code>. No dedicated response class.</li>
+<li><strong>Wire Status Response</strong> (outbound): JSON object built inline in <code>WireStatusServlet.doGet()</code>. Contains full wire transfer record fields. No dedicated response class.</li>
+<li><strong>FX Rate Response</strong> (inbound from Currency Service): Parsed as <code>{&quot;rate&quot;: &lt;double&gt;}</code> JSON.</li>
+<li><strong>Ledger Debit Request</strong> (outbound to Ledger Service): Hand-crafted XML string with fields: <code>debitAccountId</code>, <code>creditAccountId</code>, <code>amount</code>, <code>description</code>, <code>referenceNumber</code>. Content-Type: <code>application/xml</code>.</li>
+<li><strong>RabbitMQ Wire Event</strong> (outbound): JSON payload built with <code>org.json.JSONObject</code>. Fields: <code>wireTransferId</code>, <code>status</code>, <code>referenceNumber</code>, <code>amount</code>, <code>currencyCode</code>, <code>eventDate</code>.</li>
+</ul>
+<p>There are no protobuf schemas, GraphQL schemas, or OpenAPI specs. All contracts are implicit and embedded in the servlet implementation code.</p>
+<h2 id="communication-patterns">Communication Patterns</h2>
+<p><strong>Synchronous (REST over HTTP)</strong>:</p>
+<ul>
+<li><code>WireTransferServlet</code> calls the <strong>Currency Service</strong> (<code>GET /api/currency/rate?from=USD&amp;to={currency}</code>) to retrieve FX rates for international transfers. Both connect and read timeouts are set to <strong>7 seconds</strong>. On failure or non-2xx response, the FX rate silently defaults to <code>1.0</code> — there is no retry, circuit breaker, or fallback alert.</li>
+<li><code>WireTransferServlet</code> calls the <strong>Ledger Service</strong> (<code>POST /api/transactions</code>) with an XML-formatted debit request. Both connect and read timeouts are set to <strong>7 seconds</strong>. On failure, the transfer is persisted with status <code>PENDING_LEDGER</code> and <code>failureReason = &quot;Ledger posting failed.&quot;</code> — no retry is performed.</li>
+</ul>
+<p><strong>Asynchronous (AMQP)</strong>:</p>
+<ul>
+<li>After database insertion, <code>WireTransferServlet</code> publishes a JSON event to the RabbitMQ <strong><code>wire.events</code></strong> topic exchange. The routing key is <code>{routingKeyPrefix}.{status.toLowerCase()}</code> (e.g., <code>wire.posted</code> or <code>wire.pending_ledger</code>). AMQP connection and channel are opened fresh per request and closed in a <code>finally</code> block. Publish failures are silently swallowed.</li>
+</ul>
+<p><strong>Resilience Patterns</strong>: None formally implemented. There are no circuit breakers, retry policies, bulkhead patterns, or dead-letter queue configurations. All failures in external calls are absorbed silently with minimal fallback logic (FX defaults to 1.0, ledger failure changes status field only).</p>
+<p><strong>Service Discovery</strong>: Services are located by <strong>hardcoded base URLs</strong> read from <code>WireConfig</code> (environment variables or <code>wire-transfer.properties</code>). There is no service registry, DNS-based discovery, or client-side load balancing.</p>
+<p><strong>API Gateway</strong>: Not present. Clients call the servlet endpoints directly.</p>
+<p><strong>Startup Dependency Chain</strong>: <code>WireBootstrapServlet</code> is configured with <code>&lt;load-on-startup&gt;1&lt;/load-on-startup&gt;</code> in <code>web.xml</code>. It opens a JDBC connection to SQL Server and creates the <code>WireTransfers</code> table on startup. If SQL Server is unavailable at startup, the application fails to deploy.</p>
+<p><strong>Security Posture</strong>: No authentication, no authorization, and no TLS are configured at the API level. All endpoints (<code>/api/wire/transfer</code>, <code>/api/wire/{id}/status</code>, <code>/health</code>) are <strong>publicly accessible with no authentication or authorization checks</strong>. Wire transfer amounts and account identifiers can be submitted by any caller without credentials.</p>
+<h2 id="service-technology-matrix">Service Technology Matrix</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Web Framework</th><th>Data Access</th><th>Discovery</th><th>Gateway</th><th>Health Check</th><th>Cache</th><th>Metrics</th></tr></thead><tbody>
+<tr><td>ZavaWireTransferService</td><td>Servlet API 4.0 (Jakarta EE 8)</td><td>Raw JDBC (mssql-jdbc)</td><td>None (hardcoded URLs)</td><td>None</td><td>Custom HTML endpoint</td><td>None</td><td>None</td></tr>
+<tr><td>Currency Service</td><td>Unknown (external)</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+<tr><td>Ledger Service</td><td>Unknown (external)</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+<tr><td>RabbitMQ</td><td>AMQP 0-9-1 broker</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+</tbody></table></div>
+<h2 id="service-communication-sequence">Service Communication Sequence</h2>
+<div class="mermaid">
+sequenceDiagram
+    participant Client
+    participant WireTransfer as "WireTransferServlet"
+    participant CurrencySvc as "Currency Service"
+    participant LedgerSvc as "Ledger Service"
+    participant DB as "SQL Server (ZavaBankDB)"
+    participant MQ as "RabbitMQ"
+
+    Client->>WireTransfer: POST /api/wire/transfer (JSON)
+    WireTransfer->>WireTransfer: Validate input fields and routing number
+
+    alt International transfer (non-USD)
+        WireTransfer->>CurrencySvc: GET /api/currency/rate?from=USD&to={currency}
+        alt Currency Service responds 2xx
+            CurrencySvc-->>WireTransfer: {"rate": 1.23}
+        else Timeout or error (7s)
+            WireTransfer-->>WireTransfer: Default fxRate = 1.0
+        end
+    end
+
+    WireTransfer->>LedgerSvc: POST /api/transactions (XML debit)
+    alt Ledger responds 2xx
+        LedgerSvc-->>WireTransfer: HTTP 2xx
+        WireTransfer->>WireTransfer: status = POSTED
+    else Timeout or error (7s)
+        WireTransfer-->>WireTransfer: status = PENDING_LEDGER
+    end
+
+    WireTransfer->>DB: INSERT INTO WireTransfers
+    DB-->>WireTransfer: generated WireTransferID
+
+    WireTransfer--)MQ: Publish wire event to wire.events exchange
+    Note over WireTransfer,MQ: Async publish; failures silently ignored
+
+    WireTransfer-->>Client: 200 JSON (wireTransferId, status, referenceNumber, fxRate, ...)
+</div>
+</div>
+</div>
+<div id="tab-config" class="tab-panel">
+  <div class="fact-content"><h1 id="configuration-externalized-settings-inventory">Configuration &amp; Externalized Settings Inventory</h1>
+<p>ZavaWireTransferService uses two configuration sources: a bundled properties file and Docker image environment variables. There are no runtime profiles, feature flags, config server, or secret store integrations.</p>
+<h2 id="configuration-sources">Configuration Sources</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Source</th><th>Type</th><th>Path / Location</th><th>Notes</th></tr></thead><tbody>
+<tr><td><code>wire-transfer.properties</code></td><td>Properties file</td><td><code>src/main/resources/wire-transfer.properties</code></td><td>Bundled inside the WAR; provides fallback defaults for all runtime settings</td></tr>
+<tr><td>Dockerfile ENV</td><td>Environment variables</td><td><code>Dockerfile</code> (runtime stage)</td><td>Baked-in environment variable defaults for the container image; can be overridden at container runtime</td></tr>
+<tr><td><code>web.xml</code></td><td>Deployment descriptor</td><td><code>src/main/webapp/WEB-INF/web.xml</code></td><td>Servlet registration and URL mappings; no runtime-configurable properties</td></tr>
+<tr><td><code>build.gradle</code></td><td>Build script</td><td><code>build.gradle</code></td><td>Dependency declarations and WAR packaging; no build profiles</td></tr>
+</tbody></table></div>
+<p>No Spring Cloud Config server, Azure App Configuration, HashiCorp Vault, AWS Secrets Manager, Kubernetes ConfigMaps/Secrets, or <code>.env</code> files are in use.</p>
+<h2 id="build-profiles">Build Profiles</h2>
+<p>No build profiles are defined. The Gradle build script (<code>build.gradle</code>) has a single configuration for all environments. There are no <code>debug</code>/<code>release</code> configurations, Gradle build variants, or conditional dependency inclusions.</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Profile</th><th>Activation</th><th>Purpose</th><th>Key Dependencies/Plugins</th></tr></thead><tbody>
+<tr><td>(default — only one)</td><td>Always active</td><td>Compiles Java 11 sources and packages a WAR file named <code>ROOT.war</code></td><td><code>java</code>, <code>war</code> plugins; <code>javax.servlet-api</code>, <code>mssql-jdbc</code>, <code>amqp-client</code>, <code>org.json</code></td></tr>
+</tbody></table></div>
+<h2 id="runtime-profiles">Runtime Profiles</h2>
+<p>No runtime profiles are configured. The application does not use Spring Boot, Spring profiles, or any profile-switching mechanism. A single set of settings applies across all environments; values are differentiated only by environment variable overrides at container startup.</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Profile</th><th>Activation Method</th><th>Config Files</th><th>Key Overrides</th></tr></thead><tbody>
+<tr><td>(single — no profiles)</td><td>N/A</td><td><code>wire-transfer.properties</code> (bundled)</td><td>All values overridable via environment variables at container runtime</td></tr>
+</tbody></table></div>
+<h2 id="properties-inventory">Properties Inventory</h2>
+<p>All properties are read by <code>WireConfig</code> using a priority rule: <strong>environment variable takes precedence over <code>wire-transfer.properties</code></strong>.</p>
+<h3 id="zavawiretransferservice">ZavaWireTransferService</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Property Key</th><th>Default Value (properties file)</th><th>Env Variable Override</th><th>Notes</th></tr></thead><tbody>
+<tr><td><code>db.host</code></td><td><code>sqlserver</code></td><td><code>DB_HOST</code></td><td>SQL Server hostname</td></tr>
+<tr><td><code>db.port</code></td><td><code>1433</code></td><td><code>DB_PORT</code></td><td>SQL Server port</td></tr>
+<tr><td><code>db.name</code></td><td><code>ZavaBankDB</code></td><td><code>DB_NAME</code></td><td>Database name</td></tr>
+<tr><td><code>db.user</code></td><td><code>sa</code></td><td><code>DB_USER</code></td><td>Database username</td></tr>
+<tr><td><code>db.password</code></td><td><code>YourStrong!Passw0rd</code></td><td><code>DB_PASSWORD</code></td><td>Database password (sensitive — see Secrets section)</td></tr>
+<tr><td><code>currency.service.baseUrl</code></td><td><code>http://zava-currency-service:8080</code></td><td><code>CURRENCY_SERVICE_BASE_URL</code></td><td>Base URL of the external Currency Service</td></tr>
+<tr><td><code>ledger.service.baseUrl</code></td><td><code>http://zava-ledger:8080</code></td><td><code>LEDGER_SERVICE_BASE_URL</code></td><td>Base URL of the external Ledger Service</td></tr>
+<tr><td><code>ledger.settlement.accountId</code></td><td><em>(not set; defaults to 1 in code)</em></td><td><code>LEDGER_SETTLEMENT_ACCOUNT_ID</code></td><td>Settlement account ID for ledger debit postings</td></tr>
+<tr><td><code>rabbitmq.host</code></td><td><code>rabbitmq</code></td><td><code>RABBITMQ_HOST</code></td><td>RabbitMQ broker hostname</td></tr>
+<tr><td><code>rabbitmq.port</code></td><td><code>5672</code></td><td><code>RABBITMQ_PORT</code></td><td>RabbitMQ AMQP port</td></tr>
+<tr><td><code>rabbitmq.user</code></td><td><code>guest</code></td><td><code>RABBITMQ_USER</code></td><td>RabbitMQ username</td></tr>
+<tr><td><code>rabbitmq.password</code></td><td><code>guest</code></td><td><code>RABBITMQ_PASSWORD</code></td><td>RabbitMQ password (sensitive — see Secrets section)</td></tr>
+<tr><td><code>rabbitmq.exchange</code></td><td><code>wire.events</code></td><td><code>RABBITMQ_EXCHANGE</code></td><td>RabbitMQ topic exchange name</td></tr>
+<tr><td><code>rabbitmq.routing.key.prefix</code></td><td><code>wire</code></td><td><code>RABBITMQ_ROUTING_KEY_PREFIX</code></td><td>Routing key prefix for published events</td></tr>
+</tbody></table></div>
+<h2 id="startup-parameters-resource-requirements">Startup Parameters &amp; Resource Requirements</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>JVM / Runtime Options</th><th>Memory</th><th>Instance Count</th></tr></thead><tbody>
+<tr><td>ZavaWireTransferService</td><td>Tomcat defaults (<code>catalina.sh run</code>); no <code>-Xms</code>/<code>-Xmx</code> or <code>-D</code> flags set</td><td>Not specified (Docker/Tomcat defaults)</td><td>Not specified; no scaling config</td></tr>
+</tbody></table></div>
+<p>No JVM heap tuning, GC flags, or system property overrides are configured. The container starts Tomcat with <code>CMD [&quot;catalina.sh&quot;, &quot;run&quot;]</code>, relying on JVM default ergonomics for heap sizing.</p>
+<h2 id="startup-dependency-chain">Startup Dependency Chain</h2>
+<ol>
+<li><strong>SQL Server</strong> must be reachable before <code>WireBootstrapServlet</code> (configured as <code>load-on-startup=1</code>) executes at application startup. If SQL Server is unavailable, the servlet container will fail to deploy the WAR.</li>
+<li><strong>ZavaWireTransferService</strong> WAR is deployed to Tomcat (the only application service).</li>
+<li><strong>Currency Service</strong> and <strong>Ledger Service</strong> do not need to be available at startup — they are called at request time with 7-second timeouts.</li>
+<li><strong>RabbitMQ</strong> does not need to be available at startup — the AMQP connection is opened per-request and failures are silently ignored.</li>
+</ol>
+<p>No health check probes, <code>dockerize</code> wait-for-TCP mechanisms, Docker Compose <code>depends_on</code> conditions, or Kubernetes readiness probes are configured. Startup ordering is entirely unguarded.</p>
+<h2 id="secrets-sensitive-configuration">Secrets &amp; Sensitive Configuration</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Secret Reference</th><th>Type</th><th>Storage</th></tr></thead><tbody>
+<tr><td><code>DB_PASSWORD</code> / <code>db.password</code></td><td>Database password</td><td>Plaintext in <code>wire-transfer.properties</code> and Dockerfile <code>ENV</code> — [MASKED in this document]</td></tr>
+<tr><td><code>DB_USER</code> / <code>db.user</code></td><td>Database username</td><td>Plaintext in <code>wire-transfer.properties</code> and Dockerfile <code>ENV</code></td></tr>
+<tr><td><code>RABBITMQ_PASSWORD</code> / <code>rabbitmq.password</code></td><td>Message broker password</td><td>Plaintext in <code>wire-transfer.properties</code> and Dockerfile <code>ENV</code> — [MASKED in this document]</td></tr>
+<tr><td><code>RABBITMQ_USER</code> / <code>rabbitmq.user</code></td><td>Message broker username</td><td>Plaintext in <code>wire-transfer.properties</code> and Dockerfile <code>ENV</code></td></tr>
+</tbody></table></div>
+<p>&gt; <strong>Critical finding</strong>: The database password (<code>YourStrong!Passw0rd</code>) and RabbitMQ credentials are committed in plaintext to the repository — both in <code>src/main/resources/wire-transfer.properties</code> and baked into the Dockerfile as <code>ENV</code> defaults. Any image built from this Dockerfile will contain these credentials in its layer history, regardless of runtime overrides.</p>
+<h3 id="secrets-provisioning-workflow">Secrets Provisioning Workflow</h3>
+<p>There is <strong>no secrets provisioning workflow</strong>. Credentials are:</p>
+<ol>
+<li>Hardcoded as defaults in <code>wire-transfer.properties</code> (bundled into the WAR artifact).</li>
+<li>Duplicated as <code>ENV</code> defaults in the Dockerfile (baked into the container image at build time).</li>
+<li>Overridable at container runtime via environment variable injection (e.g., <code>docker run -e DB_PASSWORD=...</code>), but the defaults remain in the image layers.</li>
+</ol>
+<p>No secret store (Azure Key Vault, HashiCorp Vault, AWS Secrets Manager), managed identity, sealed secrets, or CI/CD secrets injection pipeline is configured. Before cloud migration, all secrets must be moved to a managed secret store and removed from source code and container image layers.</p>
+<h2 id="feature-flags">Feature Flags</h2>
+<p>No feature flag framework or conditional configuration mechanism is present. There are no <code>@ConditionalOnProperty</code> annotations, LaunchDarkly integrations, environment-based toggles, or A/B testing mechanisms.</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Flag Name</th><th>Default</th><th>Controlled By</th></tr></thead><tbody>
+<tr><td>(none detected)</td><td>—</td><td>—</td></tr>
+</tbody></table></div>
+<h2 id="framework-runtime-versions">Framework &amp; Runtime Versions</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Component</th><th>Version</th><th>Source</th></tr></thead><tbody>
+<tr><td>Java</td><td>11</td><td><code>build.gradle</code> (<code>sourceCompatibility = JavaVersion.VERSION_11</code>)</td></tr>
+<tr><td>Gradle (build)</td><td>7.6</td><td><code>Dockerfile</code> (<code>gradle:7.6-jdk11</code> build stage)</td></tr>
+<tr><td>Gradle (wrapper)</td><td>9.5.1</td><td><code>.gradle/9.5.1/</code> directory</td></tr>
+<tr><td>Servlet Container</td><td>Tomcat 9</td><td><code>Dockerfile</code> (<code>tomcat:9-jdk11</code> runtime stage)</td></tr>
+<tr><td>Servlet API</td><td>4.0.1</td><td><code>build.gradle</code> (<code>javax.servlet:javax.servlet-api:4.0.1</code>)</td></tr>
+<tr><td>SQL Server JDBC Driver</td><td>12.6.3.jre11</td><td><code>build.gradle</code> (<code>com.microsoft.sqlserver:mssql-jdbc</code>)</td></tr>
+<tr><td>RabbitMQ AMQP Client</td><td>5.20.0</td><td><code>build.gradle</code> (<code>com.rabbitmq:amqp-client</code>)</td></tr>
+<tr><td>org.json</td><td>20140107</td><td><code>build.gradle</code> (<code>org.json:json</code>)</td></tr>
+<tr><td>Base Docker image (build)</td><td><code>gradle:7.6-jdk11</code></td><td><code>Dockerfile</code></td></tr>
+<tr><td>Base Docker image (runtime)</td><td><code>tomcat:9-jdk11</code></td><td><code>Dockerfile</code></td></tr>
+</tbody></table></div>
+</div>
+</div>
+<div id="tab-workflows" class="tab-panel">
+  <div class="fact-content"><h1 id="core-business-workflows">Core Business Workflows</h1>
+<p>ZavaWireTransferService enables clients to initiate domestic and international wire transfers and query their status, orchestrating FX conversion, ledger debiting, and event publication as part of the transfer processing workflow.</p>
+<h2 id="domain-entities">Domain Entities</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Entity</th><th>Service / Bounded Context</th><th>Description</th><th>Key Relationships</th></tr></thead><tbody>
+<tr><td>WireTransfer</td><td>Wire Transfer (ZavaWireTransferService)</td><td>Represents a single wire transfer instruction, including originator account, beneficiary details, amount, currency, FX rate applied, settlement amount in USD, and current processing status</td><td>Self-contained; references <code>FromAccountID</code> (external account system) and <code>ToAccountNumber</code>/<code>ToRoutingNumber</code> (external beneficiary banking system)</td></tr>
+</tbody></table></div>
+<h2 id="service-to-domain-mapping">Service-to-Domain Mapping</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Domain Context</th><th>Owned Entities</th><th>External Dependencies</th></tr></thead><tbody>
+<tr><td>ZavaWireTransferService</td><td>Wire Transfer Initiation &amp; Tracking</td><td>WireTransfer</td><td>Currency Service (FX rates), Ledger Service (account debit posting), RabbitMQ (status event publication)</td></tr>
+<tr><td>Currency Service (external)</td><td>Foreign Exchange</td><td>FX Rate (not owned here)</td><td>—</td></tr>
+<tr><td>Ledger Service (external)</td><td>Account Ledger / General Ledger</td><td>Account Transaction (not owned here)</td><td>—</td></tr>
+</tbody></table></div>
+<h2 id="primary-workflows">Primary Workflows</h2>
+<h3 id="workflow-1-initiate-wire-transfer">Workflow 1: Initiate Wire Transfer</h3>
+<p>A client submits a wire transfer request. The service validates the request, optionally fetches a live FX rate for international transfers, posts a debit to the originating account via the Ledger Service, persists the transfer record in SQL Server, and publishes a status event to RabbitMQ.</p>
+<p><strong>Steps:</strong></p>
+<ol>
+<li><strong>Receive and parse request</strong>: Client submits JSON payload via POST. The service reads the request body and parses JSON fields.</li>
+<li><strong>Input validation</strong>: All required fields must be present and non-empty; <code>amount</code> must be greater than zero; <code>toRoutingNumber</code> must pass ABA routing number checksum validation (9 digits, weighted checksum mod 10 = 0).</li>
+<li><strong>FX rate lookup (international only)</strong>: If <code>currencyCode</code> is not <code>USD</code>, the service calls the Currency Service to retrieve the current USD exchange rate. On failure or timeout (7s), the FX rate silently defaults to <code>1.0</code> and processing continues.</li>
+<li><strong>Debit amount calculation</strong>: <code>debitAmountUSD = amount &#215; fxRate</code>, rounded to 2 decimal places.</li>
+<li><strong>Ledger debit posting</strong>: The service calls the Ledger Service with an XML debit request (originating account → settlement account, amount in USD, reference number). On success, status is set to <code>POSTED</code>. On failure or timeout (7s), status is set to <code>PENDING_LEDGER</code> with a failure reason recorded.</li>
+<li><strong>Reference number generation</strong>: A unique reference number is generated as <code>WIRE-{8-char uppercase UUID fragment}</code>.</li>
+<li><strong>Persist wire transfer record</strong>: The transfer is inserted into the <code>WireTransfers</code> table with all fields including status, FX rate, and failure reason if applicable. The auto-generated <code>WireTransferID</code> is captured.</li>
+<li><strong>Publish event to RabbitMQ</strong>: A JSON event is published to the <code>wire.events</code> topic exchange with a routing key of <code>wire.{status}</code> (e.g., <code>wire.posted</code> or <code>wire.pending_ledger</code>). Publish failures are silently ignored.</li>
+<li><strong>Return response</strong>: The service returns the <code>wireTransferId</code>, <code>status</code>, <code>referenceNumber</code>, <code>fxRate</code>, <code>debitAmountUSD</code>, and <code>ledgerPosted</code> flag to the client.</li>
+</ol>
+<h3 id="workflow-2-query-wire-transfer-status">Workflow 2: Query Wire Transfer Status</h3>
+<p>A client queries the processing status of a previously submitted wire transfer by its numeric ID.</p>
+<p><strong>Steps:</strong></p>
+<ol>
+<li><strong>Receive request</strong>: Client submits GET request with the wire transfer ID in the URL path (<code>/api/wire/{id}/status</code>).</li>
+<li><strong>ID validation</strong>: The path segment is parsed as a <code>long</code> integer. Non-numeric values return 400.</li>
+<li><strong>Database lookup</strong>: The service queries the <code>WireTransfers</code> table by <code>WireTransferID</code>.</li>
+<li><strong>Return result</strong>: If found, returns the full wire transfer record as JSON (all fields including status, amounts, dates, and failure reason). If not found, returns 404.</li>
+</ol>
+<h3 id="workflow-3-application-bootstrap-startup">Workflow 3: Application Bootstrap (Startup)</h3>
+<p>On application startup, <code>WireBootstrapServlet</code> (configured as <code>load-on-startup=1</code>) connects to SQL Server and creates the <code>WireTransfers</code> table using a conditional DDL statement (<code>IF OBJECT_ID ... IS NULL CREATE TABLE ...</code>). This ensures the schema exists before the first transfer request is received.</p>
+<h2 id="cross-service-data-flows">Cross-Service Data Flows</h2>
+<p><strong>Wire Transfer → Currency Service (synchronous, optional):</strong></p>
+<p>The wire transfer workflow calls the Currency Service only for international (non-USD) transfers. The service provides a single FX rate (<code>rate</code> field as a double) from USD to the target currency. If the Currency Service is unavailable or returns an error, the FX rate defaults to <code>1.0</code> and processing proceeds — meaning the debit will be calculated in the original currency amount, potentially causing an incorrect USD settlement for the originating account.</p>
+<p><strong>Wire Transfer → Ledger Service (synchronous, required for POSTED status):</strong></p>
+<p>The service posts an XML debit request to the Ledger Service for every transfer attempt. The Ledger Service is responsible for deducting funds from the originating account and crediting a settlement/suspense account. If the Ledger Service is unavailable or returns a non-2xx response, the wire transfer is still persisted but with status <code>PENDING_LEDGER</code>. There is no retry mechanism, compensating transaction, or dead-letter handling.</p>
+<p><strong>Wire Transfer → RabbitMQ (asynchronous, fire-and-forget):</strong></p>
+<p>After database persistence, the service publishes a JSON event to RabbitMQ. This is a one-way notification; the wire transfer service does not wait for acknowledgement or confirmation. Downstream consumers (not part of this codebase) may use these events to trigger further processing, notifications, or reconciliation. Event failures have no effect on the transfer record.</p>
+<h2 id="business-workflow-sequence">Business Workflow Sequence</h2>
+<div class="mermaid">
+sequenceDiagram
+    participant Client
+    participant WireTransfer as "WireTransferServlet"
+    participant CurrencySvc as "Currency Service"
+    participant LedgerSvc as "Ledger Service"
+    participant DB as "SQL Server"
+    participant MQ as "RabbitMQ"
+
+    Client->>WireTransfer: Submit wire transfer request (JSON)
+    WireTransfer->>WireTransfer: Validate required fields and routing number checksum
+
+    alt Validation fails
+        WireTransfer-->>Client: 400 Bad Request (validation error)
+    else Validation passes
+        alt International transfer (non-USD)
+            WireTransfer->>CurrencySvc: Request FX rate (USD to target currency)
+            alt Currency Service available
+                CurrencySvc-->>WireTransfer: FX rate returned
+            else Timeout or error (7s)
+                Note over WireTransfer: FX rate defaults to 1.0 (silent fallback)
+            end
+        end
+
+        WireTransfer->>WireTransfer: Calculate debitAmountUSD and generate reference number
+
+        WireTransfer->>LedgerSvc: Post XML debit (originator account to settlement account)
+        alt Ledger debit succeeds
+            LedgerSvc-->>WireTransfer: HTTP 2xx
+            Note over WireTransfer: status = POSTED
+        else Timeout or error (7s)
+            Note over WireTransfer: status = PENDING_LEDGER, failureReason recorded
+        end
+
+        WireTransfer->>DB: INSERT WireTransfers record
+        DB-->>WireTransfer: Generated WireTransferID
+
+        WireTransfer--)MQ: Publish wire event (wire.posted or wire.pending_ledger)
+        Note over WireTransfer,MQ: Fire-and-forget; publish failure is silently ignored
+
+        WireTransfer-->>Client: 200 OK (wireTransferId, status, referenceNumber, fxRate, debitAmountUSD)
+    end
+</div>
+<h2 id="business-rules-decision-logic">Business Rules &amp; Decision Logic</h2>
+<h3 id="validation-rules">Validation Rules</h3>
+<ul>
+<li><strong>Required fields</strong>: <code>fromAccountId</code> (must be &gt; 0), <code>toAccountNumber</code> (non-empty), <code>toRoutingNumber</code> (non-empty, must pass checksum), <code>beneficiaryName</code> (non-empty), <code>amount</code> (must be &gt; 0).</li>
+<li><strong>Routing number format</strong>: Must be exactly 9 digits. Must satisfy the ABA routing number checksum: <code>(3&#215;d1 + 7&#215;d2 + d3 + 3&#215;d4 + 7&#215;d5 + d6 + 3&#215;d7 + 7&#215;d8 + d9) mod 10 == 0</code>.</li>
+<li><strong>Currency code</strong>: Defaults to <code>USD</code> if not provided. Any non-USD value triggers an international transfer with FX rate lookup.</li>
+<li><strong>Amount precision</strong>: Amount is rounded to 2 decimal places using <code>HALF_UP</code> rounding at parse time.</li>
+</ul>
+<h3 id="state-transitions">State Transitions</h3>
+<p>The <code>WireTransfer</code> entity has two possible post-processing statuses:</p>
+<ul>
+<li><strong><code>POSTED</code></strong>: Ledger debit succeeded; funds have been debited from the originating account.</li>
+<li><strong><code>PENDING_LEDGER</code></strong>: Ledger debit failed; the transfer record exists but funds have not been debited. No automatic retry or reconciliation is implemented.</li>
+</ul>
+<h3 id="decision-logic">Decision Logic</h3>
+<ul>
+<li><strong>International vs domestic</strong>: Determined solely by <code>currencyCode</code>. Any currency other than <code>USD</code> is treated as international and triggers FX rate lookup.</li>
+<li><strong>FX rate fallback</strong>: If the Currency Service fails, <code>fxRate</code> defaults to <code>1.0</code>, meaning <code>debitAmountUSD</code> equals the requested <code>amount</code> regardless of the actual exchange rate. This is a silent business risk.</li>
+<li><strong>Ledger failure handling</strong>: A ledger failure does not abort the transfer — the record is persisted with <code>PENDING_LEDGER</code> status. There is no compensating action, dead-letter queue, or human escalation workflow.</li>
+</ul>
+<h3 id="cross-cutting-concerns">Cross-Cutting Concerns</h3>
+<ul>
+<li><strong>Transactions</strong>: No <code>@Transactional</code> or JDBC transaction management. The ledger debit call and database insert are not atomic — it is possible for the ledger to be debited while the database insert fails (orphaned debit), or for the database insert to succeed with <code>POSTED</code> status while the ledger was not actually debited.</li>
+<li><strong>Error handling</strong>: External service failures (Currency Service, Ledger Service, RabbitMQ) are all caught and silently swallowed. No structured error logging, alerting, or compensating transaction is implemented.</li>
+<li><strong>Audit / logging</strong>: No audit trail or structured logging is implemented. All catch blocks use <code>ignored</code> exception variables and discard error information.</li>
+<li><strong>Authorization</strong>: No authentication or authorization is enforced. Any caller can submit a wire transfer for any <code>fromAccountId</code> without identity verification, making the endpoint vulnerable to unauthorized fund transfers.</li>
+<li><strong>Idempotency</strong>: No idempotency key or duplicate-detection mechanism exists. Repeated identical requests will create multiple wire transfer records and may trigger multiple ledger debits.</li>
+</ul>
+</div>
+</div>
+<div id="tab-deps" class="tab-panel">
+  <div class="fact-content"><h1 id="dependency-map">Dependency Map</h1>
+<p>ZavaWireTransferService declares 4 external dependencies managed by Gradle. The stack is intentionally lean: a servlet container API, a SQL Server JDBC driver, a JSON library, and a RabbitMQ AMQP client.</p>
+<h2 id="dependencies">Dependencies</h2>
+<div class="mermaid">
+flowchart LR
+    App["ZavaWireTransferService\nJava 11 WAR"]
+
+    subgraph Web["Web Frameworks"]
+        ServletAPI["Servlet API v4.0.1\n(compileOnly / provided)"]
+    end
+
+    subgraph DB["Database / ORM"]
+        MSSQL["mssql-jdbc v12.6.3.jre11\n(SQL Server JDBC Driver)"]
+    end
+
+    subgraph Messaging["Messaging"]
+        RabbitMQ["amqp-client v5.20.0\n(RabbitMQ AMQP Client)"]
+    end
+
+    subgraph Util["Utilities"]
+        OrgJson["org.json v20140107"]
+    end
+
+    App -->|"web"| Web
+    App -->|"persistence"| DB
+    App -->|"messaging"| Messaging
+    App -->|"utilities"| Util
+</div>
+<h3 id="dependency-summary">Dependency Summary</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Category</th><th>Count</th><th>Key Libraries</th><th>Notes</th></tr></thead><tbody>
+<tr><td>Web Frameworks</td><td>1</td><td>javax.servlet:javax.servlet-api 4.0.1</td><td>Provided/compileOnly — supplied by the servlet container at runtime</td></tr>
+<tr><td>Database / ORM</td><td>1</td><td>com.microsoft.sqlserver:mssql-jdbc 12.6.3.jre11</td><td>Modern JDBC driver for SQL Server; no ORM layer</td></tr>
+<tr><td>Messaging</td><td>1</td><td>com.rabbitmq:amqp-client 5.20.0</td><td>RabbitMQ AMQP 0-9-1 client</td></tr>
+<tr><td>Utilities</td><td>1</td><td>org.json:json 20140107</td><td>JSON parsing/serialization</td></tr>
+</tbody></table></div>
+<h3 id="version-compatibility-risks">Version &amp; Compatibility Risks</h3>
+<p>The most notable risk is <code>org.json:json:20140107</code>, which is over a decade old (released in 2014) and predates many security and correctness fixes in the library; it should be updated to a recent release (e.g., <code>20240303</code> or later). The Servlet API 4.0.1 targets Jakarta EE 8 (<code>javax.*</code> namespace); migration to a cloud-native runtime (e.g., Azure App Service, Azure Container Apps, or AKS) would still work, but any future upgrade to Jakarta EE 9+ requires renaming all <code>javax.servlet</code> imports to <code>jakarta.servlet</code>. The RabbitMQ <code>amqp-client 5.20.0</code> is a recent stable release and presents no immediate risk, though a migration to Azure Service Bus would replace this dependency.</p>
+<h3 id="notable-observations">Notable Observations</h3>
+<ul>
+<li><strong>No ORM layer</strong>: The application uses raw JDBC <code>PreparedStatement</code> calls directly. While this keeps the dependency count low, it means all SQL is hand-written and there is no schema migration framework (e.g., Flyway/Liquibase).</li>
+<li><strong>Very outdated JSON library</strong>: <code>org.json:json:20140107</code> is from January 2014. It is functional but has had multiple correctness and performance improvements since then. Modern alternatives such as <code>jackson-databind</code> or an updated <code>org.json</code> release would reduce risk.</li>
+<li><strong>No logging framework declared</strong>: There is no SLF4J, Log4j, or Logback dependency. The application uses no structured logging; exceptions are silently swallowed (<code>catch (Exception ignored)</code>), making production observability and debugging difficult.</li>
+<li><strong>No caching, security, or observability libraries</strong>: There are no libraries for authentication/authorization, response caching, metrics, or distributed tracing, all of which would be expected in a production financial service.</li>
+</ul>
+<h2 id="test-dependencies">Test Dependencies</h2>
+<p>No test-scoped dependencies were detected in <code>build.gradle</code>.</p>
+<p>Total test-scope dependencies: <strong>0</strong></p>
+<p>There are no test dependencies declared in the project. No unit testing framework (e.g., JUnit 5, Mockito), integration testing library (e.g., Testcontainers), or contract-testing framework was detected. This is a significant gap for a financial transaction service and should be addressed before migrating to cloud infrastructure.</p>
+</div>
+</div>
+<div id="tab-data" class="tab-panel">
+  <div class="fact-content"><h1 id="data-architecture-persistence-layer">Data Architecture &amp; Persistence Layer</h1>
+<p>ZavaWireTransferService uses a single Microsoft SQL Server database (ZavaBankDB) with one application-managed table (<code>WireTransfers</code>), accessed entirely through raw JDBC with no ORM layer.</p>
+<h2 id="database-configuration">Database Configuration</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service/Module</th><th>DB Type</th><th>Profile</th><th>Driver</th><th>Connection</th><th>Migration Tool</th></tr></thead><tbody>
+<tr><td>ZavaWireTransferService</td><td>Microsoft SQL Server</td><td>All (single config)</td><td>mssql-jdbc 12.6.3.jre11</td><td>JDBC URL: <code>jdbc:sqlserver://{host}:{port};databaseName=ZavaBankDB;encrypt=false;trustServerCertificate=true</code></td><td>None — schema is created programmatically by <code>WireBootstrapServlet</code> on startup</td></tr>
+</tbody></table></div>
+<ul>
+<li>Default host/port: <code>sqlserver:1433</code> (from <code>wire-transfer.properties</code>; overridable via env vars).</li>
+<li>Connection pooling: <strong>none configured</strong> — a new JDBC connection is opened and closed per HTTP request.</li>
+<li>Schema management: <code>WireBootstrapServlet</code> executes a <code>CREATE TABLE IF NOT EXISTS</code> DDL statement via a raw JDBC <code>PreparedStatement</code> at application startup. There is no migration framework (Flyway, Liquibase, or equivalent). Schema drift between deployments is not tracked.</li>
+</ul>
+<h2 id="data-ownership-per-service">Data Ownership per Service</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Tables Owned</th><th>ORM Framework</th><th>Caching</th><th>Notes</th></tr></thead><tbody>
+<tr><td>ZavaWireTransferService</td><td>WireTransfers</td><td>None (raw JDBC)</td><td>None</td><td>Schema created at startup via <code>WireBootstrapServlet</code>; no migration history</td></tr>
+</tbody></table></div>
+<h2 id="entity-model">Entity Model</h2>
+<div class="mermaid">
+erDiagram
+    WireTransfers {
+        bigint WireTransferID PK
+        int FromAccountID
+        nvarchar ToAccountNumber
+        nvarchar ToRoutingNumber
+        nvarchar BeneficiaryName
+        nvarchar CurrencyCode
+        decimal Amount
+        decimal FxRate
+        decimal DebitAmountUSD
+        bit IsInternational
+        nvarchar Status
+        nvarchar ReferenceNumber
+        nvarchar FailureReason
+        datetime CreatedDate
+        datetime UpdatedDate
+    }
+</div>
+<p>&gt; Note: There is a single table with no foreign key relationships to other application-managed tables. <code>FromAccountID</code> is a logical reference to an account in an external system (not enforced by a FK constraint in this database). No JPA/Hibernate entities or ORM annotations exist; the schema is defined inline in <code>WireBootstrapServlet.java</code>.</p>
+<h2 id="key-repository-methods">Key Repository Methods</h2>
+<p>There are no formal repository interfaces or classes in this application. All data access is performed inline within the servlet classes using raw JDBC <code>PreparedStatement</code> calls.</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Class</th><th>Method / SQL</th><th>Purpose</th></tr></thead><tbody>
+<tr><td>ZavaWireTransferService</td><td>WireBootstrapServlet</td><td><code>IF OBJECT_ID(&#39;WireTransfers&#39;, &#39;U&#39;) IS NULL CREATE TABLE WireTransfers (...)</code></td><td>Creates the WireTransfers table on application startup if it does not already exist</td></tr>
+<tr><td>ZavaWireTransferService</td><td>WireTransferServlet</td><td><code>INSERT INTO WireTransfers (...) VALUES (...); RETURN_GENERATED_KEYS</code></td><td>Persists a new wire transfer record and retrieves the auto-generated <code>WireTransferID</code></td></tr>
+<tr><td>ZavaWireTransferService</td><td>WireStatusServlet</td><td><code>SELECT ... FROM WireTransfers WHERE WireTransferID = ?</code></td><td>Retrieves a single wire transfer record by primary key for status queries</td></tr>
+</tbody></table></div>
+<p>No batch/bulk queries, named queries, stored procedure calls, or custom finders are used.</p>
+<h2 id="caching-strategy">Caching Strategy</h2>
+<p>No caching layer is configured. Every request to <code>WireStatusServlet</code> executes a direct SQL <code>SELECT</code> against SQL Server with a freshly opened JDBC connection. There is no second-level cache, query result cache, in-process cache (e.g., Caffeine), or distributed cache (e.g., Redis). For a status-check API on a financial service, this means every read incurs a full database round-trip with a new TCP connection overhead.</p>
+<h2 id="data-ownership-boundaries">Data Ownership Boundaries</h2>
+<p>ZavaWireTransferService owns the <code>WireTransfers</code> table exclusively. There is no shared database schema with other services; the application operates as the sole writer and reader of this table. Cross-service data access works only through HTTP calls:</p>
+<ul>
+<li><strong>Currency Service</strong>: queried at runtime via HTTP GET for FX rates — no shared database.</li>
+<li><strong>Ledger Service</strong>: receives XML POST requests for debit posting — no shared database.</li>
+<li><strong>RabbitMQ consumers</strong>: downstream consumers receive events via the <code>wire.events</code> exchange but have no direct access to the <code>WireTransfers</code> table.</li>
+</ul>
+<p><strong>Read/Write pattern</strong>: The application is write-heavy at the transfer endpoint (INSERT + external service calls) and read-light at the status endpoint (single-row SELECT by PK). There is no CQRS separation, no read replica, and no eventual consistency mechanism.</p>
+<h3 id="data-classification-sensitivity">Data Classification &amp; Sensitivity</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Entity</th><th>Sensitive Fields</th><th>Classification</th><th>Controls in Place</th></tr></thead><tbody>
+<tr><td>WireTransfers</td><td><code>BeneficiaryName</code></td><td>PII (full name of beneficiary)</td><td><strong>None</strong> — stored in plaintext; no encryption-at-rest, no masking</td></tr>
+<tr><td>WireTransfers</td><td><code>FromAccountID</code>, <code>ToAccountNumber</code>, <code>ToRoutingNumber</code></td><td>PCI-adjacent financial identifiers</td><td><strong>None</strong> — stored in plaintext; no encryption-at-rest, no masking</td></tr>
+<tr><td>WireTransfers</td><td><code>Amount</code>, <code>DebitAmountUSD</code>, <code>FxRate</code></td><td>Financial transaction data</td><td><strong>None</strong> — stored in plaintext</td></tr>
+<tr><td>WireTransfers</td><td><code>FailureReason</code></td><td>Operational metadata</td><td>None required</td></tr>
+</tbody></table></div>
+<p><strong>Summary</strong>: The <code>WireTransfers</code> table stores PII (beneficiary name) and financial account identifiers (account number, routing number, amounts) with no encryption-at-rest, no field-level masking, no access control beyond database credentials, and no audit log. This is a significant compliance risk for a financial service and must be addressed prior to any cloud migration. The JDBC connection string also uses <code>encrypt=false;trustServerCertificate=true</code>, meaning data in transit between the application and SQL Server is unencrypted.</p>
+</div>
+</div>
+<p class="footer">Your feedback is invaluable &mdash; <a href="https://aka.ms/ghcp-appmod/feedback">Share feedback</a></p>
+<script>
+function toggleRow(rowId, triggerRow) {
+  var detail = document.getElementById(rowId);
+  var btn = document.getElementById('btn-' + rowId);
+  if (!detail) return;
+  var visible = detail.style.display !== 'none';
+  detail.style.display = visible ? 'none' : 'table-row';
+  if (btn) btn.classList.toggle('open', !visible);
+}
+(function() {
+  var nav = document.querySelector('.tab-nav');
+  if (!nav) return;
+  nav.addEventListener('click', function(e) {
+    var btn = e.target.closest('.tab-btn');
+    if (!btn) return;
+    var targetId = btn.getAttribute('data-tab');
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+    btn.classList.add('active');
+    var panel = document.getElementById(targetId);
+    if (panel) {
+      panel.classList.add('active');
+      // Render any mermaid diagrams in this panel that haven't been processed yet
+      if (window.__mermaidReady) { window.__renderMermaidIn(panel); }
+    }
+  });
+})();
+
+// ── Diagram lightbox ────────────────────────────────────────
+(function() {
+  var lightbox = document.getElementById('diagram-lightbox');
+  var inner = document.getElementById('diagram-lightbox-inner');
+  var closeBtn = document.getElementById('diagram-lightbox-close');
+  if (!lightbox || !inner || !closeBtn) return;
+
+  var scale = 1;
+  var translateX = 0;
+  var translateY = 0;
+  var isDragging = false;
+  var dragStartX = 0;
+  var dragStartY = 0;
+
+  function applyTransform() {
+    var svg = inner.querySelector('svg');
+    if (svg) {
+      svg.style.transform = 'translate(' + translateX + 'px, ' + translateY + 'px) scale(' + scale + ')';
+      svg.style.transformOrigin = 'center center';
+      svg.style.transition = 'none';
+    }
+  }
+
+  function resetTransform() {
+    scale = 1; translateX = 0; translateY = 0;
+    applyTransform();
+  }
+
+  function openLightbox(svgEl) {
+    inner.innerHTML = svgEl.outerHTML;
+    var injected = inner.querySelector('svg');
+    if (injected) {
+      injected.removeAttribute('width');
+      injected.removeAttribute('height');
+      injected.style.cursor = 'grab';
+    }
+    resetTransform();
+    lightbox.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLightbox() {
+    lightbox.classList.remove('open');
+    inner.innerHTML = '';
+    document.body.style.overflow = '';
+    resetTransform();
+  }
+
+  inner.addEventListener('wheel', function(e) {
+    e.preventDefault();
+    var delta = e.deltaY > 0 ? 0.9 : 1.1;
+    scale = Math.min(Math.max(scale * delta, 0.3), 8);
+    applyTransform();
+  }, { passive: false });
+
+  inner.addEventListener('mousedown', function(e) {
+    if (e.button !== 0) return;
+    isDragging = true;
+    dragStartX = e.clientX - translateX;
+    dragStartY = e.clientY - translateY;
+    var svg = inner.querySelector('svg');
+    if (svg) { svg.style.cursor = 'grabbing'; }
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', function(e) {
+    if (!isDragging) return;
+    translateX = e.clientX - dragStartX;
+    translateY = e.clientY - dragStartY;
+    applyTransform();
+  });
+
+  document.addEventListener('mouseup', function() {
+    if (!isDragging) return;
+    isDragging = false;
+    var svg = inner.querySelector('svg');
+    if (svg) { svg.style.cursor = 'grab'; }
+  });
+
+  inner.addEventListener('dblclick', function() { resetTransform(); });
+
+  document.addEventListener('click', function(e) {
+    var card = e.target.closest('.mermaid');
+    if (!card) return;
+    if (e.target.closest('.diagram-lightbox-close')) return;
+    var svg = card.querySelector('svg');
+    if (svg) { openLightbox(svg); }
+  });
+
+  closeBtn.addEventListener('click', closeLightbox);
+
+  lightbox.addEventListener('click', function(e) {
+    if (e.target === lightbox) { closeLightbox(); }
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') { closeLightbox(); }
+  });
+})();
+
+var _currentTarget = '';
+
+function toggleMultiSelect(id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  // Close others
+  document.querySelectorAll('.multi-select.open').forEach(function(ms) { if (ms.id !== id) ms.classList.remove('open'); });
+  el.classList.toggle('open');
+}
+
+// Close dropdowns on outside click
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.multi-select')) {
+    document.querySelectorAll('.multi-select.open').forEach(function(ms) { ms.classList.remove('open'); });
+  }
+});
+
+function getMultiSelectValues(msId) {
+  var el = document.getElementById(msId);
+  if (!el) return [];
+  var checked = el.querySelectorAll('input[type=checkbox]:checked');
+  var vals = [];
+  for (var i = 0; i < checked.length; i++) vals.push(checked[i].value);
+  return vals;
+}
+
+function onMultiSelectChange(msId, label) {
+  var el = document.getElementById(msId);
+  if (!el) return;
+  var vals = getMultiSelectValues(msId);
+  var total = el.querySelectorAll('input[type=checkbox]').length;
+  var btn = el.querySelector('.multi-select-btn');
+  if (btn) {
+    btn.textContent = vals.length > 0 && vals.length < total ? label + ' (' + vals.length + ')' : label;
+  }
+  applyFilters();
+}
+
+function applyFilters() {
+  var selectedDomains = getMultiSelectValues('domain-ms');
+  var selectedCrits = getMultiSelectValues('criticality-ms');
+
+  // Domain filter: show/hide entire sections (empty = show all)
+  var sections = document.querySelectorAll('.issue-section');
+  for (var i = 0; i < sections.length; i++) {
+    var domain = sections[i].getAttribute('data-domain');
+    sections[i].style.display = (selectedDomains.length === 0 || selectedDomains.indexOf(domain) >= 0) ? '' : 'none';
+  }
+
+  // Row-level filtering: respect target + criticality
+  var rows = document.querySelectorAll('.issue-row');
+  for (var i = 0; i < rows.length; i++) {
+    var row = rows[i];
+    var section = row.closest('.issue-section');
+    if (section && section.style.display === 'none') {
+      row.style.display = 'none';
+      var next = row.nextElementSibling;
+      if (next && next.classList.contains('detail-row')) next.style.display = 'none';
+      continue;
+    }
+
+    // Check target filter
+    var show = true;
+    if (_currentTarget && row.hasAttribute('data-targets')) {
+      var targetsStr = row.getAttribute('data-targets');
+      if (targetsStr && targetsStr !== '{}') {
+        try {
+          var targets = JSON.parse(targetsStr);
+          if (Object.keys(targets).length > 0 && !targets[_currentTarget]) {
+            show = false;
+          }
+        } catch(e) {}
+      }
+    }
+
+    // Check criticality filter
+    if (show && selectedCrits.length > 0) {
+      var crit = row.getAttribute('data-criticality');
+      if (selectedCrits.indexOf(crit) < 0) show = false;
+    }
+
+    row.style.display = show ? '' : 'none';
+    var nextRow = row.nextElementSibling;
+    if (nextRow && nextRow.classList.contains('detail-row')) {
+      if (!show) nextRow.style.display = 'none';
+    }
+  }
+}
+
+function clearAllFilters() {
+  document.querySelectorAll('.multi-select input[type=checkbox]').forEach(function(cb) { cb.checked = false; });
+  var domainBtn = document.querySelector('#domain-ms .multi-select-btn');
+  if (domainBtn) domainBtn.textContent = 'Domain';
+  var critBtn = document.querySelector('#criticality-ms .multi-select-btn');
+  if (critBtn) critBtn.textContent = 'Criticality';
+  applyFilters();
+}
+
+function onTargetChange(targetId) {
+  _currentTarget = targetId;
+  var rows = document.querySelectorAll('.issue-row[data-targets]');
+  var totalEffort = 0;
+  var domainCrits = {}; // domain -> {mandatory:0, potential:0, optional:0}
+
+  for (var i = 0; i < rows.length; i++) {
+    var row = rows[i];
+    var targets = JSON.parse(row.getAttribute('data-targets'));
+    var section = row.closest('.issue-section');
+    var domain = section ? section.getAttribute('data-domain') : '';
+
+    if (!targets || Object.keys(targets).length === 0) {
+      // No target data (e.g. security) — always show
+      var sp = parseFloat(row.querySelector('.sp-cell').textContent) || 0;
+      totalEffort += sp;
+      if (!domainCrits[domain]) domainCrits[domain] = {mandatory:0,potential:0,optional:0};
+      var crit = row.getAttribute('data-criticality') || 'optional';
+      domainCrits[domain][crit] = (domainCrits[domain][crit] || 0) + 1;
+      continue;
+    }
+
+    var override = targets[targetId];
+    if (!override) {
+      // Issue doesn't apply to this target
+      continue;
+    }
+
+    // Apply severity override
+    var newSeverity = (override.severity || row.getAttribute('data-default-severity') || '').toLowerCase();
+    row.setAttribute('data-criticality', newSeverity);
+    var critCell = row.querySelector('.crit-cell');
+    if (critCell) {
+      var critText = newSeverity === 'mandatory' ? 'Mandatory' : newSeverity === 'potential' ? 'Potential' : 'Optional';
+      var cssClass = newSeverity === 'mandatory' ? 'crit-square-mandatory' : newSeverity === 'potential' ? 'crit-square-potential' : 'crit-square-optional';
+      critCell.innerHTML = '<span class="crit-label"><span class="crit-square ' + cssClass + '"></span>' + critText + '</span>';
+    }
+
+    // Apply effort override
+    var newEffort = override.effort !== undefined ? override.effort : parseFloat(row.getAttribute('data-default-effort')) || 0;
+    var spCell = row.querySelector('.sp-cell');
+    if (spCell) spCell.textContent = newEffort;
+    totalEffort += newEffort;
+
+    if (!domainCrits[domain]) domainCrits[domain] = {mandatory:0,potential:0,optional:0};
+    domainCrits[domain][newSeverity] = (domainCrits[domain][newSeverity] || 0) + 1;
+  }
+
+  // Also add security findings effort (they don't have per-target data)
+  var secSection = document.querySelector('.issue-section[data-domain="security"]');
+  if (secSection) {
+    var secRows = secSection.querySelectorAll('.issue-row');
+    for (var j = 0; j < secRows.length; j++) {
+      if (!secRows[j].hasAttribute('data-targets') || secRows[j].getAttribute('data-targets') === '') {
+        var sp = parseFloat(secRows[j].querySelector('.sp-cell').textContent) || 0;
+        totalEffort += sp;
+        if (!domainCrits['security']) domainCrits['security'] = {mandatory:0,potential:0,optional:0};
+        var sc = secRows[j].getAttribute('data-criticality') || 'optional';
+        domainCrits['security'][sc] = (domainCrits['security'][sc] || 0) + 1;
+      }
+    }
+  }
+
+  // Update effort display
+  var label = totalEffort < 20 ? 'S' : totalEffort < 50 ? 'M' : totalEffort < 100 ? 'L' : 'XL';
+  var effortEl = document.getElementById('effort-display');
+  if (effortEl) effortEl.textContent = label + ' (total story points: ' + totalEffort + ')';
+
+  // Update donut charts
+  updateDonuts(domainCrits);
+
+  // Re-apply domain/criticality filters
+  applyFilters();
+}
+
+function updateDonuts(domainCrits) {
+  var container = document.getElementById('donut-container');
+  if (!container) return;
+  container.innerHTML = '';
+  var domainNames = {'cloud-readiness':'Cloud Readiness','java-upgrade':'Java Upgrade','dotnet-upgrade':'DotNET Upgrade','security':'Security'};
+  var domainOrder = ['cloud-readiness','java-upgrade','dotnet-upgrade','security'];
+  for (var d = 0; d < domainOrder.length; d++) {
+    var key = domainOrder[d];
+    var c = domainCrits[key];
+    if (!c || (c.mandatory + c.potential + c.optional) === 0) continue;
+    var total = c.mandatory + c.potential + c.optional;
+    var div = document.createElement('div');
+    div.className = 'domain-summary-item';
+    div.innerHTML = buildDonutSvg(c.mandatory, c.potential, c.optional) +
+      '<h3>' + domainNames[key] + '</h3>' +
+      '<div class="count">' + total + ' issue' + (total !== 1 ? 's' : '') + '</div>';
+    container.appendChild(div);
+  }
+}
+
+function buildDonutSvg(m, p, o) {
+  var total = m + p + o;
+  if (total === 0) return '<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;"><circle cx="50" cy="50" r="35" fill="none" stroke="#d0d7de" stroke-width="15" opacity="0.5"/></svg>';
+  var r = 35, circ = 2 * Math.PI * r, offset = 0;
+  var svg = '<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;transform:rotate(-90deg);">';
+  var segs = [{c:m,color:'var(--color-mandatory)'},{c:p,color:'var(--color-potential)'},{c:o,color:'var(--color-optional)'}];
+  for (var i = 0; i < segs.length; i++) {
+    if (segs[i].c === 0) continue;
+    var segLen = (segs[i].c / total) * circ;
+    var gap = total > segs[i].c ? 1.5 : 0;
+    var drawLen = Math.max(segLen - gap, 0.5);
+    svg += '<circle cx="50" cy="50" r="' + r + '" fill="none" stroke="' + segs[i].color + '" stroke-width="15" stroke-dasharray="' + drawLen.toFixed(2) + ' ' + circ.toFixed(2) + '" stroke-dashoffset="' + (-offset).toFixed(2) + '"/>';
+    offset += segLen;
+  }
+  svg += '</svg>';
+  return svg;
+}
+</script>
+<script>document.addEventListener('DOMContentLoaded', function() { onTargetChange('azure-aks'); });</script>
+</div></body></html>

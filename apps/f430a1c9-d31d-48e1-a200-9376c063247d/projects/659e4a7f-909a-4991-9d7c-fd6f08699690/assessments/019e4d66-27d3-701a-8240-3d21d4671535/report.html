@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Assessment - ZavaKYCService</title>
+<style>
+:root {
+  --bg-primary: #ffffff;
+  --bg-card: #f8f9fa;
+  --bg-page: #f0f1f3;
+  --text-primary: #24292f;
+  --text-secondary: #57606a;
+  --text-muted: #6b7280;
+  --border-color: #d0d7de;
+  --border-light: #e1e4e8;
+  --link-color: #2563eb;
+  --color-mandatory: #E3008C;
+  --color-potential: #637CEF;
+  --color-optional: #A19F9D;
+  --font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  --font-mono: 'Cascadia Code', 'Consolas', 'Courier New', monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-family); font-size: 13px; color: var(--text-primary); background: var(--bg-primary); line-height: 1.5; margin: 0; padding: 0; }
+a { color: var(--link-color); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Page layout ───────────────────────────────────────────── */
+.main { margin: 0; padding: 24px 32px; background: var(--bg-primary); }
+.back-link { color: var(--text-muted); font-size: 13px; margin-bottom: 16px; display: block; }
+h1 { font-weight: 600; font-size: 20px; color: var(--text-primary); margin-bottom: 20px; }
+
+/* ── Report cards (matches VS Code .vscode-report-card) ──── */
+.report-card { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 4px; padding: 12px; margin-bottom: 20px; }
+.report-card h2 { font-size: 14px; font-weight: 600; margin: 0; color: var(--text-primary); }
+.report-card-body { margin-top: 16px; }
+
+/* ── Application Information (two-column) ────────────────── */
+.app-info-container { display: flex; gap: 8px; flex-wrap: wrap; }
+.app-info-column { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 8px; }
+.app-info-row { display: flex; align-items: baseline; }
+.app-info-label { width: 136px; flex-shrink: 0; font-weight: 600; color: var(--text-primary); }
+.app-info-value { flex: 1; color: var(--text-primary); }
+
+/* ── Issue Summary (pie charts + legend) ─────────────────── */
+.cards-container { display: flex; align-items: stretch; gap: 20px; flex-wrap: wrap; }
+.issue-summary-card { flex: 2; }
+.domain-summary-container { display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-around; }
+.domain-summary-item { flex: 1; min-width: 120px; text-align: center; padding: 0 16px; border-right: 1px solid var(--border-light); }
+.domain-summary-item:last-child { border-right: none; }
+.domain-summary-item h3 { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-top: 8px; }
+.domain-summary-item .count { font-size: 12px; color: var(--text-secondary); }
+.criticality-legend { display: flex; flex-wrap: wrap; gap: 15px; padding-top: 12px; justify-content: center; }
+.criticality-legend .legend-item { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-secondary); }
+.legend-swatch { display: inline-block; width: 1em; height: 1em; border-radius: 2px; }
+
+/* ── Issue list tables ───────────────────────────────────── */
+.issue-section { margin-top: 20px; }
+.issue-section h2 { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+.issue-table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 600px; }
+.issue-table th { text-align: left; text-transform: uppercase; font-weight: 600; font-size: calc(13px * 0.875); padding: 6px 8px; background: var(--bg-card); border-bottom: 1px solid var(--border-color); color: var(--text-secondary); position: sticky; top: 0; z-index: 1; }
+.issue-table td { padding: 12px 8px; border-bottom: 1px solid var(--border-light); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
+.col-issue { width: 55%; }
+.col-criticality { width: 25%; }
+.col-storypoint { width: 20%; }
+
+/* ── Target dropdown ─────────────────────────────────────── */
+.target-select-container { margin: 4px 0 16px 0; display: flex; align-items: center; gap: 8px; }
+.target-select-container label { font-weight: 600; color: var(--text-primary); font-size: 14px; }
+.target-select-container select { font-family: var(--font-family); font-size: 13px; padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer; }
+
+/* ── Filter bar ──────────────────────────────────────────── */
+.filter-bar { display: flex; flex-wrap: wrap; gap: 16px; margin: 16px 0 8px 0; align-items: center; }
+.multi-select { position: relative; display: inline-block; min-width: 140px; }
+.multi-select-btn { font-family: var(--font-family); font-size: 13px; padding: 4px 24px 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer; width: 100%; text-align: left; position: relative; white-space: nowrap; }
+.multi-select-btn::after { content: '\25BE'; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--text-secondary); }
+.multi-select-dropdown { display: none; position: absolute; top: 100%; left: 0; min-width: 100%; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 100; margin-top: 2px; }
+.multi-select.open .multi-select-dropdown { display: block; }
+.multi-select-option { display: flex; align-items: center; gap: 6px; padding: 5px 10px; cursor: pointer; font-size: 13px; white-space: nowrap; }
+.multi-select-option:hover { background: var(--bg-secondary); }
+.multi-select-option input[type=checkbox] { margin: 0; cursor: pointer; }
+.clear-filters { font-size: 12px; color: var(--link-color); cursor: pointer; margin-left: 4px; }
+
+/* ── Criticality labels (colored square + text) ──────────── */
+.crit-label { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; white-space: nowrap; }
+.crit-square { display: inline-block; width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+.crit-square-mandatory { background: var(--color-mandatory); }
+.crit-square-potential { background: var(--color-potential); }
+.crit-square-optional { background: var(--color-optional); }
+
+/* ── Expandable rows ─────────────────────────────────────── */
+.expand-btn { background: none; border: none; cursor: pointer; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 11px; transition: transform 0.15s; padding: 0; vertical-align: middle; flex-shrink: 0; }
+.expand-btn.open { transform: rotate(90deg); }
+.issue-title-cell { display: flex; align-items: center; gap: 4px; }
+.detail-row td { padding: 0; border-bottom: 1px solid var(--border-light); white-space: normal; overflow: visible; text-overflow: clip; }
+.detail-content { display: flex; gap: 0; padding: 8px 8px 8px 32px; min-width: 0; }
+.file-list { flex: 0 0 50%; min-width: 0; overflow: hidden; }
+.file-list table { width: 100%; border-collapse: collapse; }
+.file-list th { font-size: calc(13px * 0.875); text-transform: uppercase; font-weight: 600; color: var(--text-secondary); padding: 6px 8px; border-bottom: 1px solid var(--border-color); text-align: left; height: 32px; }
+.file-list td { font-size: 13px; padding: 6px 8px; border-bottom: 1px solid var(--border-light); color: var(--text-primary); }
+.file-list .file-path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 300px; display: block; }
+.file-list .position { font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary); }
+.explanation-panel { flex: 1; padding-left: 16px; min-width: 0; overflow-wrap: break-word; word-wrap: break-word; }
+.explanation-panel h4 { font-size: calc(13px * 0.875); text-transform: uppercase; font-weight: 600; color: var(--text-secondary); padding: 6px 0; border-bottom: 1px solid var(--border-color); height: 32px; margin: 0; }
+.explanation-panel p { font-size: 13px; padding: 8px 0; color: var(--text-primary); line-height: 1.6; white-space: normal; word-break: break-word; }
+
+/* ── Experimental badge ──────────────────────────────────── */
+.badge-experimental { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; background: #fef9c3; color: #854d0e; vertical-align: middle; margin-left: 8px; cursor: default; }
+
+/* ── Footer ──────────────────────────────────────────────── */
+.footer { text-align: center; margin-top: 24px; color: var(--text-muted); font-size: 13px; }
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 800px) {
+  .main { padding: 16px; }
+  .app-info-container { flex-direction: column; }
+  .domain-summary-container { flex-direction: column; }
+  .domain-summary-item { border-right: none; border-bottom: 1px solid var(--border-light); padding-bottom: 12px; }
+  .detail-content { flex-direction: column; }
+  .file-list { flex: none; width: 100%; }
+  .explanation-panel { padding-left: 0; padding-top: 8px; }
+}
+/* ── Tab navigation ──────────────────────────────────────── */
+.tab-nav { display: flex; gap: 0; border-bottom: 1px solid var(--border-color); margin-bottom: 28px; flex-wrap: wrap; }
+.tab-btn { background: none; border: none; border-bottom: 2px solid transparent; padding: 10px 18px; font-size: 13px; font-family: var(--font-family); color: var(--text-secondary); cursor: pointer; margin-bottom: -1px; white-space: nowrap; position: relative; }
+.tab-btn:hover { color: var(--text-primary); }
+.tab-btn.active { color: var(--link-color); border-bottom-color: var(--link-color); font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ── Tooltip on tab ──────────────────────────────────────── */
+.tab-btn[data-tooltip]::after { content: attr(data-tooltip); position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); background: #24292f; color: #ffffff; font-size: 12px; font-weight: 400; padding: 6px 10px; border-radius: 4px; white-space: normal; width: max-content; max-width: 260px; text-align: center; pointer-events: none; opacity: 0; transition: opacity 0.15s; z-index: 100; }
+.tab-btn[data-tooltip]:hover::after { opacity: 1; }
+
+/* ── Fact content — prose column ─────────────────────────── */
+.fact-content { max-width: 860px; margin: 0 auto; line-height: 1.75; color: var(--text-primary); font-size: 14px; }
+.fact-content h1 { font-size: 22px; font-weight: 700; margin: 0 0 6px 0; color: var(--text-primary); letter-spacing: -0.01em; }
+.fact-content h1 + p { margin-top: 6px; color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
+.fact-content h2 { font-size: 17px; font-weight: 700; margin: 36px 0 12px 0; padding-bottom: 6px; border-bottom: 1px solid var(--border-color); color: var(--text-primary); letter-spacing: -0.01em; }
+.fact-content h3 { font-size: 14px; font-weight: 700; margin: 24px 0 8px 0; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.04em; font-size: 12px; color: var(--text-secondary); }
+.fact-content p { margin: 10px 0; color: var(--text-primary); }
+.fact-content ul, .fact-content ol { margin: 10px 0 10px 22px; }
+.fact-content li { margin: 5px 0; }
+.fact-content a { color: var(--link-color); }
+.fact-content a:hover { text-decoration: underline; }
+
+/* ── Fact tables ─────────────────────────────────────────── */
+.table-wrap { overflow-x: auto; margin: 16px 0; }
+.fact-content table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 13px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); }
+.fact-content thead { background: var(--bg-card); }
+.fact-content th { text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; padding: 8px 14px; border-bottom: 1px solid var(--border-color); color: var(--text-secondary); }
+.fact-content td { padding: 9px 14px; border-bottom: 1px solid var(--border-light); vertical-align: top; color: var(--text-primary); }
+.fact-content tr:last-child td { border-bottom: none; }
+.fact-content tbody tr:hover { background: #f6f8fa; }
+
+/* ── Fact code ───────────────────────────────────────────── */
+.fact-content code { font-family: var(--font-mono); font-size: 12px; background: #f0f1f3; padding: 2px 6px; border-radius: 4px; color: #c7254e; }
+.fact-content pre { background: #f6f8fa; border: 1px solid var(--border-light); border-radius: 6px; padding: 14px 16px; overflow-x: auto; margin: 14px 0; }
+.fact-content pre code { background: none; color: var(--text-primary); padding: 0; border-radius: 0; }
+.fact-content hr { border: none; border-top: 1px solid var(--border-light); margin: 28px 0; }
+.fact-content strong { font-weight: 600; }
+.fact-content em { font-style: italic; }
+.fact-content blockquote { border-left: 3px solid var(--border-color); margin: 12px 0; padding: 4px 16px; color: var(--text-secondary); }
+.fact-unavailable { padding: 32px 0; }
+.fact-unavailable h3 { font-size: 16px; font-weight: 600; color: var(--text-primary); text-transform: none; letter-spacing: 0; margin: 0 0 12px 0; }
+.fact-unavailable p { margin: 0 0 8px 0; color: var(--text-secondary); }
+.fact-unavailable ol, .fact-unavailable ul { margin: 0 0 0 22px; color: var(--text-primary); }
+.fact-unavailable li { margin: 6px 0; }
+
+/* ── Mermaid diagram card ─────────────────────────────────── */
+.mermaid { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 8px; padding: 24px 16px; margin: 20px 0; overflow-x: auto; text-align: center; cursor: pointer; position: relative; }
+.mermaid:hover { border-color: var(--border-color); }
+.mermaid svg { max-width: 100%; height: auto !important; display: inline-block; }
+.mermaid-zoom-hint { position: absolute; top: 8px; right: 10px; font-size: 11px; color: var(--text-muted); opacity: 0; transition: opacity 0.15s; pointer-events: none; }
+.mermaid:hover .mermaid-zoom-hint { opacity: 1; }
+
+/* ── Diagram lightbox ────────────────────────────────────── */
+.diagram-lightbox { display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.7); backdrop-filter: blur(2px); align-items: center; justify-content: center; cursor: zoom-out; padding: 48px 32px; }
+.diagram-lightbox.open { display: flex; }
+.diagram-lightbox-inner { background: #ffffff; border-radius: 10px; padding: 32px; width: 88vw; max-height: 88vh; overflow: hidden; cursor: default; box-shadow: 0 24px 64px rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; }
+.diagram-lightbox-inner svg { width: 100% !important; height: auto !important; max-height: 76vh; display: block; }
+.diagram-lightbox-close { position: fixed; top: 20px; right: 24px; background: #ffffff; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-primary); box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 1001; }
+.diagram-lightbox-close:hover { background: var(--bg-card); }
+.diagram-lightbox-hint { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.55); color: #ffffff; font-size: 12px; padding: 6px 14px; border-radius: 20px; pointer-events: none; white-space: nowrap; z-index: 1001; }
+</style>
+<script>
+window.__mermaidPending = [];
+window.__mermaidReady = false;
+window.__renderMermaidIn = function(container) {
+  // Until the real implementation overrides this (after the ES module import
+  // resolves), just queue the container so we can render it later.
+  if (container) { window.__mermaidPending.push(container); }
+};
+</script>
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+mermaid.initialize({ startOnLoad: false, theme: 'default', flowchart: { useMaxWidth: true }, sequence: { useMaxWidth: true } });
+
+// Real implementation: actually run mermaid on the unprocessed diagrams in the
+// given container (only ones not already rendered). Adds a "Click to expand"
+// hint span after each successful render so the lightbox affordance is
+// discoverable.
+window.__renderMermaidIn = function(container) {
+  var nodes = container ? container.querySelectorAll('.mermaid:not([data-processed])') : [];
+  if (nodes.length > 0) {
+    mermaid.run({ nodes: Array.from(nodes) }).then(function() {
+      nodes.forEach(function(node) {
+        if (!node.querySelector('.mermaid-zoom-hint')) {
+          var hint = document.createElement('span');
+          hint.className = 'mermaid-zoom-hint';
+          hint.textContent = 'Click to expand';
+          node.appendChild(hint);
+        }
+      });
+    });
+  }
+};
+
+// Drain any containers that were queued by the shim while mermaid was loading.
+// Use a Set to dedupe in case a container was both queued and is also the
+// initial-active panel below.
+var drained = new Set();
+(window.__mermaidPending || []).forEach(function(c) {
+  if (!drained.has(c)) { drained.add(c); window.__renderMermaidIn(c); }
+});
+window.__mermaidPending = [];
+window.__mermaidReady = true;
+
+// Render diagrams visible on initial load (the active tab panel(s) may not have
+// been queued by anyone — DOMContentLoaded handlers run before this if the
+// module is cached, after this if it's not, so handle both cases here).
+function renderActivePanels() {
+  document.querySelectorAll('.tab-panel.active').forEach(function(p) {
+    if (!drained.has(p)) { drained.add(p); window.__renderMermaidIn(p); }
+  });
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', renderActivePanels);
+} else {
+  renderActivePanels();
+}
+</script>
+</head><body>
+<div id="diagram-lightbox" class="diagram-lightbox" role="dialog" aria-modal="true">
+  <button class="diagram-lightbox-close" id="diagram-lightbox-close" aria-label="Close">&#x2715;</button>
+  <div class="diagram-lightbox-hint">Scroll to zoom &nbsp;·&nbsp; Drag to pan &nbsp;·&nbsp; Double-click to reset</div>
+  <div class="diagram-lightbox-inner" id="diagram-lightbox-inner"></div>
+</div>
+<div class="main">
+<a class="back-link" href="../../index.html">&#8592; Back to aggregate dashboard</a>
+<h1>ZavaKYCService</h1>
+<div class="report-card">
+  <h2>Application Information</h2>
+  <div class="report-card-body">
+    <div class="app-info-container">
+      <div class="app-info-column">
+        <div class="app-info-row"><span class="app-info-label">Application Name</span><span class="app-info-value">ZavaKYCService</span></div>
+        <div class="app-info-row"><span class="app-info-label">Java Version</span><span class="app-info-value">Unknown</span></div>
+        <div class="app-info-row"><span class="app-info-label">Effort</span><span class="app-info-value" id="effort-display">S (total story points: 8)</span></div>
+      </div>
+      <div class="app-info-column">
+        <div class="app-info-row"><span class="app-info-label">Build Tools</span><span class="app-info-value">Gradle</span></div>
+        <div class="app-info-row"><span class="app-info-label">Frameworks</span><span class="app-info-value">N/A</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+<nav class="tab-nav">
+  <button class="tab-btn active" data-tab="tab-issues" data-tooltip="Issues detected in the source code">Issues</button>
+  <button class="tab-btn" data-tab="tab-arch" data-tooltip="How the app&#39;s layers connect — from UI to data.">Architecture</button>
+  <button class="tab-btn" data-tab="tab-api" data-tooltip="Endpoints exposed by this app and how services communicate.">API Contracts</button>
+  <button class="tab-btn" data-tab="tab-config" data-tooltip="Environment settings, runtime profiles, and deployment manifests.">Configuration</button>
+  <button class="tab-btn" data-tab="tab-workflows" data-tooltip="Domain entities and the core flows users move through.">Business Workflows</button>
+  <button class="tab-btn" data-tab="tab-deps" data-tooltip="Libraries and frameworks this app depends on, grouped by category.">Dependencies</button>
+  <button class="tab-btn" data-tab="tab-data" data-tooltip="Database schema, entity relationships, and persistence behavior.">Data Model</button>
+</nav>
+<div id="tab-issues" class="tab-panel active">
+<div class="target-select-container">
+  <label for="target-select">Target Compute Service:</label>
+  <select id="target-select" onchange="onTargetChange(this.value)">
+    <option value="azure-aks">Azure Kubernetes Service</option>
+    <option value="azure-appservice">Azure App Service</option>
+    <option value="azure-container-apps">Azure Container Apps</option>
+  </select>
+</div>
+<div class="report-card">
+  <h2>Issue Summary</h2>
+  <div class="report-card-body">
+    <div class="domain-summary-container" id="donut-container">
+      <div class="domain-summary-item">
+<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;transform:rotate(-90deg);">
+  <circle cx="50" cy="50" r="35" fill="none" stroke="var(--color-mandatory)" stroke-width="15" stroke-dasharray="219.91 219.91" stroke-dashoffset="-0.00"/>
+</svg>
+
+        <h3>Java Upgrade</h3>
+        <div class="count">1 issue</div>
+      </div>
+    </div>
+    <div class="criticality-legend">
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--color-mandatory)"></span>Mandatory</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--color-potential)"></span>Potential</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--color-optional)"></span>Optional</div>
+    </div>
+  </div>
+</div>
+<div class="filter-bar" id="filter-bar">
+  <a class="clear-filters" href="javascript:void(0)" onclick="clearAllFilters()">Clear all</a>
+</div>
+<div class="issue-section" data-domain="java-upgrade">
+  <h2>Java Upgrade</h2>
+  <table class="issue-table">
+    <colgroup><col class="col-issue"/><col class="col-criticality"/><col class="col-storypoint"/></colgroup>
+    <thead><tr><th>Issue Category</th><th>Criticality</th><th>Story Point</th></tr></thead>
+    <tbody>
+    <tr class="issue-row" data-criticality="mandatory" data-targets='{"azure-aks":{"effort":8,"severity":"mandatory"},"azure-appservice":{"effort":8,"severity":"mandatory"},"azure-container-apps":{"effort":8,"severity":"mandatory"}}' data-default-effort="8" data-default-severity="mandatory" data-rule="azure-java-version-01000" onclick="toggleRow('row-javaupgrade-0', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-javaupgrade-0">&#x276F;</button> Java Version Has Reached the End of Support</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-mandatory"></span>Mandatory</span></td>
+      <td class="sp-cell">8</td>
+    </tr>
+    <tr class="detail-row" id="row-javaupgrade-0" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="build.gradle">build.gradle</span></td><td><span class="position">Line 7, Col 0</span></td></tr>
+            <tr><td><span class="file-path" title="build.gradle">build.gradle</span></td><td><span class="position">Line 8, Col 0</span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>The application is using a Java version that has reached the end of support. It is strongly recommended to plan and execute a migration strategy to upgrade your application to a supported Java version.<br/>Supported Java versions receive long-term support (LTS) from the Java community, including bug fixes and updates. Migrating to a supported version provides you with a stable and well-maintained platform for your application.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+</div>
+</div><!-- #tab-issues -->
+<div id="tab-arch" class="tab-panel">
+  <div class="fact-content"><h1 id="architecture-diagram">Architecture Diagram</h1>
+<p>ZavaKYCService is a Java Servlet-based KYC (Know Your Customer) microservice that verifies customer identities against a watchlist and records verification results in a Microsoft SQL Server database, deployed as a WAR on Apache Tomcat 9.</p>
+<h2 id="application-architecture">Application Architecture</h2>
+<div class="mermaid">
+flowchart TD
+    subgraph Client["Client Layer"]
+        HTTP["HTTP Client / Upstream Service"]
+    end
+
+    subgraph App["Application Layer - Java 8 / Tomcat 9"]
+        Health["HealthServlet\n(GET /health)"]
+        Bootstrap["KycBootstrapServlet\n(load-on-startup)"]
+        Verify["KycVerifyServlet\n(POST /api/kyc/verify)"]
+        Status["KycStatusServlet\n(GET /api/kyc/status/*)"]
+        Config["KycConfig\n(Properties + Env Vars)"]
+        ConnFactory["KycConnectionFactory\n(JDBC Driver Manager)"]
+    end
+
+    subgraph Data["Data Layer"]
+        MSSQL[("SQL Server\nZavaBankDB")]
+        WatchlistTbl["KYCWatchlist table"]
+        VerifyTbl["KYCVerification table"]
+    end
+
+    HTTP -->|"GET /health"| Health
+    HTTP -->|"POST /api/kyc/verify"| Verify
+    HTTP -->|"GET /api/kyc/status/{id}"| Status
+    Bootstrap -->|"CREATE TABLE IF NOT EXISTS"| MSSQL
+    Verify -->|"SELECT watchlist match"| ConnFactory
+    Verify -->|"INSERT verification record"| ConnFactory
+    Status -->|"SELECT latest status"| ConnFactory
+    ConnFactory -->|"JDBC connection"| MSSQL
+    Config -->|"supplies URL/credentials"| ConnFactory
+    MSSQL --- WatchlistTbl
+    MSSQL --- VerifyTbl
+</div>
+<h3 id="technology-stack-summary">Technology Stack Summary</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Layer</th><th>Technology</th><th>Version</th><th>Purpose</th></tr></thead><tbody>
+<tr><td>Runtime</td><td>Java SE</td><td>1.8</td><td>Application language and runtime</td></tr>
+<tr><td>Web Container</td><td>Apache Tomcat</td><td>9</td><td>Servlet container and HTTP server</td></tr>
+<tr><td>Build</td><td>Gradle</td><td>7.6</td><td>Build automation and WAR packaging</td></tr>
+<tr><td>Web Framework</td><td>Jakarta Servlet API</td><td>4.0.1</td><td>HTTP request/response handling</td></tr>
+<tr><td>Data Access</td><td>Microsoft JDBC Driver for SQL Server</td><td>12.6.3.jre8</td><td>JDBC connectivity to SQL Server</td></tr>
+<tr><td>JSON</td><td>org.json</td><td>20140107</td><td>JSON serialization/deserialization</td></tr>
+<tr><td>Database</td><td>Microsoft SQL Server</td><td>(configured via env)</td><td>Persistent storage for watchlist and verifications</td></tr>
+<tr><td>Containerization</td><td>Docker</td><td>—</td><td>Multi-stage build; Tomcat 9 / JDK 8 base image</td></tr>
+</tbody></table></div>
+<h3 id="data-storage-external-services">Data Storage &amp; External Services</h3>
+<p>The application uses a single Microsoft SQL Server database (<code>ZavaBankDB</code>) as its only persistence layer. Two tables are created at startup by <code>KycBootstrapServlet</code>: <code>KYCWatchlist</code> (stores sanctioned or flagged names with their source, e.g. OFAC) and <code>KYCVerification</code> (stores the full audit trail of every customer verification attempt including status, reason, and timestamp). Database connection parameters (host, port, database name, user, password) are read from <code>kyc.properties</code> with environment-variable overrides (<code>DB_HOST</code>, <code>DB_PORT</code>, <code>DB_NAME</code>, <code>DB_USER</code>, <code>DB_PASSWORD</code>). There are no external APIs, message brokers, caches, or other third-party services.</p>
+<h3 id="key-architectural-decisions">Key Architectural Decisions</h3>
+<ul>
+<li><strong>No framework; plain Servlet API</strong>: The application deliberately avoids Spring or Jakarta EE CDI — all components are plain <code>HttpServlet</code> subclasses wired via <code>web.xml</code>, keeping the footprint minimal but lacking DI, AOP, or transaction management.</li>
+<li><strong>Direct JDBC with manual resource management</strong>: Database access uses raw <code>DriverManager.getConnection</code> and manually closed <code>Connection</code>/<code>PreparedStatement</code>/<code>ResultSet</code> objects; there is no connection pool (e.g. HikariCP) or ORM layer.</li>
+<li><strong>Environment-variable-first configuration</strong>: <code>KycConfig</code> reads twelve-factor-style environment variables before falling back to the bundled <code>kyc.properties</code> file, enabling container-friendly configuration injection.</li>
+</ul>
+<h2 id="component-relationships">Component Relationships</h2>
+<div class="mermaid">
+flowchart LR
+    subgraph Presentation["Presentation (Servlets)"]
+        HealthServlet["HealthServlet"]
+        KycVerifyServlet["KycVerifyServlet"]
+        KycStatusServlet["KycStatusServlet"]
+        KycBootstrapServlet["KycBootstrapServlet"]
+    end
+
+    subgraph Infrastructure["Infrastructure"]
+        KycConfig["KycConfig"]
+        KycConnectionFactory["KycConnectionFactory"]
+    end
+
+    subgraph DataAccess["Data Access (JDBC)"]
+        WatchlistOps["Watchlist Queries"]
+        VerifyOps["Verification Queries"]
+        StatusOps["Status Queries"]
+        BootstrapOps["DDL Bootstrap"]
+    end
+
+    KycVerifyServlet -->|"check watchlist"| WatchlistOps
+    KycVerifyServlet -->|"insert result"| VerifyOps
+    KycStatusServlet -->|"fetch latest status"| StatusOps
+    KycBootstrapServlet -->|"create tables"| BootstrapOps
+    WatchlistOps -->|"uses connection"| KycConnectionFactory
+    VerifyOps -->|"uses connection"| KycConnectionFactory
+    StatusOps -->|"uses connection"| KycConnectionFactory
+    BootstrapOps -->|"uses connection"| KycConnectionFactory
+    KycConnectionFactory -->|"reads config"| KycConfig
+</div>
+<h3 id="component-inventory">Component Inventory</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Component</th><th>Layer</th><th>Type</th><th>Responsibility</th></tr></thead><tbody>
+<tr><td>HealthServlet</td><td>Presentation</td><td>HTTP Servlet</td><td>Returns a simple HTML health-check response at <code>GET /health</code></td></tr>
+<tr><td>KycBootstrapServlet</td><td>Presentation / Lifecycle</td><td>HTTP Servlet (load-on-startup)</td><td>Creates <code>KYCWatchlist</code> and <code>KYCVerification</code> tables and seeds initial watchlist data on application startup</td></tr>
+<tr><td>KycVerifyServlet</td><td>Presentation</td><td>HTTP Servlet</td><td>Accepts <code>POST /api/kyc/verify</code> requests, checks the customer name against the watchlist, records the verification result, and returns a JSON status</td></tr>
+<tr><td>KycStatusServlet</td><td>Presentation</td><td>HTTP Servlet</td><td>Accepts <code>GET /api/kyc/status/{customerId}</code> requests and returns the most recent KYC verification record for the given customer as JSON</td></tr>
+<tr><td>KycConfig</td><td>Infrastructure</td><td>Utility / Configuration</td><td>Reads database connection parameters from <code>kyc.properties</code> with environment-variable override support</td></tr>
+<tr><td>KycConnectionFactory</td><td>Infrastructure</td><td>Utility / Factory</td><td>Loads the SQL Server JDBC driver and opens JDBC connections using parameters supplied by <code>KycConfig</code></td></tr>
+</tbody></table></div>
+</div>
+</div>
+<div id="tab-api" class="tab-panel">
+  <div class="fact-content"><h1 id="api-service-communication-contracts">API &amp; Service Communication Contracts</h1>
+<p>ZavaKYCService exposes 4 HTTP endpoints over a single deployable WAR, covering health-checking, database bootstrapping, KYC verification, and KYC status lookup; all communication is synchronous HTTP with no inter-service calls or messaging.</p>
+<h2 id="service-catalog">Service Catalog</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Port</th><th>Category</th><th>Purpose</th></tr></thead><tbody>
+<tr><td>ZavaKYCService</td><td>8080</td><td>Business</td><td>Performs Know Your Customer (KYC) identity verification by checking customer names against a watchlist and persisting verification results</td></tr>
+</tbody></table></div>
+<h2 id="api-endpoints-inventory">API Endpoints Inventory</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Method</th><th>Path</th><th>Request Type</th><th>Response Type</th></tr></thead><tbody>
+<tr><td>ZavaKYCService</td><td>GET</td><td>/health</td><td>—</td><td>HTML text (<code>ZavaKYCService - Online</code>)</td></tr>
+<tr><td>ZavaKYCService</td><td>POST</td><td>/api/kyc/verify</td><td>JSON body: <code>customerId</code> (int), <code>fullName</code> (string), <code>idNumber</code> (string, optional)</td><td>JSON: <code>customerId</code>, <code>status</code> (PASS\</td><td>REVIEW), <code>reason</code></td></tr>
+<tr><td>ZavaKYCService</td><td>GET</td><td>/api/kyc/status/{customerId}</td><td>Path param: <code>customerId</code> (int)</td><td>JSON: <code>customerId</code>, <code>status</code>, <code>reason</code>, <code>fullName</code>, <code>idNumber</code>, <code>verifiedDate</code></td></tr>
+<tr><td>ZavaKYCService</td><td>—</td><td>/internal/bootstrap</td><td>— (Servlet lifecycle <code>init()</code> only)</td><td>— (No HTTP response; runs once at startup)</td></tr>
+</tbody></table></div>
+<h2 id="management-observability-endpoints">Management &amp; Observability Endpoints</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Endpoint</th><th>Custom Metrics</th></tr></thead><tbody>
+<tr><td>ZavaKYCService</td><td>GET /health</td><td>None — returns a static HTML string; no runtime metrics or health indicators</td></tr>
+</tbody></table></div>
+<p>&gt; Note: No Spring Boot Actuator, Micrometer, Prometheus scrape endpoint, or structured health-check protocol is configured. The <code>/health</code> endpoint is a hand-written HTML response only.</p>
+<h2 id="dtos-contracts">DTOs &amp; Contracts</h2>
+<p>The application defines no explicit DTO or model classes. JSON request and response bodies are constructed inline using <code>org.json.JSONObject</code> objects directly within each servlet handler:</p>
+<ul>
+<li><strong>KYC Verify Request</strong> (POST /api/kyc/verify body): an ad-hoc JSON object containing <code>customerId</code> (int), <code>fullName</code> (string), and optionally <code>idNumber</code> (string). Parsed via <code>JSONObject.optInt</code> / <code>JSONObject.optString</code>.</li>
+<li><strong>KYC Verify Response</strong>: an inline <code>JSONObject</code> with fields <code>customerId</code>, <code>status</code> (<code>PASS</code> or <code>REVIEW</code>), and <code>reason</code> (explanation string).</li>
+<li><strong>KYC Status Response</strong> (GET /api/kyc/status/{customerId}): an inline <code>JSONObject</code> with fields <code>customerId</code>, <code>status</code>, <code>reason</code>, <code>fullName</code>, <code>idNumber</code>, and <code>verifiedDate</code>.</li>
+<li><strong>Error Response</strong> (all endpoints): a minimal inline JSON object <code>{&quot;status&quot;:&quot;ERROR&quot;,&quot;message&quot;:&quot;...&quot;}</code>.</li>
+</ul>
+<p>There are no OpenAPI/Swagger specifications, no protobuf schemas, no GraphQL schemas, and no Jackson or custom serializer configuration — all serialization is performed manually through the <code>org.json</code> library. None of the data structures are immutable (no records, no Lombok <code>@Value</code>).</p>
+<h2 id="communication-patterns">Communication Patterns</h2>
+<p><strong>Synchronous HTTP only</strong>: All client interactions are standard synchronous HTTP request/response pairs. There is no inter-service communication — ZavaKYCService is a standalone monolith that does not call any upstream or peer services.</p>
+<p><strong>No asynchronous messaging</strong>: No message queues, event buses, Kafka topics, or pub/sub patterns are present.</p>
+<p><strong>No resilience patterns</strong>: There are no circuit breakers (Resilience4j, Hystrix), retry policies, timeouts, or bulkhead configurations. If the SQL Server database is unavailable, all requests that hit the database will receive a 500 Internal Server Error immediately.</p>
+<p><strong>No service discovery or API gateway</strong>: The service registers with no discovery mechanism. Callers must know the host and port directly. No API gateway, reverse proxy configuration, or load-balancer sidecar is defined in the project source.</p>
+<p><strong>Startup dependency chain</strong>: <code>KycBootstrapServlet</code> is declared with <code>&lt;load-on-startup&gt;1&lt;/load-on-startup&gt;</code> in <code>web.xml</code>, meaning it runs before the application accepts traffic and will fail the entire deployment if the database is unreachable at startup. There is no readiness probe or retry loop in the bootstrap logic.</p>
+<p><strong>Security posture</strong>: No authentication, authorization, or TLS is configured at any level. All four endpoints — including <code>/internal/bootstrap</code> and all <code>/api/kyc/*</code> endpoints — are publicly accessible with no token validation, no Basic Auth, no role checks, and no HTTPS enforcement. Sensitive customer PII (full name, ID number) is transmitted over plain HTTP.</p>
+<h2 id="service-technology-matrix">Service Technology Matrix</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Web Framework</th><th>Data Access</th><th>Discovery</th><th>Gateway</th><th>Health Check</th><th>Cache</th><th>Metrics</th></tr></thead><tbody>
+<tr><td>ZavaKYCService</td><td>Servlet API 4.0 (Tomcat 9)</td><td>Raw JDBC (DriverManager)</td><td>None</td><td>None</td><td>Custom HTML endpoint</td><td>None</td><td>None</td></tr>
+</tbody></table></div>
+<h2 id="service-communication-sequence">Service Communication Sequence</h2>
+<div class="mermaid">
+sequenceDiagram
+    participant Client
+    participant KycVerify as "KycVerifyServlet\n(POST /api/kyc/verify)"
+    participant KycStatus as "KycStatusServlet\n(GET /api/kyc/status/{id})"
+    participant ConnFactory as "KycConnectionFactory"
+    participant DB as "SQL Server ZavaBankDB"
+
+    Note over Client,DB: KYC Verification Flow
+    Client->>KycVerify: POST /api/kyc/verify\n{customerId, fullName, idNumber}
+    KycVerify->>ConnFactory: openConnection()
+    ConnFactory->>DB: JDBC connect
+    DB-->>ConnFactory: Connection
+    KycVerify->>DB: SELECT TOP 1 FROM KYCWatchlist WHERE UPPER(FullName)=UPPER(?)
+    alt Name found in watchlist
+        DB-->>KycVerify: Row returned
+        KycVerify->>DB: INSERT INTO KYCVerification (status=REVIEW)
+        DB-->>KycVerify: OK
+        KycVerify-->>Client: 200 {status: "REVIEW", reason: "Name matched watchlist."}
+    else Name not in watchlist
+        DB-->>KycVerify: No rows
+        KycVerify->>DB: INSERT INTO KYCVerification (status=PASS)
+        DB-->>KycVerify: OK
+        KycVerify-->>Client: 200 {status: "PASS", reason: "No watchlist match."}
+    end
+
+    Note over Client,DB: KYC Status Lookup Flow
+    Client->>KycStatus: GET /api/kyc/status/{customerId}
+    KycStatus->>ConnFactory: openConnection()
+    ConnFactory->>DB: JDBC connect
+    DB-->>ConnFactory: Connection
+    KycStatus->>DB: SELECT TOP 1 FROM KYCVerification WHERE CustomerID=? ORDER BY VerifiedDate DESC
+    alt Record found
+        DB-->>KycStatus: Verification row
+        KycStatus-->>Client: 200 {customerId, status, reason, fullName, idNumber, verifiedDate}
+    else No record
+        DB-->>KycStatus: Empty result set
+        KycStatus-->>Client: 404 {customerId, status: "NOT_FOUND"}
+    end
+</div>
+</div>
+</div>
+<div id="tab-config" class="tab-panel">
+  <div class="fact-content"><h1 id="configuration-externalized-settings-inventory">Configuration &amp; Externalized Settings Inventory</h1>
+<p>ZavaKYCService uses a single flat properties file (<code>kyc.properties</code>) as its primary configuration source, with environment-variable overrides for all database connection settings and no profile system, secrets manager, or external configuration server.</p>
+<h2 id="configuration-sources">Configuration Sources</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Source</th><th>Type</th><th>Path / Location</th><th>Notes</th></tr></thead><tbody>
+<tr><td><code>kyc.properties</code></td><td>Java properties file</td><td><code>src/main/resources/kyc.properties</code></td><td>Bundled inside WAR at classpath root; read once at class-load time via <code>KycConfig</code> static initializer</td></tr>
+<tr><td><code>web.xml</code></td><td>Servlet deployment descriptor</td><td><code>src/main/webapp/WEB-INF/web.xml</code></td><td>Declares all servlet mappings and load-on-startup order</td></tr>
+<tr><td><code>build.gradle</code></td><td>Gradle build script</td><td><code>build.gradle</code></td><td>Defines plugins, Java version, dependencies, and WAR packaging</td></tr>
+<tr><td><code>Dockerfile</code></td><td>Container image definition</td><td><code>Dockerfile</code></td><td>Two-stage build: gradle:7.6-jdk8 builder → tomcat:9-jdk8 runtime</td></tr>
+<tr><td>Environment variables</td><td>OS / container env</td><td>Injected at runtime</td><td><code>DB_HOST</code>, <code>DB_PORT</code>, <code>DB_NAME</code>, <code>DB_USER</code>, <code>DB_PASSWORD</code> override <code>kyc.properties</code> values</td></tr>
+</tbody></table></div>
+<p>No external configuration server (Spring Cloud Config, Azure App Configuration, Consul), no ConfigMap/Secret YAML, and no <code>.env</code> file are present.</p>
+<h2 id="build-profiles">Build Profiles</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Profile</th><th>Activation</th><th>Purpose</th><th>Key Dependencies / Plugins</th></tr></thead><tbody>
+<tr><td>(default)</td><td>Always active</td><td>Compiles all sources with Java 8 compatibility and packages as a WAR named <code>ROOT.war</code></td><td><code>java</code> plugin, <code>war</code> plugin; <code>archiveBaseName = &#39;ROOT&#39;</code> so Tomcat deploys to root context</td></tr>
+</tbody></table></div>
+<p>No Maven/Gradle build profiles are defined. There is a single unconditional build configuration.</p>
+<h2 id="runtime-profiles">Runtime Profiles</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Profile</th><th>Activation Method</th><th>Config Files</th><th>Key Overrides</th></tr></thead><tbody>
+<tr><td>(single profile)</td><td>None — no profile system</td><td><code>kyc.properties</code> (classpath)</td><td>Environment variables (<code>DB_HOST</code>, <code>DB_PORT</code>, <code>DB_NAME</code>, <code>DB_USER</code>, <code>DB_PASSWORD</code>) take precedence over <code>kyc.properties</code> values</td></tr>
+</tbody></table></div>
+<p>No Spring profile (<code>application-dev.yml</code>, etc.), <code>.NET</code> environment, or <code>NODE_ENV</code> concept exists. All environments share the same application binary; only the five database environment variables differentiate deployments.</p>
+<h2 id="properties-inventory">Properties Inventory</h2>
+<h3 id="zavakycservice-kycproperties">ZavaKYCService — <code>kyc.properties</code></h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Property Key</th><th>Default Value</th><th>Source / Override</th><th>Notes</th></tr></thead><tbody>
+<tr><td><code>db.host</code></td><td><code>sqlserver</code></td><td><code>kyc.properties</code>; overridden by <code>DB_HOST</code> env var</td><td>Hostname of the SQL Server instance</td></tr>
+<tr><td><code>db.port</code></td><td><code>1433</code></td><td><code>kyc.properties</code>; overridden by <code>DB_PORT</code> env var</td><td>SQL Server default port</td></tr>
+<tr><td><code>db.name</code></td><td><code>ZavaBankDB</code></td><td><code>kyc.properties</code>; overridden by <code>DB_NAME</code> env var</td><td>Target database name</td></tr>
+<tr><td><code>db.user</code></td><td><code>sa</code></td><td><code>kyc.properties</code>; overridden by <code>DB_USER</code> env var</td><td>SQL Server login username</td></tr>
+<tr><td><code>db.password</code></td><td><code>[SENSITIVE — see Secrets section]</code></td><td><code>kyc.properties</code>; overridden by <code>DB_PASSWORD</code> env var</td><td>SQL Server login password</td></tr>
+</tbody></table></div>
+<p>The JDBC URL is assembled at runtime as:</p>
+<pre><code>
+jdbc:sqlserver://&lt;db.host&gt;:&lt;db.port&gt;;databaseName=&lt;db.name&gt;;encrypt=false;trustServerCertificate=true
+</code></pre>
+<p>Note: <code>encrypt=false</code> and <code>trustServerCertificate=true</code> are hard-coded in <code>KycConfig.getDbUrl()</code> — they are not externalized properties and cannot be changed without recompiling.</p>
+<h2 id="startup-parameters-resource-requirements">Startup Parameters &amp; Resource Requirements</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>JVM / Runtime Options</th><th>Memory Limits</th><th>CPU Limits</th><th>Instance Count</th><th>Notes</th></tr></thead><tbody>
+<tr><td>ZavaKYCService</td><td>None declared</td><td>Not specified</td><td>Not specified</td><td>1</td><td>Tomcat uses its own default thread pool; no <code>-Xms</code>/<code>-Xmx</code> flags are set in the Dockerfile or any startup script</td></tr>
+</tbody></table></div>
+<p>The <code>Dockerfile</code> uses <code>CMD [&quot;catalina.sh&quot;, &quot;run&quot;]</code> without any JVM tuning flags. Memory and CPU limits must be configured externally (Kubernetes <code>resources</code> or <code>docker run --memory</code>).</p>
+<h2 id="startup-dependency-chain">Startup Dependency Chain</h2>
+<ol>
+<li><strong>SQL Server</strong> must be reachable before the application starts. <code>KycBootstrapServlet</code> is declared with <code>&lt;load-on-startup&gt;1&lt;/load-on-startup&gt;</code> in <code>web.xml</code>, causing it to run synchronously during Tomcat&#39;s deployment phase before any HTTP requests are accepted.</li>
+<li><strong>No wait mechanism is implemented</strong>: if SQL Server is unavailable at startup, <code>KycBootstrapServlet.init()</code> throws a <code>ServletException</code>, which causes the WAR deployment to fail and Tomcat to mark the application as unavailable.</li>
+<li><strong>No readiness probe, liveness probe, or <code>dockerize</code>/<code>wait-for-it</code> script</strong> is configured in the <code>Dockerfile</code> or any orchestration file.</li>
+</ol>
+<p>Startup order: SQL Server must be healthy → ZavaKYCService deploys → <code>KycBootstrapServlet</code> runs DDL → all other servlets accept traffic.</p>
+<h2 id="secrets-sensitive-configuration">Secrets &amp; Sensitive Configuration</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Secret Reference</th><th>Type</th><th>Storage / Source</th></tr></thead><tbody>
+<tr><td><code>db.password</code> / <code>DB_PASSWORD</code></td><td>Database password</td><td>Plain text in <code>kyc.properties</code> (bundled in WAR); can be overridden by <code>DB_PASSWORD</code> environment variable</td></tr>
+<tr><td><code>db.user</code> / <code>DB_USER</code></td><td>Database username</td><td>Plain text in <code>kyc.properties</code>; can be overridden by <code>DB_USER</code> environment variable</td></tr>
+</tbody></table></div>
+<p>&gt; <strong>Security warning</strong>: The default password (<code>YourStrong!Passw0rd</code>) is committed in plain text to <code>src/main/resources/kyc.properties</code>. Any user with access to the WAR or the repository can read the credentials. No encryption (Jasypt, Azure Key Vault, AWS Secrets Manager, HashiCorp Vault) is applied.</p>
+<h3 id="secrets-provisioning-workflow">Secrets Provisioning Workflow</h3>
+<p>The current secrets provisioning workflow is informal:</p>
+<ol>
+<li><strong>Source</strong>: Credentials are hard-coded in <code>kyc.properties</code> inside the repository.</li>
+<li><strong>Override path</strong>: Container deployments may inject <code>DB_HOST</code>, <code>DB_PORT</code>, <code>DB_NAME</code>, <code>DB_USER</code>, and <code>DB_PASSWORD</code> as container environment variables, which <code>KycConfig</code> reads with priority over the bundled file.</li>
+<li><strong>No secret store</strong>: There is no integration with Azure Key Vault, HashiCorp Vault, AWS Secrets Manager, or Kubernetes Secrets. Secrets must be manually set as environment variables or the hard-coded defaults are used.</li>
+<li><strong>No access control model</strong>: No managed identity, service principal, or RBAC policy governs secret access. Anyone with access to the container environment or the repository can read the credentials.</li>
+</ol>
+<h2 id="feature-flags">Feature Flags</h2>
+<p>No feature flag framework is used. There are no <code>@ConditionalOnProperty</code>, <code>@ConditionalOnExpression</code>, <code>LaunchDarkly</code>, <code>Unleash</code>, or custom toggle mechanisms in the codebase.</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Flag Name</th><th>Default</th><th>Controlled By</th></tr></thead><tbody>
+<tr><td>(none detected)</td><td>—</td><td>—</td></tr>
+</tbody></table></div>
+<h2 id="framework-runtime-versions">Framework &amp; Runtime Versions</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Component</th><th>Version</th><th>Source</th></tr></thead><tbody>
+<tr><td>Java SE</td><td>1.8 (Java 8)</td><td><code>build.gradle</code>: <code>sourceCompatibility = JavaVersion.VERSION_1_8</code></td></tr>
+<tr><td>Gradle (build tool)</td><td>7.6</td><td><code>Dockerfile</code>: <code>FROM gradle:7.6-jdk8</code> (builder stage)</td></tr>
+<tr><td>Apache Tomcat (runtime)</td><td>9</td><td><code>Dockerfile</code>: <code>FROM tomcat:9-jdk8</code> (runtime stage)</td></tr>
+<tr><td>JDK (builder image)</td><td>8</td><td>Docker base image <code>gradle:7.6-jdk8</code></td></tr>
+<tr><td>JDK (runtime image)</td><td>8</td><td>Docker base image <code>tomcat:9-jdk8</code></td></tr>
+<tr><td>Servlet API</td><td>4.0.1</td><td><code>build.gradle</code>: <code>compileOnly &#39;javax.servlet:javax.servlet-api:4.0.1&#39;</code></td></tr>
+<tr><td>Microsoft JDBC Driver for SQL Server</td><td>12.6.3.jre8</td><td><code>build.gradle</code> dependency</td></tr>
+<tr><td>org.json</td><td>20140107</td><td><code>build.gradle</code> dependency</td></tr>
+</tbody></table></div>
+</div>
+</div>
+<div id="tab-workflows" class="tab-panel">
+  <div class="fact-content"><h1 id="core-business-workflows">Core Business Workflows</h1>
+<p>ZavaKYCService implements a financial compliance domain that screens customer identities against a watchlist of sanctioned individuals and maintains an immutable audit trail of every verification decision for regulatory purposes.</p>
+<h2 id="domain-entities">Domain Entities</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Entity</th><th>Service / Bounded Context</th><th>Description</th><th>Key Relationships</th></tr></thead><tbody>
+<tr><td>KYCWatchlist</td><td>KYC Compliance</td><td>Represents a sanctioned or flagged individual whose name should trigger a manual review during customer onboarding</td><td>Referenced by the verification process to determine whether a submitted customer name is flagged</td></tr>
+<tr><td>KYCVerification</td><td>KYC Compliance</td><td>Records the outcome of a single KYC screening event for a specific customer, capturing the full name, identity document number, determination (PASS or REVIEW), and timestamp</td><td>Logically linked to KYCWatchlist entries when a watchlist match drives a REVIEW status; linked to an upstream Customer entity by CustomerID</td></tr>
+</tbody></table></div>
+<h2 id="service-to-domain-mapping">Service-to-Domain Mapping</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Domain Context</th><th>Owned Entities</th><th>External Dependencies</th></tr></thead><tbody>
+<tr><td>ZavaKYCService</td><td>KYC Compliance</td><td>KYCWatchlist, KYCVerification</td><td>Upstream customer identity system (provides <code>CustomerID</code>; no API call made — caller is trusted to supply a valid ID)</td></tr>
+</tbody></table></div>
+<p>ZavaKYCService is a single-bounded-context monolith. All domain logic, data ownership, and persistence reside within one deployable unit. There is no cross-service communication.</p>
+<h2 id="primary-workflows">Primary Workflows</h2>
+<h3 id="workflow-1-application-bootstrap-and-schema-initialization">Workflow 1: Application Bootstrap and Schema Initialization</h3>
+<p>Triggered once at application startup via <code>KycBootstrapServlet</code> (<code>load-on-startup=1</code>). This workflow runs before any HTTP traffic is accepted.</p>
+<p><strong>Steps:</strong></p>
+<ol>
+<li>Servlet container (Tomcat) loads <code>KycBootstrapServlet</code> during deployment.</li>
+<li>Servlet opens a JDBC connection to SQL Server.</li>
+<li>Executes DDL: creates <code>KYCWatchlist</code> table if it does not already exist.</li>
+<li>Executes DDL: creates <code>KYCVerification</code> table if it does not already exist.</li>
+<li>Seeds one initial watchlist entry (<code>John Alias</code>, source <code>OFAC-SAMPLE</code>) if the <code>KYCWatchlist</code> table is empty.</li>
+<li>Closes the connection and returns control to Tomcat.</li>
+</ol>
+<p>If any step fails (e.g., SQL Server is unreachable), the servlet throws a <code>ServletException</code>, the WAR deployment fails, and the application becomes unavailable.</p>
+<hr/>
+<h3 id="workflow-2-customer-kyc-verification">Workflow 2: Customer KYC Verification</h3>
+<p>Initiated by an upstream service or operator submitting a <code>POST /api/kyc/verify</code> request with the customer&#39;s identity information.</p>
+<p><strong>Steps:</strong></p>
+<ol>
+<li>Receive JSON body containing <code>customerId</code>, <code>fullName</code>, and optionally <code>idNumber</code>.</li>
+<li><strong>Input validation</strong>: reject with HTTP 400 if the JSON is malformed, <code>customerId</code> is not a positive integer, or <code>fullName</code> is blank.</li>
+<li>Open a JDBC connection to SQL Server.</li>
+<li><strong>Watchlist check</strong>: query <code>KYCWatchlist</code> for a case-insensitive exact match on <code>FullName</code>.</li>
+<li><strong>Determination</strong>:</li>
+</ol>
+<ul>
+<ul>
+<li>If a match is found → status = <code>REVIEW</code>, reason = <code>&quot;Name matched watchlist.&quot;</code></li>
+<li>If no match → status = <code>PASS</code>, reason = <code>&quot;No watchlist match.&quot;</code></li>
+</ul>
+</ul>
+<ol>
+<li><strong>Record persistence</strong>: insert a <code>KYCVerification</code> row with <code>CustomerID</code>, <code>FullName</code>, <code>IdNumber</code>, determined <code>Status</code>, <code>Reason</code>, and the current timestamp.</li>
+<li>Return JSON response: <code>{customerId, status, reason}</code>.</li>
+</ol>
+<hr/>
+<h3 id="workflow-3-kyc-status-lookup">Workflow 3: KYC Status Lookup</h3>
+<p>Initiated by an upstream system querying the latest verification outcome for a previously submitted customer, via <code>GET /api/kyc/status/{customerId}</code>.</p>
+<p><strong>Steps:</strong></p>
+<ol>
+<li>Extract <code>customerId</code> from the URL path.</li>
+<li><strong>Input validation</strong>: reject with HTTP 400 if the path segment is missing or not a valid integer.</li>
+<li>Open a JDBC connection to SQL Server.</li>
+<li>Query <code>KYCVerification</code> for the most recent record for the given <code>CustomerID</code> (ordered by <code>VerifiedDate DESC</code>, then <code>VerificationID DESC</code> as a tie-breaker).</li>
+<li>If no record exists → return HTTP 404 <code>{customerId, status: &quot;NOT_FOUND&quot;}</code>.</li>
+<li>If a record exists → return HTTP 200 with full verification details: <code>{customerId, status, reason, fullName, idNumber, verifiedDate}</code>.</li>
+</ol>
+<hr/>
+<h3 id="workflow-4-health-check">Workflow 4: Health Check</h3>
+<p>Initiated by a load balancer or monitoring system via <code>GET /health</code>.</p>
+<p>Returns a static HTML response (<code>ZavaKYCService - Online</code>) with HTTP 200. No business logic or database interaction occurs.</p>
+<h2 id="cross-service-data-flows">Cross-Service Data Flows</h2>
+<p>ZavaKYCService is a self-contained service with no outbound calls to other services. There are no aggregation flows, no gateway composition patterns, and no circuit breaker fallbacks involving external services.</p>
+<p>The only external dependency is the upstream caller, which is responsible for:</p>
+<ul>
+<li>Supplying a valid <code>CustomerID</code> that corresponds to a real customer in the upstream customer-management system.</li>
+<li>Interpreting the returned <code>status</code> field (<code>PASS</code> or <code>REVIEW</code>) to determine whether to proceed with customer onboarding or route the case for manual review.</li>
+</ul>
+<p>The service does not validate that <code>CustomerID</code> exists in any upstream system — it trusts the caller.</p>
+<h2 id="business-workflow-sequence">Business Workflow Sequence</h2>
+<div class="mermaid">
+sequenceDiagram
+    participant UpstreamSvc as "Upstream Service"
+    participant VerifyServlet as "KycVerifyServlet"
+    participant StatusServlet as "KycStatusServlet"
+    participant DB as "SQL Server ZavaBankDB"
+
+    Note over UpstreamSvc,DB: Workflow: Customer KYC Verification
+    UpstreamSvc->>VerifyServlet: POST /api/kyc/verify\n{customerId, fullName, idNumber}
+
+    alt Invalid input (missing/blank fields or bad JSON)
+        VerifyServlet-->>UpstreamSvc: 400 Bad Request
+    else Valid input
+        VerifyServlet->>DB: Check KYCWatchlist for fullName (case-insensitive)
+        alt Name found in watchlist
+            DB-->>VerifyServlet: Match found
+            VerifyServlet->>DB: INSERT KYCVerification (status=REVIEW)
+            DB-->>VerifyServlet: OK
+            VerifyServlet-->>UpstreamSvc: 200 {status: "REVIEW",\nreason: "Name matched watchlist."}
+            Note over UpstreamSvc: Route customer for manual compliance review
+        else Name not in watchlist
+            DB-->>VerifyServlet: No match
+            VerifyServlet->>DB: INSERT KYCVerification (status=PASS)
+            DB-->>VerifyServlet: OK
+            VerifyServlet-->>UpstreamSvc: 200 {status: "PASS",\nreason: "No watchlist match."}
+            Note over UpstreamSvc: Allow customer to proceed with onboarding
+        end
+    end
+
+    Note over UpstreamSvc,DB: Workflow: KYC Status Lookup
+    UpstreamSvc->>StatusServlet: GET /api/kyc/status/{customerId}
+    alt customerId is non-numeric or missing
+        StatusServlet-->>UpstreamSvc: 400 Bad Request
+    else Valid customerId
+        StatusServlet->>DB: SELECT most recent KYCVerification for customerId
+        alt Verification record found
+            DB-->>StatusServlet: status, reason, fullName, idNumber, verifiedDate
+            StatusServlet-->>UpstreamSvc: 200 Full verification record
+        else No record found
+            DB-->>StatusServlet: Empty result
+            StatusServlet-->>UpstreamSvc: 404 {status: "NOT_FOUND"}
+        end
+    end
+</div>
+<h2 id="business-rules-decision-logic">Business Rules &amp; Decision Logic</h2>
+<h3 id="validation-rules">Validation Rules</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Rule</th><th>Location</th><th>Condition</th><th>Rejection</th></tr></thead><tbody>
+<tr><td>customerId required and positive</td><td>KycVerifyServlet</td><td><code>customerId &lt;= 0</code></td><td>HTTP 400</td></tr>
+<tr><td>fullName required and non-blank</td><td>KycVerifyServlet</td><td><code>fullName.length() == 0</code> after trim</td><td>HTTP 400</td></tr>
+<tr><td>Valid JSON body</td><td>KycVerifyServlet</td><td>Body cannot be parsed as JSON</td><td>HTTP 400</td></tr>
+<tr><td>customerId must be numeric</td><td>KycStatusServlet</td><td>Path segment throws <code>NumberFormatException</code></td><td>HTTP 400</td></tr>
+<tr><td>customerId path segment required</td><td>KycStatusServlet</td><td><code>pathInfo == null</code> or splits into != 2 parts</td><td>HTTP 400</td></tr>
+</tbody></table></div>
+<h3 id="decision-logic">Decision Logic</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Decision Point</th><th>Logic</th><th>Outcome</th></tr></thead><tbody>
+<tr><td>Watchlist match determination</td><td><code>SELECT TOP 1</code> from <code>KYCWatchlist WHERE UPPER(FullName) = UPPER(?)</code> — exact case-insensitive match only; no partial/fuzzy matching</td><td>Match → <code>REVIEW</code>; no match → <code>PASS</code></td></tr>
+<tr><td>Most-recent verification selection</td><td><code>ORDER BY VerifiedDate DESC, VerificationID DESC</code> — timestamp first, then synthetic key as tie-breaker</td><td>Returns the single most recent verification for <code>GET /status</code></td></tr>
+<tr><td>Schema initialization idempotency</td><td><code>IF OBJECT_ID(&#39;TableName&#39;, &#39;U&#39;) IS NULL CREATE TABLE ...</code></td><td>Safe to run on every startup; no-op if tables already exist</td></tr>
+<tr><td>Seed data idempotency</td><td><code>IF NOT EXISTS (SELECT 1 FROM KYCWatchlist) INSERT ...</code></td><td>Seeds only when table is empty; prevents duplicate seed rows</td></tr>
+</tbody></table></div>
+<h3 id="state-transitions">State Transitions</h3>
+<p>KYC verification results are <strong>immutable once written</strong>. There is no update or delete operation on <code>KYCVerification</code>. A customer may be verified multiple times; the status lookup always returns the most recent result, but all historical records are retained.</p>
+<pre><code>
+Customer Submitted → [watchlist check] → PASS or REVIEW
+                                          (record persisted, cannot be modified)
+</code></pre>
+<h3 id="business-constraints">Business Constraints</h3>
+<ul>
+<li><strong>No partial name matching</strong>: Watchlist screening uses exact equality (<code>UPPER(FullName) = UPPER(?)</code>) — a customer named &quot;John Smith&quot; will not match a watchlist entry of &quot;John A. Smith&quot;.</li>
+<li><strong>No identity-document screening</strong>: <code>idNumber</code> is stored in <code>KYCVerification</code> but is never checked against a watchlist or external identity verification service.</li>
+<li><strong>Single-check per request</strong>: Each <code>POST /api/kyc/verify</code> call performs one watchlist check and records one outcome. There is no aggregation of multiple identity signals.</li>
+<li><strong>No re-verification logic</strong>: The service does not check whether a customer has already passed KYC; every call creates a new verification record.</li>
+</ul>
+<h3 id="cross-cutting-concerns">Cross-Cutting Concerns</h3>
+<ul>
+<li><strong>Transactions</strong>: No transaction management is declared. Each database operation uses its own <code>Connection</code> object. If <code>insertVerification</code> fails after <code>existsInWatchlist</code> succeeds, the verification record is lost but no rollback occurs. The two operations are not atomic.</li>
+<li><strong>Error handling</strong>: All <code>SQLException</code> exceptions are caught in servlet handlers and return HTTP 500 with a generic error message; the original exception is not exposed to the caller. No dead-letter queue or compensating action exists.</li>
+<li><strong>Audit trail</strong>: <code>KYCVerification</code> serves as the audit log — every verification attempt is persisted with a timestamp. However, there is no separate audit event log, no change tracking, and no mechanism to record who initiated the verification request.</li>
+<li><strong>Authorization</strong>: No authentication or authorization is enforced. Any caller that can reach the service&#39;s HTTP port can submit verifications or retrieve status for any customer ID.</li>
+</ul>
+</div>
+</div>
+<div id="tab-deps" class="tab-panel">
+  <div class="fact-content"><h1 id="dependency-map">Dependency Map</h1>
+<p>ZavaKYCService declares 3 external dependencies managed through a single Gradle build file (<code>build.gradle</code>), covering the servlet API, SQL Server JDBC driver, and JSON parsing.</p>
+<h2 id="dependencies">Dependencies</h2>
+<div class="mermaid">
+flowchart LR
+    App["ZavaKYCService v1.0.0"]
+
+    subgraph Web["Web Frameworks"]
+        ServletAPI["Servlet API v4.0.1\n(compileOnly)"]
+    end
+
+    subgraph DB["Database / JDBC"]
+        MssqlJdbc["mssql-jdbc v12.6.3.jre8"]
+    end
+
+    subgraph Util["Utilities"]
+        OrgJson["org.json v20140107"]
+    end
+
+    App -->|"web"| Web
+    App -->|"persistence"| DB
+    App -->|"utilities"| Util
+</div>
+<h3 id="dependency-summary">Dependency Summary</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Category</th><th>Count</th><th>Key Libraries</th><th>Notes</th></tr></thead><tbody>
+<tr><td>Web Frameworks</td><td>1</td><td>javax.servlet-api 4.0.1 (compileOnly)</td><td>Provided at runtime by Tomcat 9; not bundled in WAR</td></tr>
+<tr><td>Database / JDBC</td><td>1</td><td>com.microsoft.sqlserver:mssql-jdbc 12.6.3.jre8</td><td>Current production release for SQL Server connectivity</td></tr>
+<tr><td>Utilities</td><td>1</td><td>org.json 20140107</td><td>Very old release from 2014; no version number in artifact</td></tr>
+</tbody></table></div>
+<h3 id="version-compatibility-risks">Version &amp; Compatibility Risks</h3>
+<p>The <code>org.json:json:20140107</code> dependency is a 2014 build, over a decade old, and predates the introduction of semantic versioning in the library. Newer releases (e.g., <code>20240303</code>) include bug fixes and security improvements; continuing to use the 2014 build carries potential JSON parsing edge-case risks and limits access to modern API improvements. The <code>javax.servlet-api:4.0.1</code> dependency targets the Java EE 8 namespace (<code>javax.<em></code>); migration to Jakarta EE 9+ (which uses the <code>jakarta.</em></code> namespace) would require a namespace refactor across all servlet classes and the <code>web.xml</code>. The <code>mssql-jdbc:12.6.3.jre8</code> driver is a recent release and poses no immediate compatibility risk, but the <code>jre8</code> classifier should be replaced with <code>jre11</code> or <code>jre17</code> if the JDK target is ever upgraded.</p>
+<h3 id="notable-observations">Notable Observations</h3>
+<ul>
+<li><strong>No logging framework declared</strong>: The application performs no structured logging; adding SLF4J with Logback or Log4j2 is advisable for observability, especially in a containerised deployment.</li>
+<li><strong>No connection pooling library</strong>: Database connections are created via <code>DriverManager.getConnection</code> on every request. Under moderate load this will exhaust JDBC connections; HikariCP or c3p0 should be added.</li>
+<li><strong>No security or authentication library</strong>: There is no dependency for authentication, authorization, or input sanitization, meaning all security concerns must be handled manually in servlet code.</li>
+<li><strong>Minimal dependency footprint</strong>: With only 3 declared dependencies the application is very lightweight, but this also means it reimplements capabilities (connection pooling, logging, validation) that established libraries provide safely.</li>
+</ul>
+<h2 id="test-dependencies">Test Dependencies</h2>
+<p>No test-scoped dependencies were detected.</p>
+<p>Total test-scope dependencies: 0</p>
+<p>No test framework (JUnit, Mockito, etc.) is declared in <code>build.gradle</code>. The project has no automated unit or integration tests, which is a significant gap for production readiness and migration confidence.</p>
+</div>
+</div>
+<div id="tab-data" class="tab-panel">
+  <div class="fact-content"><h1 id="data-architecture-persistence-layer">Data Architecture &amp; Persistence Layer</h1>
+<p>ZavaKYCService persists data in a single Microsoft SQL Server database (<code>ZavaBankDB</code>) through two tables managed via raw JDBC — no ORM framework is used, and no caching layer is present.</p>
+<h2 id="database-configuration">Database Configuration</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service / Module</th><th>DB Type</th><th>Profile</th><th>Driver</th><th>Connection</th><th>Migration Tool</th></tr></thead><tbody>
+<tr><td>ZavaKYCService</td><td>Microsoft SQL Server</td><td>All (single profile)</td><td>mssql-jdbc 12.6.3.jre8</td><td>JDBC URL constructed from <code>DB_HOST</code>/<code>DB_PORT</code>/<code>DB_NAME</code> env vars (fallback: <code>kyc.properties</code>)</td><td>None — schema created programmatically in <code>KycBootstrapServlet.init()</code> at startup</td></tr>
+</tbody></table></div>
+<p>&gt; Note: <code>encrypt=false;trustServerCertificate=true</code> is hard-coded in the JDBC URL, disabling TLS for the database connection. Refer to <code>configuration-inventory.md</code> for the full property inventory.</p>
+<h2 id="data-ownership-per-service">Data Ownership per Service</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Tables Owned</th><th>ORM Framework</th><th>Caching</th><th>Notes</th></tr></thead><tbody>
+<tr><td>ZavaKYCService</td><td>KYCWatchlist, KYCVerification</td><td>None (raw JDBC)</td><td>None</td><td>Tables are created via DDL statements in <code>KycBootstrapServlet.init()</code> using <code>IF OBJECT_ID(...) IS NULL CREATE TABLE</code>; an initial seed row is also inserted if <code>KYCWatchlist</code> is empty</td></tr>
+</tbody></table></div>
+<h2 id="entity-model">Entity Model</h2>
+<div class="mermaid">
+erDiagram
+    KYCWatchlist {
+        int WatchlistID PK "IDENTITY auto-increment"
+        nvarchar FullName "NOT NULL, max 200"
+        nvarchar Source "nullable, max 100"
+        datetime CreatedDate "DEFAULT GETDATE()"
+    }
+
+    KYCVerification {
+        bigint VerificationID PK "IDENTITY auto-increment"
+        int CustomerID "NOT NULL, FK to upstream customer"
+        nvarchar FullName "NOT NULL, max 200"
+        nvarchar IdNumber "nullable, max 100"
+        nvarchar Status "NOT NULL: PASS or REVIEW"
+        nvarchar Reason "nullable, max 500"
+        datetime VerifiedDate "DEFAULT GETDATE()"
+    }
+
+    KYCWatchlist ||--o{ KYCVerification : "name match drives status"
+</div>
+<p>&gt; Note: There is no formal foreign-key constraint between <code>KYCWatchlist</code> and <code>KYCVerification</code> in the database schema. The relationship shown is logical: during verification, <code>KycVerifyServlet</code> queries <code>KYCWatchlist</code> by name and the match result determines the <code>Status</code> written to <code>KYCVerification</code>.</p>
+<h2 id="key-repository-methods">Key Repository Methods</h2>
+<p>There are no repository interfaces or ORM repository classes. All data access is implemented as inline JDBC operations within servlet handlers. The table below documents the logical query methods:</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Component</th><th>Operation</th><th>SQL / Logic</th><th>Purpose</th></tr></thead><tbody>
+<tr><td>KycBootstrapServlet</td><td>createTablesIfAbsent</td><td><code>IF OBJECT_ID(&#39;KYCWatchlist&#39;,&#39;U&#39;) IS NULL CREATE TABLE ...</code></td><td>Idempotent schema bootstrap at startup</td></tr>
+<tr><td>KycBootstrapServlet</td><td>seedWatchlist</td><td><code>IF NOT EXISTS (SELECT 1 FROM KYCWatchlist) INSERT INTO KYCWatchlist ...</code></td><td>Seeds one initial watchlist entry if table is empty</td></tr>
+<tr><td>KycVerifyServlet</td><td>existsInWatchlist</td><td><code>SELECT TOP 1 WatchlistID FROM KYCWatchlist WHERE UPPER(FullName) = UPPER(?)</code></td><td>Case-insensitive watchlist name check</td></tr>
+<tr><td>KycVerifyServlet</td><td>insertVerification</td><td><code>INSERT INTO KYCVerification (CustomerID, FullName, IdNumber, Status, Reason, VerifiedDate) VALUES (?, ?, ?, ?, ?, GETDATE())</code></td><td>Persists verification result</td></tr>
+<tr><td>KycStatusServlet</td><td>findLatestVerification</td><td><code>SELECT TOP 1 Status, Reason, FullName, IdNumber, VerifiedDate FROM KYCVerification WHERE CustomerID = ? ORDER BY VerifiedDate DESC, VerificationID DESC</code></td><td>Retrieves most recent verification record for a customer</td></tr>
+</tbody></table></div>
+<p>No named queries, stored procedures, or batch operations are used.</p>
+<h2 id="caching-strategy">Caching Strategy</h2>
+<p>No caching layer is configured. All read operations execute a direct SQL query against SQL Server on every request. There is no in-memory cache, no Redis, no second-level cache (Hibernate is not used), and no Spring Cache annotations. Because <code>KYCWatchlist</code> data changes infrequently relative to how often it is read (every verification request), introducing a short-lived in-memory or distributed cache for watchlist lookups would reduce database load significantly.</p>
+<h2 id="data-ownership-boundaries">Data Ownership Boundaries</h2>
+<p>ZavaKYCService is a self-contained single-service application with one isolated SQL Server database. There is no shared database or cross-service data access — no other service reads from or writes to <code>ZavaBankDB</code> through this codebase. <code>CustomerID</code> in <code>KYCVerification</code> is an application-level foreign key referencing an upstream customer identity system, but there is no declared database constraint or API call to validate its existence; the calling service is responsible for providing a valid customer identifier.</p>
+<p>All database connections are opened per-request using <code>DriverManager.getConnection</code> with no connection pool. Each servlet opens a single connection, executes its query, and closes the connection in a <code>finally</code> block. Under concurrent load this pattern will create a large number of short-lived TCP connections and may exhaust the SQL Server connection limit.</p>
+<h3 id="data-classification-sensitivity">Data Classification &amp; Sensitivity</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Table</th><th>Sensitive Fields</th><th>Classification</th><th>Controls in Place</th></tr></thead><tbody>
+<tr><td>KYCVerification</td><td>FullName, IdNumber, CustomerID</td><td>PII (Personally Identifiable Information)</td><td>None — no encryption-at-rest, no field masking, no column-level access control, no audit log</td></tr>
+<tr><td>KYCWatchlist</td><td>FullName</td><td>PII (sanctioned/flagged individual names)</td><td>None — no encryption-at-rest, no access control beyond database-level credentials</td></tr>
+</tbody></table></div>
+<p><strong>Summary</strong>: Both tables store PII. <code>KYCVerification</code> additionally stores customer identity numbers (<code>IdNumber</code>), which may qualify as government-issued identifier data requiring heightened protection under GDPR, PCI-DSS, or local financial regulation. No encryption-at-rest, no data masking, no field-level access control, and no audit trail mechanism is currently implemented. Database credentials are stored in plain text in <code>kyc.properties</code> and the JDBC URL disables TLS (<code>encrypt=false</code>), meaning PII is transmitted unencrypted between the application and the database.</p>
+</div>
+</div>
+<p class="footer">Your feedback is invaluable &mdash; <a href="https://aka.ms/ghcp-appmod/feedback">Share feedback</a></p>
+<script>
+function toggleRow(rowId, triggerRow) {
+  var detail = document.getElementById(rowId);
+  var btn = document.getElementById('btn-' + rowId);
+  if (!detail) return;
+  var visible = detail.style.display !== 'none';
+  detail.style.display = visible ? 'none' : 'table-row';
+  if (btn) btn.classList.toggle('open', !visible);
+}
+(function() {
+  var nav = document.querySelector('.tab-nav');
+  if (!nav) return;
+  nav.addEventListener('click', function(e) {
+    var btn = e.target.closest('.tab-btn');
+    if (!btn) return;
+    var targetId = btn.getAttribute('data-tab');
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+    btn.classList.add('active');
+    var panel = document.getElementById(targetId);
+    if (panel) {
+      panel.classList.add('active');
+      // Render any mermaid diagrams in this panel that haven't been processed yet
+      if (window.__mermaidReady) { window.__renderMermaidIn(panel); }
+    }
+  });
+})();
+
+// ── Diagram lightbox ────────────────────────────────────────
+(function() {
+  var lightbox = document.getElementById('diagram-lightbox');
+  var inner = document.getElementById('diagram-lightbox-inner');
+  var closeBtn = document.getElementById('diagram-lightbox-close');
+  if (!lightbox || !inner || !closeBtn) return;
+
+  var scale = 1;
+  var translateX = 0;
+  var translateY = 0;
+  var isDragging = false;
+  var dragStartX = 0;
+  var dragStartY = 0;
+
+  function applyTransform() {
+    var svg = inner.querySelector('svg');
+    if (svg) {
+      svg.style.transform = 'translate(' + translateX + 'px, ' + translateY + 'px) scale(' + scale + ')';
+      svg.style.transformOrigin = 'center center';
+      svg.style.transition = 'none';
+    }
+  }
+
+  function resetTransform() {
+    scale = 1; translateX = 0; translateY = 0;
+    applyTransform();
+  }
+
+  function openLightbox(svgEl) {
+    inner.innerHTML = svgEl.outerHTML;
+    var injected = inner.querySelector('svg');
+    if (injected) {
+      injected.removeAttribute('width');
+      injected.removeAttribute('height');
+      injected.style.cursor = 'grab';
+    }
+    resetTransform();
+    lightbox.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLightbox() {
+    lightbox.classList.remove('open');
+    inner.innerHTML = '';
+    document.body.style.overflow = '';
+    resetTransform();
+  }
+
+  inner.addEventListener('wheel', function(e) {
+    e.preventDefault();
+    var delta = e.deltaY > 0 ? 0.9 : 1.1;
+    scale = Math.min(Math.max(scale * delta, 0.3), 8);
+    applyTransform();
+  }, { passive: false });
+
+  inner.addEventListener('mousedown', function(e) {
+    if (e.button !== 0) return;
+    isDragging = true;
+    dragStartX = e.clientX - translateX;
+    dragStartY = e.clientY - translateY;
+    var svg = inner.querySelector('svg');
+    if (svg) { svg.style.cursor = 'grabbing'; }
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', function(e) {
+    if (!isDragging) return;
+    translateX = e.clientX - dragStartX;
+    translateY = e.clientY - dragStartY;
+    applyTransform();
+  });
+
+  document.addEventListener('mouseup', function() {
+    if (!isDragging) return;
+    isDragging = false;
+    var svg = inner.querySelector('svg');
+    if (svg) { svg.style.cursor = 'grab'; }
+  });
+
+  inner.addEventListener('dblclick', function() { resetTransform(); });
+
+  document.addEventListener('click', function(e) {
+    var card = e.target.closest('.mermaid');
+    if (!card) return;
+    if (e.target.closest('.diagram-lightbox-close')) return;
+    var svg = card.querySelector('svg');
+    if (svg) { openLightbox(svg); }
+  });
+
+  closeBtn.addEventListener('click', closeLightbox);
+
+  lightbox.addEventListener('click', function(e) {
+    if (e.target === lightbox) { closeLightbox(); }
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') { closeLightbox(); }
+  });
+})();
+
+var _currentTarget = '';
+
+function toggleMultiSelect(id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  // Close others
+  document.querySelectorAll('.multi-select.open').forEach(function(ms) { if (ms.id !== id) ms.classList.remove('open'); });
+  el.classList.toggle('open');
+}
+
+// Close dropdowns on outside click
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.multi-select')) {
+    document.querySelectorAll('.multi-select.open').forEach(function(ms) { ms.classList.remove('open'); });
+  }
+});
+
+function getMultiSelectValues(msId) {
+  var el = document.getElementById(msId);
+  if (!el) return [];
+  var checked = el.querySelectorAll('input[type=checkbox]:checked');
+  var vals = [];
+  for (var i = 0; i < checked.length; i++) vals.push(checked[i].value);
+  return vals;
+}
+
+function onMultiSelectChange(msId, label) {
+  var el = document.getElementById(msId);
+  if (!el) return;
+  var vals = getMultiSelectValues(msId);
+  var total = el.querySelectorAll('input[type=checkbox]').length;
+  var btn = el.querySelector('.multi-select-btn');
+  if (btn) {
+    btn.textContent = vals.length > 0 && vals.length < total ? label + ' (' + vals.length + ')' : label;
+  }
+  applyFilters();
+}
+
+function applyFilters() {
+  var selectedDomains = getMultiSelectValues('domain-ms');
+  var selectedCrits = getMultiSelectValues('criticality-ms');
+
+  // Domain filter: show/hide entire sections (empty = show all)
+  var sections = document.querySelectorAll('.issue-section');
+  for (var i = 0; i < sections.length; i++) {
+    var domain = sections[i].getAttribute('data-domain');
+    sections[i].style.display = (selectedDomains.length === 0 || selectedDomains.indexOf(domain) >= 0) ? '' : 'none';
+  }
+
+  // Row-level filtering: respect target + criticality
+  var rows = document.querySelectorAll('.issue-row');
+  for (var i = 0; i < rows.length; i++) {
+    var row = rows[i];
+    var section = row.closest('.issue-section');
+    if (section && section.style.display === 'none') {
+      row.style.display = 'none';
+      var next = row.nextElementSibling;
+      if (next && next.classList.contains('detail-row')) next.style.display = 'none';
+      continue;
+    }
+
+    // Check target filter
+    var show = true;
+    if (_currentTarget && row.hasAttribute('data-targets')) {
+      var targetsStr = row.getAttribute('data-targets');
+      if (targetsStr && targetsStr !== '{}') {
+        try {
+          var targets = JSON.parse(targetsStr);
+          if (Object.keys(targets).length > 0 && !targets[_currentTarget]) {
+            show = false;
+          }
+        } catch(e) {}
+      }
+    }
+
+    // Check criticality filter
+    if (show && selectedCrits.length > 0) {
+      var crit = row.getAttribute('data-criticality');
+      if (selectedCrits.indexOf(crit) < 0) show = false;
+    }
+
+    row.style.display = show ? '' : 'none';
+    var nextRow = row.nextElementSibling;
+    if (nextRow && nextRow.classList.contains('detail-row')) {
+      if (!show) nextRow.style.display = 'none';
+    }
+  }
+}
+
+function clearAllFilters() {
+  document.querySelectorAll('.multi-select input[type=checkbox]').forEach(function(cb) { cb.checked = false; });
+  var domainBtn = document.querySelector('#domain-ms .multi-select-btn');
+  if (domainBtn) domainBtn.textContent = 'Domain';
+  var critBtn = document.querySelector('#criticality-ms .multi-select-btn');
+  if (critBtn) critBtn.textContent = 'Criticality';
+  applyFilters();
+}
+
+function onTargetChange(targetId) {
+  _currentTarget = targetId;
+  var rows = document.querySelectorAll('.issue-row[data-targets]');
+  var totalEffort = 0;
+  var domainCrits = {}; // domain -> {mandatory:0, potential:0, optional:0}
+
+  for (var i = 0; i < rows.length; i++) {
+    var row = rows[i];
+    var targets = JSON.parse(row.getAttribute('data-targets'));
+    var section = row.closest('.issue-section');
+    var domain = section ? section.getAttribute('data-domain') : '';
+
+    if (!targets || Object.keys(targets).length === 0) {
+      // No target data (e.g. security) — always show
+      var sp = parseFloat(row.querySelector('.sp-cell').textContent) || 0;
+      totalEffort += sp;
+      if (!domainCrits[domain]) domainCrits[domain] = {mandatory:0,potential:0,optional:0};
+      var crit = row.getAttribute('data-criticality') || 'optional';
+      domainCrits[domain][crit] = (domainCrits[domain][crit] || 0) + 1;
+      continue;
+    }
+
+    var override = targets[targetId];
+    if (!override) {
+      // Issue doesn't apply to this target
+      continue;
+    }
+
+    // Apply severity override
+    var newSeverity = (override.severity || row.getAttribute('data-default-severity') || '').toLowerCase();
+    row.setAttribute('data-criticality', newSeverity);
+    var critCell = row.querySelector('.crit-cell');
+    if (critCell) {
+      var critText = newSeverity === 'mandatory' ? 'Mandatory' : newSeverity === 'potential' ? 'Potential' : 'Optional';
+      var cssClass = newSeverity === 'mandatory' ? 'crit-square-mandatory' : newSeverity === 'potential' ? 'crit-square-potential' : 'crit-square-optional';
+      critCell.innerHTML = '<span class="crit-label"><span class="crit-square ' + cssClass + '"></span>' + critText + '</span>';
+    }
+
+    // Apply effort override
+    var newEffort = override.effort !== undefined ? override.effort : parseFloat(row.getAttribute('data-default-effort')) || 0;
+    var spCell = row.querySelector('.sp-cell');
+    if (spCell) spCell.textContent = newEffort;
+    totalEffort += newEffort;
+
+    if (!domainCrits[domain]) domainCrits[domain] = {mandatory:0,potential:0,optional:0};
+    domainCrits[domain][newSeverity] = (domainCrits[domain][newSeverity] || 0) + 1;
+  }
+
+  // Also add security findings effort (they don't have per-target data)
+  var secSection = document.querySelector('.issue-section[data-domain="security"]');
+  if (secSection) {
+    var secRows = secSection.querySelectorAll('.issue-row');
+    for (var j = 0; j < secRows.length; j++) {
+      if (!secRows[j].hasAttribute('data-targets') || secRows[j].getAttribute('data-targets') === '') {
+        var sp = parseFloat(secRows[j].querySelector('.sp-cell').textContent) || 0;
+        totalEffort += sp;
+        if (!domainCrits['security']) domainCrits['security'] = {mandatory:0,potential:0,optional:0};
+        var sc = secRows[j].getAttribute('data-criticality') || 'optional';
+        domainCrits['security'][sc] = (domainCrits['security'][sc] || 0) + 1;
+      }
+    }
+  }
+
+  // Update effort display
+  var label = totalEffort < 20 ? 'S' : totalEffort < 50 ? 'M' : totalEffort < 100 ? 'L' : 'XL';
+  var effortEl = document.getElementById('effort-display');
+  if (effortEl) effortEl.textContent = label + ' (total story points: ' + totalEffort + ')';
+
+  // Update donut charts
+  updateDonuts(domainCrits);
+
+  // Re-apply domain/criticality filters
+  applyFilters();
+}
+
+function updateDonuts(domainCrits) {
+  var container = document.getElementById('donut-container');
+  if (!container) return;
+  container.innerHTML = '';
+  var domainNames = {'cloud-readiness':'Cloud Readiness','java-upgrade':'Java Upgrade','dotnet-upgrade':'DotNET Upgrade','security':'Security'};
+  var domainOrder = ['cloud-readiness','java-upgrade','dotnet-upgrade','security'];
+  for (var d = 0; d < domainOrder.length; d++) {
+    var key = domainOrder[d];
+    var c = domainCrits[key];
+    if (!c || (c.mandatory + c.potential + c.optional) === 0) continue;
+    var total = c.mandatory + c.potential + c.optional;
+    var div = document.createElement('div');
+    div.className = 'domain-summary-item';
+    div.innerHTML = buildDonutSvg(c.mandatory, c.potential, c.optional) +
+      '<h3>' + domainNames[key] + '</h3>' +
+      '<div class="count">' + total + ' issue' + (total !== 1 ? 's' : '') + '</div>';
+    container.appendChild(div);
+  }
+}
+
+function buildDonutSvg(m, p, o) {
+  var total = m + p + o;
+  if (total === 0) return '<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;"><circle cx="50" cy="50" r="35" fill="none" stroke="#d0d7de" stroke-width="15" opacity="0.5"/></svg>';
+  var r = 35, circ = 2 * Math.PI * r, offset = 0;
+  var svg = '<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;transform:rotate(-90deg);">';
+  var segs = [{c:m,color:'var(--color-mandatory)'},{c:p,color:'var(--color-potential)'},{c:o,color:'var(--color-optional)'}];
+  for (var i = 0; i < segs.length; i++) {
+    if (segs[i].c === 0) continue;
+    var segLen = (segs[i].c / total) * circ;
+    var gap = total > segs[i].c ? 1.5 : 0;
+    var drawLen = Math.max(segLen - gap, 0.5);
+    svg += '<circle cx="50" cy="50" r="' + r + '" fill="none" stroke="' + segs[i].color + '" stroke-width="15" stroke-dasharray="' + drawLen.toFixed(2) + ' ' + circ.toFixed(2) + '" stroke-dashoffset="' + (-offset).toFixed(2) + '"/>';
+    offset += segLen;
+  }
+  svg += '</svg>';
+  return svg;
+}
+</script>
+<script>document.addEventListener('DOMContentLoaded', function() { onTargetChange('azure-aks'); });</script>
+</div></body></html>

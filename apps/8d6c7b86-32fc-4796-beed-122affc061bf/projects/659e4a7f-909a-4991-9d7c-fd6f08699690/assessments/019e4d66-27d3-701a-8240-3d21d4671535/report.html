@@ -1,0 +1,1359 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Assessment - ZavaFileIngestion</title>
+<style>
+:root {
+  --bg-primary: #ffffff;
+  --bg-card: #f8f9fa;
+  --bg-page: #f0f1f3;
+  --text-primary: #24292f;
+  --text-secondary: #57606a;
+  --text-muted: #6b7280;
+  --border-color: #d0d7de;
+  --border-light: #e1e4e8;
+  --link-color: #2563eb;
+  --color-mandatory: #E3008C;
+  --color-potential: #637CEF;
+  --color-optional: #A19F9D;
+  --font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  --font-mono: 'Cascadia Code', 'Consolas', 'Courier New', monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-family); font-size: 13px; color: var(--text-primary); background: var(--bg-primary); line-height: 1.5; margin: 0; padding: 0; }
+a { color: var(--link-color); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Page layout ───────────────────────────────────────────── */
+.main { margin: 0; padding: 24px 32px; background: var(--bg-primary); }
+.back-link { color: var(--text-muted); font-size: 13px; margin-bottom: 16px; display: block; }
+h1 { font-weight: 600; font-size: 20px; color: var(--text-primary); margin-bottom: 20px; }
+
+/* ── Report cards (matches VS Code .vscode-report-card) ──── */
+.report-card { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 4px; padding: 12px; margin-bottom: 20px; }
+.report-card h2 { font-size: 14px; font-weight: 600; margin: 0; color: var(--text-primary); }
+.report-card-body { margin-top: 16px; }
+
+/* ── Application Information (two-column) ────────────────── */
+.app-info-container { display: flex; gap: 8px; flex-wrap: wrap; }
+.app-info-column { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 8px; }
+.app-info-row { display: flex; align-items: baseline; }
+.app-info-label { width: 136px; flex-shrink: 0; font-weight: 600; color: var(--text-primary); }
+.app-info-value { flex: 1; color: var(--text-primary); }
+
+/* ── Issue Summary (pie charts + legend) ─────────────────── */
+.cards-container { display: flex; align-items: stretch; gap: 20px; flex-wrap: wrap; }
+.issue-summary-card { flex: 2; }
+.domain-summary-container { display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-around; }
+.domain-summary-item { flex: 1; min-width: 120px; text-align: center; padding: 0 16px; border-right: 1px solid var(--border-light); }
+.domain-summary-item:last-child { border-right: none; }
+.domain-summary-item h3 { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-top: 8px; }
+.domain-summary-item .count { font-size: 12px; color: var(--text-secondary); }
+.criticality-legend { display: flex; flex-wrap: wrap; gap: 15px; padding-top: 12px; justify-content: center; }
+.criticality-legend .legend-item { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-secondary); }
+.legend-swatch { display: inline-block; width: 1em; height: 1em; border-radius: 2px; }
+
+/* ── Issue list tables ───────────────────────────────────── */
+.issue-section { margin-top: 20px; }
+.issue-section h2 { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+.issue-table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 600px; }
+.issue-table th { text-align: left; text-transform: uppercase; font-weight: 600; font-size: calc(13px * 0.875); padding: 6px 8px; background: var(--bg-card); border-bottom: 1px solid var(--border-color); color: var(--text-secondary); position: sticky; top: 0; z-index: 1; }
+.issue-table td { padding: 12px 8px; border-bottom: 1px solid var(--border-light); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
+.col-issue { width: 55%; }
+.col-criticality { width: 25%; }
+.col-storypoint { width: 20%; }
+
+/* ── Target dropdown ─────────────────────────────────────── */
+.target-select-container { margin: 4px 0 16px 0; display: flex; align-items: center; gap: 8px; }
+.target-select-container label { font-weight: 600; color: var(--text-primary); font-size: 14px; }
+.target-select-container select { font-family: var(--font-family); font-size: 13px; padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer; }
+
+/* ── Filter bar ──────────────────────────────────────────── */
+.filter-bar { display: flex; flex-wrap: wrap; gap: 16px; margin: 16px 0 8px 0; align-items: center; }
+.multi-select { position: relative; display: inline-block; min-width: 140px; }
+.multi-select-btn { font-family: var(--font-family); font-size: 13px; padding: 4px 24px 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer; width: 100%; text-align: left; position: relative; white-space: nowrap; }
+.multi-select-btn::after { content: '\25BE'; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--text-secondary); }
+.multi-select-dropdown { display: none; position: absolute; top: 100%; left: 0; min-width: 100%; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 100; margin-top: 2px; }
+.multi-select.open .multi-select-dropdown { display: block; }
+.multi-select-option { display: flex; align-items: center; gap: 6px; padding: 5px 10px; cursor: pointer; font-size: 13px; white-space: nowrap; }
+.multi-select-option:hover { background: var(--bg-secondary); }
+.multi-select-option input[type=checkbox] { margin: 0; cursor: pointer; }
+.clear-filters { font-size: 12px; color: var(--link-color); cursor: pointer; margin-left: 4px; }
+
+/* ── Criticality labels (colored square + text) ──────────── */
+.crit-label { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; white-space: nowrap; }
+.crit-square { display: inline-block; width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+.crit-square-mandatory { background: var(--color-mandatory); }
+.crit-square-potential { background: var(--color-potential); }
+.crit-square-optional { background: var(--color-optional); }
+
+/* ── Expandable rows ─────────────────────────────────────── */
+.expand-btn { background: none; border: none; cursor: pointer; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 11px; transition: transform 0.15s; padding: 0; vertical-align: middle; flex-shrink: 0; }
+.expand-btn.open { transform: rotate(90deg); }
+.issue-title-cell { display: flex; align-items: center; gap: 4px; }
+.detail-row td { padding: 0; border-bottom: 1px solid var(--border-light); white-space: normal; overflow: visible; text-overflow: clip; }
+.detail-content { display: flex; gap: 0; padding: 8px 8px 8px 32px; min-width: 0; }
+.file-list { flex: 0 0 50%; min-width: 0; overflow: hidden; }
+.file-list table { width: 100%; border-collapse: collapse; }
+.file-list th { font-size: calc(13px * 0.875); text-transform: uppercase; font-weight: 600; color: var(--text-secondary); padding: 6px 8px; border-bottom: 1px solid var(--border-color); text-align: left; height: 32px; }
+.file-list td { font-size: 13px; padding: 6px 8px; border-bottom: 1px solid var(--border-light); color: var(--text-primary); }
+.file-list .file-path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 300px; display: block; }
+.file-list .position { font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary); }
+.explanation-panel { flex: 1; padding-left: 16px; min-width: 0; overflow-wrap: break-word; word-wrap: break-word; }
+.explanation-panel h4 { font-size: calc(13px * 0.875); text-transform: uppercase; font-weight: 600; color: var(--text-secondary); padding: 6px 0; border-bottom: 1px solid var(--border-color); height: 32px; margin: 0; }
+.explanation-panel p { font-size: 13px; padding: 8px 0; color: var(--text-primary); line-height: 1.6; white-space: normal; word-break: break-word; }
+
+/* ── Experimental badge ──────────────────────────────────── */
+.badge-experimental { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; background: #fef9c3; color: #854d0e; vertical-align: middle; margin-left: 8px; cursor: default; }
+
+/* ── Footer ──────────────────────────────────────────────── */
+.footer { text-align: center; margin-top: 24px; color: var(--text-muted); font-size: 13px; }
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 800px) {
+  .main { padding: 16px; }
+  .app-info-container { flex-direction: column; }
+  .domain-summary-container { flex-direction: column; }
+  .domain-summary-item { border-right: none; border-bottom: 1px solid var(--border-light); padding-bottom: 12px; }
+  .detail-content { flex-direction: column; }
+  .file-list { flex: none; width: 100%; }
+  .explanation-panel { padding-left: 0; padding-top: 8px; }
+}
+/* ── Tab navigation ──────────────────────────────────────── */
+.tab-nav { display: flex; gap: 0; border-bottom: 1px solid var(--border-color); margin-bottom: 28px; flex-wrap: wrap; }
+.tab-btn { background: none; border: none; border-bottom: 2px solid transparent; padding: 10px 18px; font-size: 13px; font-family: var(--font-family); color: var(--text-secondary); cursor: pointer; margin-bottom: -1px; white-space: nowrap; position: relative; }
+.tab-btn:hover { color: var(--text-primary); }
+.tab-btn.active { color: var(--link-color); border-bottom-color: var(--link-color); font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ── Tooltip on tab ──────────────────────────────────────── */
+.tab-btn[data-tooltip]::after { content: attr(data-tooltip); position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); background: #24292f; color: #ffffff; font-size: 12px; font-weight: 400; padding: 6px 10px; border-radius: 4px; white-space: normal; width: max-content; max-width: 260px; text-align: center; pointer-events: none; opacity: 0; transition: opacity 0.15s; z-index: 100; }
+.tab-btn[data-tooltip]:hover::after { opacity: 1; }
+
+/* ── Fact content — prose column ─────────────────────────── */
+.fact-content { max-width: 860px; margin: 0 auto; line-height: 1.75; color: var(--text-primary); font-size: 14px; }
+.fact-content h1 { font-size: 22px; font-weight: 700; margin: 0 0 6px 0; color: var(--text-primary); letter-spacing: -0.01em; }
+.fact-content h1 + p { margin-top: 6px; color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
+.fact-content h2 { font-size: 17px; font-weight: 700; margin: 36px 0 12px 0; padding-bottom: 6px; border-bottom: 1px solid var(--border-color); color: var(--text-primary); letter-spacing: -0.01em; }
+.fact-content h3 { font-size: 14px; font-weight: 700; margin: 24px 0 8px 0; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.04em; font-size: 12px; color: var(--text-secondary); }
+.fact-content p { margin: 10px 0; color: var(--text-primary); }
+.fact-content ul, .fact-content ol { margin: 10px 0 10px 22px; }
+.fact-content li { margin: 5px 0; }
+.fact-content a { color: var(--link-color); }
+.fact-content a:hover { text-decoration: underline; }
+
+/* ── Fact tables ─────────────────────────────────────────── */
+.table-wrap { overflow-x: auto; margin: 16px 0; }
+.fact-content table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 13px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); }
+.fact-content thead { background: var(--bg-card); }
+.fact-content th { text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; padding: 8px 14px; border-bottom: 1px solid var(--border-color); color: var(--text-secondary); }
+.fact-content td { padding: 9px 14px; border-bottom: 1px solid var(--border-light); vertical-align: top; color: var(--text-primary); }
+.fact-content tr:last-child td { border-bottom: none; }
+.fact-content tbody tr:hover { background: #f6f8fa; }
+
+/* ── Fact code ───────────────────────────────────────────── */
+.fact-content code { font-family: var(--font-mono); font-size: 12px; background: #f0f1f3; padding: 2px 6px; border-radius: 4px; color: #c7254e; }
+.fact-content pre { background: #f6f8fa; border: 1px solid var(--border-light); border-radius: 6px; padding: 14px 16px; overflow-x: auto; margin: 14px 0; }
+.fact-content pre code { background: none; color: var(--text-primary); padding: 0; border-radius: 0; }
+.fact-content hr { border: none; border-top: 1px solid var(--border-light); margin: 28px 0; }
+.fact-content strong { font-weight: 600; }
+.fact-content em { font-style: italic; }
+.fact-content blockquote { border-left: 3px solid var(--border-color); margin: 12px 0; padding: 4px 16px; color: var(--text-secondary); }
+.fact-unavailable { padding: 32px 0; }
+.fact-unavailable h3 { font-size: 16px; font-weight: 600; color: var(--text-primary); text-transform: none; letter-spacing: 0; margin: 0 0 12px 0; }
+.fact-unavailable p { margin: 0 0 8px 0; color: var(--text-secondary); }
+.fact-unavailable ol, .fact-unavailable ul { margin: 0 0 0 22px; color: var(--text-primary); }
+.fact-unavailable li { margin: 6px 0; }
+
+/* ── Mermaid diagram card ─────────────────────────────────── */
+.mermaid { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 8px; padding: 24px 16px; margin: 20px 0; overflow-x: auto; text-align: center; cursor: pointer; position: relative; }
+.mermaid:hover { border-color: var(--border-color); }
+.mermaid svg { max-width: 100%; height: auto !important; display: inline-block; }
+.mermaid-zoom-hint { position: absolute; top: 8px; right: 10px; font-size: 11px; color: var(--text-muted); opacity: 0; transition: opacity 0.15s; pointer-events: none; }
+.mermaid:hover .mermaid-zoom-hint { opacity: 1; }
+
+/* ── Diagram lightbox ────────────────────────────────────── */
+.diagram-lightbox { display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.7); backdrop-filter: blur(2px); align-items: center; justify-content: center; cursor: zoom-out; padding: 48px 32px; }
+.diagram-lightbox.open { display: flex; }
+.diagram-lightbox-inner { background: #ffffff; border-radius: 10px; padding: 32px; width: 88vw; max-height: 88vh; overflow: hidden; cursor: default; box-shadow: 0 24px 64px rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; }
+.diagram-lightbox-inner svg { width: 100% !important; height: auto !important; max-height: 76vh; display: block; }
+.diagram-lightbox-close { position: fixed; top: 20px; right: 24px; background: #ffffff; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-primary); box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 1001; }
+.diagram-lightbox-close:hover { background: var(--bg-card); }
+.diagram-lightbox-hint { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.55); color: #ffffff; font-size: 12px; padding: 6px 14px; border-radius: 20px; pointer-events: none; white-space: nowrap; z-index: 1001; }
+</style>
+<script>
+window.__mermaidPending = [];
+window.__mermaidReady = false;
+window.__renderMermaidIn = function(container) {
+  // Until the real implementation overrides this (after the ES module import
+  // resolves), just queue the container so we can render it later.
+  if (container) { window.__mermaidPending.push(container); }
+};
+</script>
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+mermaid.initialize({ startOnLoad: false, theme: 'default', flowchart: { useMaxWidth: true }, sequence: { useMaxWidth: true } });
+
+// Real implementation: actually run mermaid on the unprocessed diagrams in the
+// given container (only ones not already rendered). Adds a "Click to expand"
+// hint span after each successful render so the lightbox affordance is
+// discoverable.
+window.__renderMermaidIn = function(container) {
+  var nodes = container ? container.querySelectorAll('.mermaid:not([data-processed])') : [];
+  if (nodes.length > 0) {
+    mermaid.run({ nodes: Array.from(nodes) }).then(function() {
+      nodes.forEach(function(node) {
+        if (!node.querySelector('.mermaid-zoom-hint')) {
+          var hint = document.createElement('span');
+          hint.className = 'mermaid-zoom-hint';
+          hint.textContent = 'Click to expand';
+          node.appendChild(hint);
+        }
+      });
+    });
+  }
+};
+
+// Drain any containers that were queued by the shim while mermaid was loading.
+// Use a Set to dedupe in case a container was both queued and is also the
+// initial-active panel below.
+var drained = new Set();
+(window.__mermaidPending || []).forEach(function(c) {
+  if (!drained.has(c)) { drained.add(c); window.__renderMermaidIn(c); }
+});
+window.__mermaidPending = [];
+window.__mermaidReady = true;
+
+// Render diagrams visible on initial load (the active tab panel(s) may not have
+// been queued by anyone — DOMContentLoaded handlers run before this if the
+// module is cached, after this if it's not, so handle both cases here).
+function renderActivePanels() {
+  document.querySelectorAll('.tab-panel.active').forEach(function(p) {
+    if (!drained.has(p)) { drained.add(p); window.__renderMermaidIn(p); }
+  });
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', renderActivePanels);
+} else {
+  renderActivePanels();
+}
+</script>
+</head><body>
+<div id="diagram-lightbox" class="diagram-lightbox" role="dialog" aria-modal="true">
+  <button class="diagram-lightbox-close" id="diagram-lightbox-close" aria-label="Close">&#x2715;</button>
+  <div class="diagram-lightbox-hint">Scroll to zoom &nbsp;·&nbsp; Drag to pan &nbsp;·&nbsp; Double-click to reset</div>
+  <div class="diagram-lightbox-inner" id="diagram-lightbox-inner"></div>
+</div>
+<div class="main">
+<a class="back-link" href="../../index.html">&#8592; Back to aggregate dashboard</a>
+<h1>ZavaFileIngestion</h1>
+<div class="report-card">
+  <h2>Application Information</h2>
+  <div class="report-card-body">
+    <div class="app-info-container">
+      <div class="app-info-column">
+        <div class="app-info-row"><span class="app-info-label">Application Name</span><span class="app-info-value">ZavaFileIngestion</span></div>
+        <div class="app-info-row"><span class="app-info-label">Java Version</span><span class="app-info-value">1.8</span></div>
+        <div class="app-info-row"><span class="app-info-label">Effort</span><span class="app-info-value" id="effort-display">S (total story points: 19)</span></div>
+      </div>
+      <div class="app-info-column">
+        <div class="app-info-row"><span class="app-info-label">Build Tools</span><span class="app-info-value">Gradle</span></div>
+        <div class="app-info-row"><span class="app-info-label">Frameworks</span><span class="app-info-value">N/A</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+<nav class="tab-nav">
+  <button class="tab-btn active" data-tab="tab-issues" data-tooltip="Issues detected in the source code">Issues</button>
+  <button class="tab-btn" data-tab="tab-arch" data-tooltip="How the app&#39;s layers connect — from UI to data.">Architecture</button>
+  <button class="tab-btn" data-tab="tab-api" data-tooltip="Endpoints exposed by this app and how services communicate.">API Contracts</button>
+  <button class="tab-btn" data-tab="tab-config" data-tooltip="Environment settings, runtime profiles, and deployment manifests.">Configuration</button>
+  <button class="tab-btn" data-tab="tab-workflows" data-tooltip="Domain entities and the core flows users move through.">Business Workflows</button>
+  <button class="tab-btn" data-tab="tab-deps" data-tooltip="Libraries and frameworks this app depends on, grouped by category.">Dependencies</button>
+  <button class="tab-btn" data-tab="tab-data" data-tooltip="Database schema, entity relationships, and persistence behavior.">Data Model</button>
+</nav>
+<div id="tab-issues" class="tab-panel active">
+<div class="target-select-container">
+  <label for="target-select">Target Compute Service:</label>
+  <select id="target-select" onchange="onTargetChange(this.value)">
+    <option value="azure-container-apps">Azure Container Apps</option>
+    <option value="azure-aks">Azure Kubernetes Service</option>
+    <option value="azure-appservice">Azure App Service</option>
+  </select>
+</div>
+<div class="report-card">
+  <h2>Issue Summary</h2>
+  <div class="report-card-body">
+    <div class="domain-summary-container" id="donut-container">
+      <div class="domain-summary-item">
+<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;transform:rotate(-90deg);">
+  <circle cx="50" cy="50" r="35" fill="none" stroke="var(--color-mandatory)" stroke-width="15" stroke-dasharray="71.80 219.91" stroke-dashoffset="-0.00"/>
+  <circle cx="50" cy="50" r="35" fill="none" stroke="var(--color-potential)" stroke-width="15" stroke-dasharray="71.80 219.91" stroke-dashoffset="-73.30"/>
+  <circle cx="50" cy="50" r="35" fill="none" stroke="var(--color-optional)" stroke-width="15" stroke-dasharray="71.80 219.91" stroke-dashoffset="-146.61"/>
+</svg>
+
+        <h3>Cloud Readiness</h3>
+        <div class="count">3 issues</div>
+      </div>
+      <div class="domain-summary-item">
+<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;transform:rotate(-90deg);">
+  <circle cx="50" cy="50" r="35" fill="none" stroke="var(--color-mandatory)" stroke-width="15" stroke-dasharray="219.91 219.91" stroke-dashoffset="-0.00"/>
+</svg>
+
+        <h3>Java Upgrade</h3>
+        <div class="count">1 issue</div>
+      </div>
+    </div>
+    <div class="criticality-legend">
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--color-mandatory)"></span>Mandatory</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--color-potential)"></span>Potential</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--color-optional)"></span>Optional</div>
+    </div>
+  </div>
+</div>
+<div class="filter-bar" id="filter-bar">
+  <div class="multi-select" id="domain-ms">
+    <button class="multi-select-btn" onclick="toggleMultiSelect('domain-ms')">Domain</button>
+    <div class="multi-select-dropdown">
+      <label class="multi-select-option"><input type="checkbox" value="cloud-readiness" onchange="onMultiSelectChange('domain-ms','Domain')"/> Cloud Readiness</label>
+      <label class="multi-select-option"><input type="checkbox" value="java-upgrade" onchange="onMultiSelectChange('domain-ms','Domain')"/> Java Upgrade</label>
+    </div>
+  </div>
+  <div class="multi-select" id="criticality-ms">
+    <button class="multi-select-btn" onclick="toggleMultiSelect('criticality-ms')">Criticality</button>
+    <div class="multi-select-dropdown">
+      <label class="multi-select-option"><input type="checkbox" value="mandatory" onchange="onMultiSelectChange('criticality-ms','Criticality')"/> Mandatory</label>
+      <label class="multi-select-option"><input type="checkbox" value="potential" onchange="onMultiSelectChange('criticality-ms','Criticality')"/> Potential</label>
+      <label class="multi-select-option"><input type="checkbox" value="optional" onchange="onMultiSelectChange('criticality-ms','Criticality')"/> Optional</label>
+    </div>
+  </div>
+  <a class="clear-filters" href="javascript:void(0)" onclick="clearAllFilters()">Clear all</a>
+</div>
+<div class="issue-section" data-domain="cloud-readiness">
+  <h2>Cloud Readiness</h2>
+  <table class="issue-table">
+    <colgroup><col class="col-issue"/><col class="col-criticality"/><col class="col-storypoint"/></colgroup>
+    <thead><tr><th>Issue Category</th><th>Criticality</th><th>Story Point</th></tr></thead>
+    <tbody>
+    <tr class="issue-row" data-criticality="mandatory" data-targets='{"azure-aks":{"effort":3,"severity":"mandatory"},"azure-appservice":{"effort":3,"severity":"mandatory"},"azure-container-apps":{"effort":3,"severity":"mandatory"}}' data-default-effort="3" data-default-severity="mandatory" data-rule="cra-hardcoded-credential-default-pwd-04000" onclick="toggleRow('row-cloudreadiness-0', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-cloudreadiness-0">&#x276F;</button> CRA: Default or well-known password detected</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-mandatory"></span>Mandatory</span></td>
+      <td class="sp-cell">3</td>
+    </tr>
+    <tr class="detail-row" id="row-cloudreadiness-0" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="src/main/resources/fileingestion.properties">src/main/resources/fileingestion.properties</span></td><td><span class="position">Line 4, Col 0</span></td></tr>
+            <tr><td><span class="file-path" title="bin/main/fileingestion.properties">bin/main/fileingestion.properties</span></td><td><span class="position">Line 4, Col 0</span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p><strong>EU Cyber Resilience Act (Annex I, Part I, Section 2(b))</strong> requires a <strong>secure by default configuration</strong>. The use of default, well-known, or trivial passwords violates the secure-by-default principle.</p><p>ETSI EN 303 645 (referenced standard for CRA compliance) explicitly prohibits universal default passwords in Provision 5.1-1.</p><p><strong>Recommended actions:</strong></p><ul><li>Remove all default/well-known passwords from code and configuration.</li><li>Require unique, strong passwords during initial setup.</li><li>Use generated secrets that are unique per deployment.</li><li>Implement password complexity requirements.</li></ul></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="potential" data-targets='{"azure-aks":{"effort":5,"severity":"potential"},"azure-appservice":{"effort":5,"severity":"potential"},"azure-container-apps":{"effort":5,"severity":"potential"}}' data-default-effort="5" data-default-severity="potential" data-rule="azure-database-microsoft-sql-03000" onclick="toggleRow('row-cloudreadiness-1', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-cloudreadiness-1">&#x276F;</button> Microsoft SQL database found</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-potential"></span>Potential</span></td>
+      <td class="sp-cell">5</td>
+    </tr>
+    <tr class="detail-row" id="row-cloudreadiness-1" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="src/main/resources/fileingestion.properties">src/main/resources/fileingestion.properties</span></td><td><span class="position">Line 9, Col 0</span></td></tr>
+            <tr><td><span class="file-path" title="bin/main/fileingestion.properties">bin/main/fileingestion.properties</span></td><td><span class="position">Line 9, Col 0</span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>To migrate a Java application that uses a Microsoft SQL database to Azure, you can follow these recommendations:</p><p> * Use a managed <strong>Azure SQL</strong>: For that create a managed Azure SQL database in Azure and choose the appropriate pricing tier based on your application&#39;s requirements for performance, storage, and availability.</p><p> * <strong>Migrate</strong> the existing Microsoft SQL database: For that you can use the Azure Database Migration Service (DMS) to perform an online migration with minimal downtime.</p><p> * Update the application&#39;s <strong>database connection</strong> details: Modify the Java application&#39;s configuration to point to the newly provisioned Azure SQL. Update the connection string, hostname, port, username, and password information accordingly.</p><p> * Enable <strong>monitoring and diagnostics</strong>: Utilize Azure Monitor to gain insights into the performance and health of your Java application and the underlying Azure SQL database. Set up metrics, alerts, and log analytics to proactively identify and resolve issues.</p><p> * Implement <strong>security</strong> measures: Apply security best practices to protect your Java application and the Azure SQL database. This includes implementing authentication and authorization mechanisms with passwordless connections and leveraging Microsoft Defender for Cloud for threat detection and vulnerability assessments.</p><p> * <strong>Backup</strong> your data: Azure SQL provides automated backups by default. You can configure the retention period for backups based on your requirements. You can also enable geo-redundant backups, if needed, to enhance data durability and availability.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="optional" data-targets='{"azure-aks":{"effort":3,"severity":"optional"},"azure-appservice":{"effort":3,"severity":"optional"},"azure-container-apps":{"effort":3,"severity":"optional"}}' data-default-effort="3" data-default-severity="optional" data-rule="localhost-00004" onclick="toggleRow('row-cloudreadiness-2', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-cloudreadiness-2">&#x276F;</button> Localhost Usage</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-optional"></span>Optional</span></td>
+      <td class="sp-cell">3</td>
+    </tr>
+    <tr class="detail-row" id="row-cloudreadiness-2" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="src/main/resources/fileingestion.properties">src/main/resources/fileingestion.properties</span></td><td><span class="position">Line 1, Col 0</span></td></tr>
+            <tr><td><span class="file-path" title="bin/main/fileingestion.properties">bin/main/fileingestion.properties</span></td><td><span class="position">Line 1, Col 0</span></td></tr>
+            <tr><td><span class="file-path" title="src/main/java/com/zavabank/fileingestion/Main.java">src/main/java/com/zavabank/fileingestion/Main.java</span></td><td><span class="position">Line 249, Col 0</span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>The app is trying to use localhost, please try to migrate the resource to cloud</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+</div>
+<div class="issue-section" data-domain="java-upgrade">
+  <h2>Java Upgrade</h2>
+  <table class="issue-table">
+    <colgroup><col class="col-issue"/><col class="col-criticality"/><col class="col-storypoint"/></colgroup>
+    <thead><tr><th>Issue Category</th><th>Criticality</th><th>Story Point</th></tr></thead>
+    <tbody>
+    <tr class="issue-row" data-criticality="mandatory" data-targets='{"azure-aks":{"effort":8,"severity":"mandatory"},"azure-appservice":{"effort":8,"severity":"mandatory"},"azure-container-apps":{"effort":8,"severity":"mandatory"}}' data-default-effort="8" data-default-severity="mandatory" data-rule="azure-java-version-01000" onclick="toggleRow('row-javaupgrade-0', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-javaupgrade-0">&#x276F;</button> Java Version Has Reached the End of Support</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-mandatory"></span>Mandatory</span></td>
+      <td class="sp-cell">8</td>
+    </tr>
+    <tr class="detail-row" id="row-javaupgrade-0" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="build.gradle">build.gradle</span></td><td><span class="position">Line 17, Col 0</span></td></tr>
+            <tr><td><span class="file-path" title="build.gradle">build.gradle</span></td><td><span class="position">Line 18, Col 0</span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>The application is using a Java version that has reached the end of support. It is strongly recommended to plan and execute a migration strategy to upgrade your application to a supported Java version.<br/>Supported Java versions receive long-term support (LTS) from the Java community, including bug fixes and updates. Migrating to a supported version provides you with a stable and well-maintained platform for your application.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+</div>
+</div><!-- #tab-issues -->
+<div id="tab-arch" class="tab-panel">
+  <div class="fact-content"><h1 id="architecture-diagram">Architecture Diagram</h1>
+<p>ZavaFileIngestion is a Java 8 batch-style file ingestion service that polls a shared directory, classifies incoming files, parses them, persists records to SQL Server, and publishes status events to RabbitMQ.</p>
+<h2 id="application-architecture">Application Architecture</h2>
+<div class="mermaid">
+flowchart TD
+    subgraph Input["Input Layer"]
+        FS["Shared File System\n/shared/file-ingestion"]
+    end
+
+    subgraph App["Application Layer - Java 8 / Gradle"]
+        Poller["File Poller\nPoll every 5 s"]
+        Classifier["File Type Classifier\ncheck / wire / reg"]
+        CheckProc["Check Image Processor\nCSV parser"]
+        WireProc["Wire Confirmation Processor\nFixed-width parser"]
+        RegProc["Regulatory Feed Processor\nCSV parser"]
+        EventPub["Ingestion Event Publisher\nRabbitMQ client"]
+        FileMover["File Mover\nprocessed / error dirs"]
+    end
+
+    subgraph Data["Data Layer"]
+        JDBC["JDBC - mssql-jdbc 12.6"]
+        DB[("SQL Server\nZavaBankCore")]
+    end
+
+    subgraph Messaging["Messaging Layer"]
+        AMQP["AMQP Client\namqp-client 5.21"]
+        RMQ[("RabbitMQ\nzava.events exchange")]
+    end
+
+    FS -->|"file detected"| Poller
+    Poller -->|"route by name"| Classifier
+    Classifier -->|"check_images"| CheckProc
+    Classifier -->|"wire_confirmations"| WireProc
+    Classifier -->|"regulatory_feeds"| RegProc
+    CheckProc -->|"INSERT StagingCheckImage"| JDBC
+    WireProc -->|"INSERT StagingWireConfirmation"| JDBC
+    RegProc -->|"INSERT StagingRegulatoryFeed"| JDBC
+    JDBC -->|"SQL"| DB
+    CheckProc -->|"processed / failed"| EventPub
+    WireProc -->|"processed / failed"| EventPub
+    RegProc -->|"processed / failed"| EventPub
+    EventPub -->|"basicPublish"| AMQP
+    AMQP -->|"topic routing key file.ingested"| RMQ
+    CheckProc -->|"move file"| FileMover
+    WireProc -->|"move file"| FileMover
+    RegProc -->|"move file"| FileMover
+    FileMover -->|"rename"| FS
+</div>
+<h3 id="technology-stack-summary">Technology Stack Summary</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Layer</th><th>Technology</th><th>Version</th><th>Purpose</th></tr></thead><tbody>
+<tr><td>Runtime</td><td>Java (JDK 8)</td><td>8</td><td>Application runtime</td></tr>
+<tr><td>Build</td><td>Gradle + Shadow Plugin</td><td>7.6 / 7.1.2</td><td>Build and fat-JAR packaging</td></tr>
+<tr><td>Container</td><td>Docker (eclipse-temurin JRE 8)</td><td>—</td><td>Container image base</td></tr>
+<tr><td>Data Access</td><td>JDBC (DriverManager)</td><td>—</td><td>Direct SQL Server connectivity</td></tr>
+<tr><td>Database Driver</td><td>mssql-jdbc</td><td>12.6.1.jre8</td><td>Microsoft SQL Server JDBC driver</td></tr>
+<tr><td>Messaging</td><td>RabbitMQ amqp-client</td><td>5.21.0</td><td>AMQP messaging client</td></tr>
+<tr><td>Configuration</td><td>Java Properties file + env vars</td><td>—</td><td>Externalized configuration</td></tr>
+</tbody></table></div>
+<h3 id="data-storage-external-services">Data Storage &amp; External Services</h3>
+<p>The application connects to a <strong>Microsoft SQL Server</strong> instance (<code>ZavaBankCore</code> database) over JDBC to persist ingested records into three staging tables: <code>StagingCheckImage</code>, <code>StagingWireConfirmation</code>, and <code>StagingRegulatoryFeed</code>. After each file is processed, an event is published to a <strong>RabbitMQ</strong> topic exchange (<code>zava.events</code>) using the routing key <code>file.ingested</code>, enabling downstream consumers to react to ingestion outcomes. The shared file system is accessed directly via the Java NIO API from a mounted volume path (<code>/shared/file-ingestion</code>).</p>
+<h3 id="key-architectural-decisions">Key Architectural Decisions</h3>
+<ul>
+<li><strong>Poll-based ingestion</strong>: A blocking while-loop polls a watch directory at a configurable interval (default 5 s), providing a simple and dependency-light scheduling mechanism without a task framework.</li>
+<li><strong>File-name-driven routing</strong>: File type classification is driven entirely by filename patterns (prefix keywords and extensions), avoiding the need for a manifest or metadata sidecar file.</li>
+<li><strong>Environment-variable override pattern</strong>: All connection properties can be overridden at runtime via environment variables (e.g., <code>SQLSERVER_URL</code>, <code>RABBITMQ_HOST</code>), making the service container-friendly.</li>
+</ul>
+<h2 id="component-relationships">Component Relationships</h2>
+<div class="mermaid">
+flowchart LR
+    subgraph Orchestration["Orchestration"]
+        Main["Main\nentry point + poll loop"]
+        Ingester["ingestPendingFiles\ndirectory scanner"]
+        FileProc["processFile\ndispatcher"]
+    end
+
+    subgraph Processing["File Processing"]
+        CheckProc["processCheckImageMetadata\nCSV single-line parser"]
+        WireProc["processWireConfirmations\nFixed-width multi-line parser"]
+        RegProc["processRegulatoryFeed\nCSV multi-line parser"]
+    end
+
+    subgraph Persistence["Persistence"]
+        InsCheck["insertCheckImageMetadata"]
+        InsWire["insertWireConfirmation"]
+        InsReg["insertRegulatoryFeed"]
+        ExecIns["executeInsert\nshared JDBC helper"]
+    end
+
+    subgraph Infrastructure["Infrastructure"]
+        Classifier["identifyFileType\nname-based classifier"]
+        EventPub["publishIngestionEvent\nRabbitMQ publisher"]
+        FileMover["moveFile\nfile system util"]
+        Config["loadConfig\nproperties + env override"]
+    end
+
+    Main -->|"calls"| Config
+    Main -->|"loops"| Ingester
+    Ingester -->|"delegates per file"| FileProc
+    FileProc -->|"routes"| Classifier
+    Classifier -.->|"type"| FileProc
+    FileProc -->|"check_images"| CheckProc
+    FileProc -->|"wire_confirmations"| WireProc
+    FileProc -->|"regulatory_feeds"| RegProc
+    CheckProc -->|"inserts"| InsCheck
+    WireProc -->|"inserts"| InsWire
+    RegProc -->|"inserts"| InsReg
+    InsCheck -->|"SQL"| ExecIns
+    InsWire -->|"SQL"| ExecIns
+    InsReg -->|"SQL"| ExecIns
+    FileProc -->|"publishes event"| EventPub
+    FileProc -->|"moves file"| FileMover
+</div>
+<h3 id="component-inventory">Component Inventory</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Component</th><th>Layer</th><th>Type</th><th>Responsibility</th></tr></thead><tbody>
+<tr><td>Main</td><td>Orchestration</td><td>Application Entry Point</td><td>Loads configuration, registers shutdown hook, drives the poll loop</td></tr>
+<tr><td>ingestPendingFiles</td><td>Orchestration</td><td>Directory Scanner</td><td>Lists files in the watch directory and dispatches each to processFile</td></tr>
+<tr><td>processFile</td><td>Orchestration</td><td>Dispatcher</td><td>Routes each file to the correct processor; triggers event publishing and file move</td></tr>
+<tr><td>identifyFileType</td><td>Infrastructure</td><td>Classifier</td><td>Determines file type from filename keywords and extension</td></tr>
+<tr><td>processCheckImageMetadata</td><td>Processing</td><td>CSV Parser</td><td>Reads a single-line CSV check image record and delegates to insertCheckImageMetadata</td></tr>
+<tr><td>processWireConfirmations</td><td>Processing</td><td>Fixed-Width Parser</td><td>Reads multi-line fixed-width wire confirmation records</td></tr>
+<tr><td>processRegulatoryFeed</td><td>Processing</td><td>CSV Parser</td><td>Reads multi-line CSV regulatory feed records</td></tr>
+<tr><td>insertCheckImageMetadata</td><td>Persistence</td><td>DB Insert</td><td>Builds the INSERT SQL for StagingCheckImage</td></tr>
+<tr><td>insertWireConfirmation</td><td>Persistence</td><td>DB Insert</td><td>Builds the INSERT SQL for StagingWireConfirmation</td></tr>
+<tr><td>insertRegulatoryFeed</td><td>Persistence</td><td>DB Insert</td><td>Builds the INSERT SQL for StagingRegulatoryFeed</td></tr>
+<tr><td>executeInsert</td><td>Persistence</td><td>JDBC Helper</td><td>Opens a JDBC connection, executes a parameterised INSERT, and closes resources</td></tr>
+<tr><td>publishIngestionEvent</td><td>Infrastructure</td><td>Messaging Publisher</td><td>Opens a RabbitMQ connection, declares the topic exchange, and publishes a JSON event</td></tr>
+<tr><td>moveFile</td><td>Infrastructure</td><td>File System Utility</td><td>Moves a processed or failed file to the appropriate subdirectory</td></tr>
+<tr><td>loadConfig</td><td>Infrastructure</td><td>Configuration Loader</td><td>Loads properties from classpath and applies environment-variable overrides</td></tr>
+</tbody></table></div>
+</div>
+</div>
+<div id="tab-api" class="tab-panel">
+  <div class="fact-content"><h1 id="api-service-communication-contracts">API &amp; Service Communication Contracts</h1>
+<p>ZavaFileIngestion exposes no HTTP API surface; it is a self-contained file-polling daemon that communicates exclusively through a shared file system (inbound), a SQL Server database (synchronous persistence), and a RabbitMQ topic exchange (asynchronous event publishing).</p>
+<h2 id="service-catalog">Service Catalog</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Port</th><th>Category</th><th>Purpose</th></tr></thead><tbody>
+<tr><td>ZavaFileIngestion</td><td>— (no HTTP port)</td><td>Business</td><td>Polls a shared directory, classifies and parses incoming files, inserts records into SQL Server, and publishes ingestion events to RabbitMQ</td></tr>
+<tr><td>SQL Server (external)</td><td>1433</td><td>Infrastructure</td><td>Relational database storing staging records for check images, wire confirmations, and regulatory feeds</td></tr>
+<tr><td>RabbitMQ (external)</td><td>5672</td><td>Infrastructure</td><td>AMQP 0-9-1 message broker receiving file-ingested events on the <code>zava.events</code> topic exchange</td></tr>
+</tbody></table></div>
+<h2 id="api-endpoints-inventory">API Endpoints Inventory</h2>
+<p>No HTTP endpoints are defined. ZavaFileIngestion is a headless daemon with no embedded web server. Its sole input interface is the file system watch directory (<code>/shared/file-ingestion</code>), and its outputs are SQL Server inserts and RabbitMQ publishes.</p>
+<p>&gt; Note: If an HTTP management interface (health check, metrics) is required, it must be added before deploying to Azure services such as Azure Container Apps or Azure App Service that rely on HTTP liveness/readiness probes.</p>
+<h2 id="management-observability-endpoints">Management &amp; Observability Endpoints</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Endpoint</th><th>Custom Metrics</th></tr></thead><tbody>
+<tr><td>ZavaFileIngestion</td><td>None</td><td>None — logging is done via stdout only (<code>System.out.println</code>); no metrics endpoint or health check is exposed</td></tr>
+</tbody></table></div>
+<h2 id="dtos-contracts">DTOs &amp; Contracts</h2>
+<p>There are no DTO or request/response model classes. The application&#39;s &quot;data contracts&quot; are implicit:</p>
+<ul>
+<li><strong>Inbound file contracts</strong> (undocumented, convention-based):</li>
+<ul>
+<li><em>Check image files</em> (<code><em>check</em>.csv</code>): single-line CSV — <code>checkNumber, accountNumber, imagePath</code></li>
+<li><em>Wire confirmation files</em> (<code><em>wire</em>.txt</code>): fixed-width records — positions 0–15 wireReference, 16–27 amount, 28–67 beneficiary</li>
+<li><em>Regulatory feed files</em> (<code><em>reg</em>.csv</code> / <code><em>feed</em>.csv</code>): multi-line CSV — <code>feedCode, recordDate, payload</code></li>
+</ul>
+<li><strong>Outbound event payload</strong> (ad-hoc JSON string, not backed by a typed class):</li>
+</ul>
+<p>  ```json</p>
+<p>  { &quot;eventType&quot;: &quot;file.ingestion&quot;, &quot;fileName&quot;: &quot;...&quot;, &quot;fileType&quot;: &quot;...&quot;, &quot;status&quot;: &quot;processed|failed&quot;, &quot;ingestedAt&quot;: &quot;&lt;epoch-ms&gt;&quot; }</p>
+<p>  ```</p>
+<ul>
+<li>No OpenAPI/Swagger specification, no protobuf schemas, and no GraphQL schema exist.</li>
+<li>Serialization is handled by manual string concatenation for the JSON event payload.</li>
+</ul>
+<h2 id="communication-patterns">Communication Patterns</h2>
+<p><strong>Synchronous — JDBC (SQL Server):</strong>  </p>
+<p>Each file record is persisted via a direct JDBC <code>DriverManager.getConnection(...)</code> call inside <code>executeInsert</code>. A new connection is opened and closed for every individual INSERT statement. There is no connection pool, no transaction manager, and no retry policy. If the INSERT fails, the error is logged and the file is moved to the error directory.</p>
+<p><strong>Asynchronous — AMQP (RabbitMQ):</strong>  </p>
+<p>After each file is processed (success or failure), <code>publishIngestionEvent</code> opens a new RabbitMQ <code>Connection</code> and <code>Channel</code>, declares the <code>zava.events</code> topic exchange as durable, publishes the JSON payload with routing key <code>file.ingested</code>, and immediately closes both resources. There is no connection pool, no retry policy, and no dead-letter queue. A publish failure is caught, logged to stdout, and silently swallowed — the file move proceeds regardless.</p>
+<p><strong>Resilience patterns:</strong> None configured. There are no circuit breakers, no retry loops, no timeout settings for either the JDBC or AMQP calls, and no bulkhead patterns.</p>
+<p><strong>Service discovery:</strong> None. All connection parameters (SQL Server URL, RabbitMQ host/port) are resolved from static properties or environment variables at startup. There is no dynamic registration or lookup.</p>
+<p><strong>API gateway:</strong> Not applicable — no HTTP surface is exposed.</p>
+<p><strong>Security posture:</strong> No authentication, TLS, or authorization is configured at any layer. Database credentials and RabbitMQ passwords are stored in plain text in <code>fileingestion.properties</code>. Environment-variable overrides are available but no secrets management integration (e.g., Azure Key Vault) is present.</p>
+<h2 id="service-technology-matrix">Service Technology Matrix</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Web</th><th>Data Access</th><th>Discovery</th><th>Gateway</th><th>Actuator / Health</th><th>Cache</th><th>Metrics</th></tr></thead><tbody>
+<tr><td>ZavaFileIngestion</td><td>None</td><td>JDBC / DriverManager</td><td>None</td><td>None</td><td>None</td><td>None</td><td>None (stdout only)</td></tr>
+</tbody></table></div>
+<h2 id="service-communication-sequence">Service Communication Sequence</h2>
+<div class="mermaid">
+sequenceDiagram
+    participant FS as "Shared File System"
+    participant Poller as "File Poller (Main)"
+    participant Processor as "File Processor"
+    participant DB as "SQL Server"
+    participant MQ as "RabbitMQ"
+
+    loop Every 5 seconds
+        Poller->>FS: listFiles(watchPath)
+        FS-->>Poller: file list
+        alt Files present
+            Poller->>Processor: processFile(file, fileType)
+            Processor->>Processor: parse CSV or fixed-width record
+            Processor->>DB: INSERT INTO Staging table
+            alt INSERT success
+                DB-->>Processor: row inserted
+                Processor->>MQ: publish file.ingested status=processed
+                Processor->>FS: move file to /processed
+            else INSERT failure
+                DB-->>Processor: exception
+                Processor->>MQ: publish file.ingested status=failed
+                Processor->>FS: move file to /error
+            end
+            alt RabbitMQ publish fails
+                MQ-->>Processor: exception (swallowed)
+            end
+        else No files
+            Poller->>Poller: sleep intervalMs
+        end
+    end
+</div>
+</div>
+</div>
+<div id="tab-config" class="tab-panel">
+  <div class="fact-content"><h1 id="configuration-externalized-settings-inventory">Configuration &amp; Externalized Settings Inventory</h1>
+<p>ZavaFileIngestion uses a single classpath properties file (<code>fileingestion.properties</code>) as its primary configuration source, with environment-variable overrides applied at runtime — no profile system, secrets manager, or external config server is configured.</p>
+<h2 id="configuration-sources">Configuration Sources</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Source</th><th>Type</th><th>Path / Location</th><th>Notes</th></tr></thead><tbody>
+<tr><td>fileingestion.properties</td><td>Classpath properties file</td><td><code>src/main/resources/fileingestion.properties</code></td><td>Packaged inside the fat JAR; serves as the baseline for all configuration</td></tr>
+<tr><td>Environment variables</td><td>Runtime override</td><td>Set in container / host environment</td><td>8 env vars override specific property keys at startup via <code>applyEnvOverride</code>; see Properties Inventory</td></tr>
+<tr><td>Dockerfile</td><td>Container build definition</td><td><code>Dockerfile</code> (repo root)</td><td>Multi-stage build — Gradle 7.6 + JDK 8 build stage; eclipse-temurin:8-jre runtime stage; no ENV instructions in image</td></tr>
+<tr><td>AppCAT assessment config</td><td>Tool configuration</td><td><code>.github/modernize/appcat/assessment-config.yaml</code></td><td>Configures AppCAT analysis targets only; not used by the application at runtime</td></tr>
+</tbody></table></div>
+<p>No Spring Cloud Config server, no Azure App Configuration, no Consul KV, no HashiCorp Vault, and no Kubernetes ConfigMap/Secret references are present.</p>
+<h2 id="build-profiles">Build Profiles</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Profile</th><th>Activation</th><th>Purpose</th><th>Key Dependencies / Plugins</th></tr></thead><tbody>
+<tr><td>(default — no named profiles)</td><td>Automatic</td><td>Single build configuration; no profile separation exists</td><td><code>com.github.johnrengelman.shadow</code> 7.1.2 — produces a self-contained fat JAR (<code>*-all.jar</code>); <code>java</code> + <code>application</code> Gradle plugins</td></tr>
+</tbody></table></div>
+<p>Gradle does not define multiple build types or flavors. There is no <code>dev</code>, <code>prod</code>, or <code>cloud</code> build variant.</p>
+<h2 id="runtime-profiles">Runtime Profiles</h2>
+<p>No runtime profile system is in use. The application does not use Spring Boot, Spring profiles, or any other profile-switching mechanism. A single flat <code>fileingestion.properties</code> file is the only profile, active in all environments. Environment-variable overrides serve as the only environment-specific customisation mechanism.</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Profile</th><th>Activation Method</th><th>Config Files</th><th>Key Overrides</th></tr></thead><tbody>
+<tr><td>(none — single environment)</td><td>n/a</td><td><code>fileingestion.properties</code> (classpath)</td><td>All properties overridable via environment variables (see Properties Inventory)</td></tr>
+</tbody></table></div>
+<h2 id="properties-inventory">Properties Inventory</h2>
+<h3 id="zavafileingestion">ZavaFileIngestion</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Property Key</th><th>Default Value</th><th>Environment Variable Override</th><th>Notes</th></tr></thead><tbody>
+<tr><td><code>rabbitmq.host</code></td><td><code>localhost</code></td><td><code>RABBITMQ_HOST</code></td><td>Hostname of the RabbitMQ broker</td></tr>
+<tr><td><code>rabbitmq.port</code></td><td><code>5672</code></td><td><code>RABBITMQ_PORT</code></td><td>AMQP port</td></tr>
+<tr><td><code>rabbitmq.username</code></td><td><code>guest</code></td><td><code>RABBITMQ_USERNAME</code></td><td>RabbitMQ login</td></tr>
+<tr><td><code>rabbitmq.password</code></td><td><code>guest</code></td><td><code>RABBITMQ_PASSWORD</code></td><td>RabbitMQ password — plaintext</td></tr>
+<tr><td><code>rabbitmq.vhost</code></td><td><code>/zavabank</code></td><td><code>RABBITMQ_VHOST</code></td><td>Virtual host</td></tr>
+<tr><td><code>rabbitmq.events.exchange</code></td><td><code>zava.events</code></td><td>—</td><td>Topic exchange name; not overridable via env var</td></tr>
+<tr><td><code>rabbitmq.ingestion.routingKey</code></td><td><code>file.ingested</code></td><td>—</td><td>Routing key for ingestion events; not overridable via env var</td></tr>
+<tr><td><code>db.url</code></td><td><code>jdbc:sqlserver://sqlserver:1433;databaseName=ZavaBankCore;encrypt=false;trustServerCertificate=true</code></td><td><code>SQLSERVER_URL</code></td><td>Full JDBC connection string</td></tr>
+<tr><td><code>db.username</code></td><td><code>sa</code></td><td><code>SQLSERVER_USERNAME</code></td><td>SQL Server login</td></tr>
+<tr><td><code>db.password</code></td><td><code>YourStrong!Passw0rd</code></td><td><code>SQLSERVER_PASSWORD</code></td><td>SQL Server password — plaintext</td></tr>
+<tr><td><code>ingestion.watch.path</code></td><td><code>/shared/file-ingestion</code></td><td><code>FILE_INGESTION_PATH</code></td><td>Directory to monitor for incoming files</td></tr>
+<tr><td><code>ingestion.processed.path</code></td><td><code>/shared/file-ingestion/processed</code></td><td><code>FILE_INGESTION_PROCESSED_PATH</code></td><td>Destination for successfully processed files</td></tr>
+<tr><td><code>ingestion.error.path</code></td><td><code>/shared/file-ingestion/error</code></td><td><code>FILE_INGESTION_ERROR_PATH</code></td><td>Destination for failed files</td></tr>
+<tr><td><code>ingestion.poll.interval.ms</code></td><td><code>5000</code></td><td><code>FILE_INGESTION_POLL_MS</code></td><td>Polling interval in milliseconds</td></tr>
+</tbody></table></div>
+<h2 id="startup-parameters-resource-requirements">Startup Parameters &amp; Resource Requirements</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>JVM / Runtime Options</th><th>Memory</th><th>CPU</th><th>Instance Count</th></tr></thead><tbody>
+<tr><td>ZavaFileIngestion</td><td>None specified (<code>java -jar app.jar</code> — no <code>-Xms</code>/<code>-Xmx</code>, no <code>-D</code> system properties)</td><td>Not specified (container or host default)</td><td>Not specified</td><td>1 (single-threaded polling loop)</td></tr>
+</tbody></table></div>
+<p>No JVM heap tuning, GC flags, or system-property overrides are configured in the Dockerfile or any launch script. The fat JAR is started with the bare minimum <code>java -jar app.jar</code> command.</p>
+<h2 id="startup-dependency-chain">Startup Dependency Chain</h2>
+<p>The application has implicit startup dependencies on SQL Server and RabbitMQ, but no formal wait mechanism is implemented:</p>
+<ol>
+<li><strong>SQL Server</strong> — must be reachable before any file is processed; otherwise <code>executeInsert</code> fails silently per file and moves it to the error directory.</li>
+<li><strong>RabbitMQ</strong> — must be reachable for <code>publishIngestionEvent</code> to succeed; failures are caught and swallowed with a log message.</li>
+<li><strong>ZavaFileIngestion</strong> — starts immediately with no health-check probe, no <code>dockerize</code> wait-for-TCP, no readiness retry, and no <code>depends_on</code> health condition.</li>
+</ol>
+<p>There is no <code>docker-compose.yml</code>, no Kubernetes readiness probe, and no Spring actuator health endpoint. If SQL Server or RabbitMQ is unavailable at startup, the application starts anyway and silently skips event publishing or marks files as failed.</p>
+<h2 id="secrets-sensitive-configuration">Secrets &amp; Sensitive Configuration</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Secret Reference</th><th>Type</th><th>Default / Storage</th></tr></thead><tbody>
+<tr><td><code>db.password</code> / <code>SQLSERVER_PASSWORD</code></td><td>Database password</td><td><code>YourStrong!Passw0rd</code> in plaintext in <code>fileingestion.properties</code> [MASKED in production]</td></tr>
+<tr><td><code>db.username</code> / <code>SQLSERVER_USERNAME</code></td><td>Database username</td><td><code>sa</code> in plaintext</td></tr>
+<tr><td><code>rabbitmq.password</code> / <code>RABBITMQ_PASSWORD</code></td><td>Message broker password</td><td><code>guest</code> in plaintext</td></tr>
+<tr><td><code>rabbitmq.username</code> / <code>RABBITMQ_USERNAME</code></td><td>Message broker username</td><td><code>guest</code> in plaintext</td></tr>
+</tbody></table></div>
+<p><strong>No encryption</strong> (Jasypt, sealed secrets, etc.) is applied to any property value. Sensitive defaults are committed to source control in <code>fileingestion.properties</code>.</p>
+<h3 id="secrets-provisioning-workflow">Secrets Provisioning Workflow</h3>
+<p>Currently there is no secrets provisioning workflow. Secrets are embedded in <code>fileingestion.properties</code> (committed to the repository) and may be overridden at deployment time via environment variables. No integration with Azure Key Vault, HashiCorp Vault, AWS Secrets Manager, or any other secrets manager exists.</p>
+<p><strong>Recommended pre-migration improvement</strong>: Replace the plaintext defaults with Azure Key Vault references using a managed identity assigned to the Azure Container App (or AKS pod). The recommended provisioning sequence for an Azure migration would be:</p>
+<ol>
+<li>Create an Azure Key Vault and store <code>db.password</code>, <code>rabbitmq.password</code>, and the JDBC connection string as secrets.</li>
+<li>Assign a system-managed identity to the compute resource (Container App / AKS workload).</li>
+<li>Grant the managed identity <code>Key Vault Secrets User</code> RBAC role.</li>
+<li>Inject secrets into the container as environment variables (<code>SQLSERVER_PASSWORD</code>, <code>RABBITMQ_PASSWORD</code>) from Key Vault at deployment time via Azure Container Apps secret references or the Azure Key Vault CSI driver (AKS).</li>
+</ol>
+<h2 id="feature-flags">Feature Flags</h2>
+<p>No feature flag framework is configured. There are no conditional beans, <code>@ConditionalOnProperty</code> annotations, LaunchDarkly/Unleash integrations, or A/B testing configurations.</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Flag Name</th><th>Default</th><th>Controlled By</th></tr></thead><tbody>
+<tr><td>—</td><td>—</td><td>No feature flags detected</td></tr>
+</tbody></table></div>
+<h2 id="framework-runtime-versions">Framework &amp; Runtime Versions</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Component</th><th>Version</th><th>Source</th></tr></thead><tbody>
+<tr><td>Java (source / target)</td><td>1.8 (Java 8)</td><td><code>build.gradle</code> — <code>sourceCompatibility</code> / <code>targetCompatibility</code></td></tr>
+<tr><td>Gradle</td><td>7.6</td><td><code>Dockerfile</code> (<code>gradle:7.6-jdk8</code> build image)</td></tr>
+<tr><td>Gradle Shadow Plugin</td><td>7.1.2</td><td><code>build.gradle</code> — <code>com.github.johnrengelman.shadow</code></td></tr>
+<tr><td>Docker build image</td><td>gradle:7.6-jdk8</td><td><code>Dockerfile</code> (build stage)</td></tr>
+<tr><td>Docker runtime image</td><td>eclipse-temurin:8-jre</td><td><code>Dockerfile</code> (runtime stage)</td></tr>
+<tr><td>amqp-client (RabbitMQ)</td><td>5.21.0</td><td><code>build.gradle</code></td></tr>
+<tr><td>mssql-jdbc</td><td>12.6.1.jre8</td><td><code>build.gradle</code></td></tr>
+</tbody></table></div>
+</div>
+</div>
+<div id="tab-workflows" class="tab-panel">
+  <div class="fact-content"><h1 id="core-business-workflows">Core Business Workflows</h1>
+<p>ZavaFileIngestion automates the ingestion of bank operational files — check image metadata, wire confirmations, and regulatory feeds — from a shared filesystem into a SQL Server staging layer, publishing status events after each file is handled.</p>
+<h2 id="domain-entities">Domain Entities</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Entity</th><th>Service / Bounded Context</th><th>Description</th><th>Key Relationships</th></tr></thead><tbody>
+<tr><td>Check Image Record</td><td>File Ingestion / Check Processing</td><td>Metadata record for a scanned check image deposited into the bank — links a check number to an account and image storage path</td><td>Standalone record; no FK relationships to other staging entities</td></tr>
+<tr><td>Wire Confirmation Record</td><td>File Ingestion / Wire Processing</td><td>Record of a completed wire transfer with reference number, amount, and beneficiary</td><td>Standalone record; no FK relationships</td></tr>
+<tr><td>Regulatory Feed Record</td><td>File Ingestion / Regulatory Reporting</td><td>A single line of a regulatory data feed, identified by feed code and record date, with an opaque payload</td><td>Standalone record; one source file produces multiple records (one per non-blank line)</td></tr>
+<tr><td>Ingestion Event</td><td>File Ingestion / Event Notification</td><td>A transient domain event published to the message broker after every file processing attempt, carrying file name, type, and outcome status</td><td>Produced from any of the three file types; consumed by downstream systems</td></tr>
+</tbody></table></div>
+<h2 id="service-to-domain-mapping">Service-to-Domain Mapping</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Domain Context</th><th>Owned Entities</th><th>External Dependencies</th></tr></thead><tbody>
+<tr><td>ZavaFileIngestion</td><td>File Ingestion</td><td>Check Image Record, Wire Confirmation Record, Regulatory Feed Record, Ingestion Event</td><td>SQL Server (record persistence), RabbitMQ (event publishing), Shared File System (file input)</td></tr>
+</tbody></table></div>
+<p>This is a single-service application. All bounded contexts are implemented within the one Java process — there are no separate microservices, modules, or downstream internal services.</p>
+<h2 id="primary-workflows">Primary Workflows</h2>
+<h3 id="workflow-1-scheduled-file-polling-and-dispatch">Workflow 1: Scheduled File Polling and Dispatch</h3>
+<p>The application continuously polls the watch directory on a configurable interval (default 5 seconds). On each cycle it lists all files present in the directory, skips any subdirectories and files whose names contain the words &quot;processed&quot; or &quot;error&quot; (to avoid reprocessing moved files), identifies the business file type for each remaining file by name, and dispatches each file to the appropriate processor. Files with names that do not match any known type keyword are silently skipped.</p>
+<p><strong>Steps:</strong></p>
+<ol>
+<li>List all entries in the watch directory (<code>/shared/file-ingestion</code>).</li>
+<li>Skip directories and non-file entries.</li>
+<li>For each file, invoke the file-type classifier using the filename.</li>
+<li>If the file type is not recognised, skip the file (no error, no move).</li>
+<li>Dispatch the file to the matching processor (check images → CSV parser; wire confirmations → fixed-width parser; regulatory feeds → CSV parser).</li>
+<li>On success: publish a <code>processed</code> event and move the file to the processed directory.</li>
+<li>On failure: publish a <code>failed</code> event and move the file to the error directory.</li>
+<li>Sleep for the configured interval and repeat.</li>
+</ol>
+<h3 id="workflow-2-check-image-file-ingestion">Workflow 2: Check Image File Ingestion</h3>
+<p>Processes a CSV file containing check image metadata. The file is expected to have a single data line; only the first line is read. The three fields (check number, account number, image path) are split by comma. A single <code>INSERT</code> is executed for the record. Empty or missing fields default to empty strings.</p>
+<p><strong>Steps:</strong></p>
+<ol>
+<li>Open the file and read the first line.</li>
+<li>Split by comma to extract <code>checkNumber</code>, <code>accountNumber</code>, <code>imagePath</code>.</li>
+<li>Insert one row into <code>StagingCheckImage</code> with <code>IngestedAt = GETDATE()</code>.</li>
+<li>Return <code>true</code> (success) or <code>false</code> (insert failure or parse exception).</li>
+</ol>
+<h3 id="workflow-3-wire-confirmation-file-ingestion">Workflow 3: Wire Confirmation File Ingestion</h3>
+<p>Processes a fixed-width text file containing wire transfer records. All non-blank lines are processed. Each line is sliced at fixed character positions: positions 0–15 for wire reference, 16–27 for amount, 28–67 for beneficiary. A separate <code>INSERT</code> is executed for each line.</p>
+<p><strong>Steps:</strong></p>
+<ol>
+<li>Open the file and iterate over all non-blank lines.</li>
+<li>Extract <code>wireReference</code> (chars 0–15), <code>amount</code> (chars 16–27), <code>beneficiary</code> (chars 28–67) via fixed-width slicing.</li>
+<li>Insert one row per line into <code>StagingWireConfirmation</code>.</li>
+<li>Return <code>true</code> if at least one row was inserted successfully.</li>
+</ol>
+<h3 id="workflow-4-regulatory-feed-file-ingestion">Workflow 4: Regulatory Feed File Ingestion</h3>
+<p>Processes a CSV file containing regulatory data records. All non-blank lines are processed. Each line is split by comma to yield <code>feedCode</code>, <code>recordDate</code>, and <code>payload</code>. A separate <code>INSERT</code> is executed per line.</p>
+<p><strong>Steps:</strong></p>
+<ol>
+<li>Open the file and iterate over all non-blank lines.</li>
+<li>Split each line by comma to extract <code>feedCode</code>, <code>recordDate</code>, <code>payload</code>.</li>
+<li>Insert one row per line into <code>StagingRegulatoryFeed</code>.</li>
+<li>Return <code>true</code> if at least one row was inserted successfully.</li>
+</ol>
+<h3 id="workflow-5-ingestion-event-publishing">Workflow 5: Ingestion Event Publishing</h3>
+<p>After every file processing attempt — regardless of outcome — a JSON event is published to the RabbitMQ topic exchange. The event carries the file name, file type, processing status (<code>processed</code> or <code>failed</code>), and the current epoch timestamp. A failure to publish the event is caught and logged but does not alter the file&#39;s disposition (the file is still moved to the processed or error directory).</p>
+<h2 id="cross-service-data-flows">Cross-Service Data Flows</h2>
+<p>ZavaFileIngestion is the sole service; there are no other internal services and no API gateway. Cross-service data flow is limited to:</p>
+<ul>
+<li><strong>Inbound</strong>: files are placed onto the shared file system by an upstream system (not modelled in this codebase).</li>
+<li><strong>Outbound to SQL Server</strong>: staging records are inserted synchronously; downstream reporting or processing services are expected to query the staging tables independently.</li>
+<li><strong>Outbound to RabbitMQ</strong>: ingestion events are published asynchronously; downstream consumers (unknown from this codebase) subscribe via the <code>zava.events</code> topic exchange with the routing key <code>file.ingested</code>.</li>
+</ul>
+<p>No API gateway aggregation, circuit breaker fallback, or cross-service read pattern exists within this codebase.</p>
+<h2 id="business-workflow-sequence">Business Workflow Sequence</h2>
+<div class="mermaid">
+sequenceDiagram
+    participant FS as "Shared File System"
+    participant Poller as "File Poller"
+    participant Classifier as "File Type Classifier"
+    participant Parser as "File Parser"
+    participant DB as "SQL Server (Staging)"
+    participant MQ as "RabbitMQ"
+
+    loop Every polling interval (default 5 s)
+        Poller->>FS: List files in watch directory
+        FS-->>Poller: File list
+
+        alt Files present
+            loop For each file
+                Poller->>Classifier: Identify type by filename
+                alt Filename matches known type
+                    Classifier-->>Poller: check_images OR wire_confirmations OR regulatory_feeds
+                    Poller->>Parser: Parse file according to type
+                    Parser->>Parser: Read and extract records (CSV or fixed-width)
+                    Parser->>DB: INSERT record(s) into staging table
+                    alt INSERT succeeds
+                        DB-->>Parser: Row inserted
+                        Parser-->>Poller: success
+                        Poller->>MQ: Publish file.ingested status=processed
+                        Poller->>FS: Move file to /processed
+                    else INSERT fails
+                        DB-->>Parser: Exception
+                        Parser-->>Poller: failure
+                        Poller->>MQ: Publish file.ingested status=failed
+                        Poller->>FS: Move file to /error
+                    end
+                    alt RabbitMQ unavailable
+                        Note over MQ: Publish exception swallowed; file move proceeds
+                    end
+                else Filename unrecognised
+                    Classifier-->>Poller: null - skip file
+                end
+            end
+        else No files present
+            Poller->>Poller: Sleep polling interval
+        end
+    end
+</div>
+<h2 id="business-rules-decision-logic">Business Rules &amp; Decision Logic</h2>
+<h3 id="file-type-classification-rules">File Type Classification Rules</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Rule</th><th>Logic</th></tr></thead><tbody>
+<tr><td>Skip already-moved files</td><td>Filenames containing the substrings <code>processed</code> or <code>error</code> are excluded from processing to prevent double-ingestion</td></tr>
+<tr><td>Check image identification</td><td>Filename ends with <code>.csv</code> AND contains <code>check</code></td></tr>
+<tr><td>Wire confirmation identification</td><td>Filename ends with <code>.txt</code> AND contains <code>wire</code></td></tr>
+<tr><td>Regulatory feed identification</td><td>Filename ends with <code>.csv</code> or <code>.txt</code> AND contains <code>reg</code> or <code>feed</code></td></tr>
+<tr><td>Fallback keyword match</td><td>If none of the above patterns match, the classifier tests for the keywords <code>check</code>, <code>wire</code>, or <code>reg</code> in the filename (in that priority order) and maps to the associated type</td></tr>
+<tr><td>Unrecognised file</td><td>If no keyword matches, the file is silently skipped — no error is logged and the file is left in the watch directory</td></tr>
+</tbody></table></div>
+<h3 id="validation-rules">Validation Rules</h3>
+<ul>
+<li><strong>No schema validation</strong>: file contents are not validated against a schema. Malformed lines result in empty string values being inserted (e.g., a missing CSV field yields <code>&quot;&quot;</code>).</li>
+<li><strong>Empty file handling</strong>: a check image file with no first line returns <code>false</code> immediately (no insert). Wire confirmation and regulatory feed processors skip blank lines silently.</li>
+<li><strong>Fixed-width boundary safety</strong>: the wire confirmation parser uses safe substring slicing — if a line is shorter than the expected width, the short segment is returned rather than throwing an exception.</li>
+</ul>
+<h3 id="state-transitions">State Transitions</h3>
+<p>Files follow a simple two-state lifecycle:</p>
+<pre><code>
+[Pending in watch dir] → [Processing] → [Processed dir] (success)
+                                      → [Error dir]     (failure)
+</code></pre>
+<p>There is no retry state: a file that moves to the error directory is not automatically reprocessed.</p>
+<h3 id="error-handling-business-constraints">Error Handling &amp; Business Constraints</h3>
+<ul>
+<li><strong>Silent event-publish failures</strong>: a RabbitMQ publish error is logged to stdout and swallowed. Downstream consumers may miss the event without any compensating action.</li>
+<li><strong>No connection pooling</strong>: every INSERT and every event publish opens and closes a new connection. Under high file volume this can exhaust SQL Server or RabbitMQ connection limits.</li>
+<li><strong>No deduplication</strong>: if a file with the same name re-appears in the watch directory (e.g., after a manual reset), it will be processed and inserted again, creating duplicate staging records.</li>
+<li><strong>No transactional boundary</strong>: the INSERT and the file move are not wrapped in a transaction. A crash between INSERT success and file move could result in the file being reprocessed on the next poll cycle.</li>
+</ul>
+<h3 id="audit-logging">Audit &amp; Logging</h3>
+<ul>
+<li>Every processing outcome is logged to stdout via <code>System.out.println</code> with a <code>[ZavaFileIngestion]</code> prefix.</li>
+<li><code>IngestedAt</code> is set to <code>GETDATE()</code> at insert time, providing a server-side audit timestamp on every staging record.</li>
+<li>No structured logging, correlation IDs, or distributed tracing are implemented.</li>
+</ul>
+</div>
+</div>
+<div id="tab-deps" class="tab-panel">
+  <div class="fact-content"><h1 id="dependency-map">Dependency Map</h1>
+<p>ZavaFileIngestion is a Java 8 Gradle project with 2 declared external runtime dependencies: one for AMQP messaging (RabbitMQ) and one for database connectivity (SQL Server JDBC driver).</p>
+<h2 id="dependencies">Dependencies</h2>
+<div class="mermaid">
+flowchart LR
+    App["ZavaFileIngestion\nJava 8 / Gradle 7.6"]
+
+    subgraph DB["Database / JDBC"]
+        MSSQLDriver["mssql-jdbc v12.6.1.jre8"]
+    end
+
+    subgraph Messaging["Messaging"]
+        RabbitClient["amqp-client v5.21.0"]
+    end
+
+    App -->|"persistence"| DB
+    App -->|"messaging"| Messaging
+</div>
+<h3 id="dependency-summary">Dependency Summary</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Category</th><th>Count</th><th>Key Libraries</th><th>Notes</th></tr></thead><tbody>
+<tr><td>Database / JDBC</td><td>1</td><td>mssql-jdbc 12.6.1.jre8</td><td>Microsoft SQL Server JDBC driver; jre8 classifier targets Java 8 runtime</td></tr>
+<tr><td>Messaging</td><td>1</td><td>amqp-client 5.21.0</td><td>Official RabbitMQ Java client for AMQP 0-9-1 protocol</td></tr>
+</tbody></table></div>
+<h3 id="version-compatibility-risks">Version &amp; Compatibility Risks</h3>
+<p>The application targets <strong>Java 8</strong>, which reached Oracle end-of-life for public updates in March 2019 (OpenJDK builds continue via Adoptium/Temurin, but Java 8 is significantly behind current LTS releases Java 17 and 21). The <code>mssql-jdbc 12.6.1.jre8</code> driver is modern and compatible with SQL Server 2016+, but the <code>.jre8</code> classifier must be swapped for <code>.jre11</code> or <code>.jre17</code> if the runtime is upgraded. The <code>amqp-client 5.21.0</code> is a current release and does not carry immediate version risk, but upgrading the Java runtime to 17 or 21 would require reverification of the library&#39;s class compatibility. The Gradle Shadow Plugin 7.1.2 used for fat-JAR packaging is compatible with Gradle 7.6 but would need to be updated alongside any Gradle upgrade.</p>
+<h3 id="notable-observations">Notable Observations</h3>
+<ul>
+<li><strong>Minimal dependency footprint</strong>: With only two external libraries, the project carries a very small transitive dependency tree, which reduces supply-chain risk and simplifies future upgrades.</li>
+<li><strong>No logging framework declared</strong>: The application uses <code>System.out.println</code> directly. There is no SLF4J, Logback, or Log4j dependency, meaning log routing, levels, and structured output are not configurable at runtime.</li>
+<li><strong>Java 8 end-of-life risk</strong>: The build targets <code>sourceCompatibility = JavaVersion.VERSION_1_8</code>. Upgrading to Java 17 (or 21 LTS) would be advisable before containerising for Azure, as the base image (<code>eclipse-temurin:8-jre</code>) is an older image tier.</li>
+<li><strong>No security or observability libraries</strong>: The project has no authentication, tracing, or metrics library. Deploying to Azure would benefit from adding Azure Monitor / Application Insights or OpenTelemetry for observability.</li>
+</ul>
+<h2 id="test-dependencies">Test Dependencies</h2>
+<p>No test-scope dependencies detected.</p>
+<p>Total test-scope dependencies: 0</p>
+<p>No test framework (e.g., JUnit, Mockito) is declared in <code>build.gradle</code>. There are no automated test sources present in the repository. Adding a unit and integration test suite would be strongly recommended before migrating to a production cloud environment.</p>
+</div>
+</div>
+<div id="tab-data" class="tab-panel">
+  <div class="fact-content"><h1 id="data-architecture-persistence-layer">Data Architecture &amp; Persistence Layer</h1>
+<p>ZavaFileIngestion persists data to a single Microsoft SQL Server database (<code>ZavaBankCore</code>) using raw JDBC with no ORM framework, mapping three implicit staging table schemas derived from the application&#39;s INSERT statements.</p>
+<h2 id="database-configuration">Database Configuration</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service / Module</th><th>DB Type</th><th>Profile</th><th>Driver</th><th>Connection</th><th>Migration Tool</th></tr></thead><tbody>
+<tr><td>ZavaFileIngestion</td><td>Microsoft SQL Server</td><td>Single (no profile separation)</td><td>mssql-jdbc 12.6.1.jre8</td><td>jdbc:sqlserver://sqlserver:1433; databaseName=ZavaBankCore; encrypt=false; trustServerCertificate=true</td><td>None — no migration tool configured; DDL must be applied manually or via external scripts</td></tr>
+</tbody></table></div>
+<p>A new JDBC connection is opened and closed for every individual INSERT statement — no connection pool (HikariCP, DBCP, etc.) is configured. There is no transaction management; each INSERT is auto-committed.</p>
+<h2 id="data-ownership-per-service">Data Ownership per Service</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Tables Owned</th><th>ORM Framework</th><th>Caching</th><th>Notes</th></tr></thead><tbody>
+<tr><td>ZavaFileIngestion</td><td>StagingCheckImage, StagingWireConfirmation, StagingRegulatoryFeed</td><td>None (raw JDBC via DriverManager)</td><td>None</td><td>Three staging tables; schema is implicit — inferred only from hardcoded INSERT statements in source code; no migration scripts found</td></tr>
+</tbody></table></div>
+<h2 id="entity-model">Entity Model</h2>
+<p>&gt; Note: No JPA/ORM entity classes exist. The table schemas below are inferred from the <code>INSERT INTO</code> SQL strings embedded in <code>executeInsert</code> call sites within <code>Main.java</code>.</p>
+<div class="mermaid">
+erDiagram
+    StagingCheckImage {
+        int Id PK "auto-generated by DB (assumed)"
+        string FileName
+        string CheckNumber
+        string AccountNumber
+        string ImagePath
+        datetime IngestedAt "set by GETDATE()"
+    }
+
+    StagingWireConfirmation {
+        int Id PK "auto-generated by DB (assumed)"
+        string FileName
+        string WireReference
+        string Amount
+        string Beneficiary
+        datetime IngestedAt "set by GETDATE()"
+    }
+
+    StagingRegulatoryFeed {
+        int Id PK "auto-generated by DB (assumed)"
+        string FileName
+        string FeedCode
+        string RecordDate
+        string Payload
+        datetime IngestedAt "set by GETDATE()"
+    }
+</div>
+<p>No foreign-key relationships exist between the staging tables. Each table records an independent set of ingested file records.</p>
+<h2 id="key-repository-methods">Key Repository Methods</h2>
+<p>There are no repository interfaces or classes. Data access is implemented via two static helper methods directly inside <code>Main.java</code>:</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Method</th><th>SQL Operation</th><th>Purpose</th></tr></thead><tbody>
+<tr><td>ZavaFileIngestion</td><td><code>insertCheckImageMetadata(config, fileName, checkNumber, accountNumber, imagePath)</code></td><td><code>INSERT INTO StagingCheckImage</code></td><td>Persists one check-image record extracted from a CSV file</td></tr>
+<tr><td>ZavaFileIngestion</td><td><code>insertWireConfirmation(config, fileName, wireReference, amount, beneficiary)</code></td><td><code>INSERT INTO StagingWireConfirmation</code></td><td>Persists one wire confirmation record extracted from a fixed-width file</td></tr>
+<tr><td>ZavaFileIngestion</td><td><code>insertRegulatoryFeed(config, fileName, feedCode, recordDate, payload)</code></td><td><code>INSERT INTO StagingRegulatoryFeed</code></td><td>Persists one regulatory feed record extracted from a CSV file</td></tr>
+<tr><td>ZavaFileIngestion</td><td><code>executeInsert(config, sql, values[])</code></td><td>Generic parameterised INSERT</td><td>Shared JDBC helper that opens a connection, executes any INSERT with positional parameters, and closes all resources</td></tr>
+</tbody></table></div>
+<p>No custom finders, bulk queries, stored procedure calls, or named queries exist. There are no read (SELECT) operations — the service is write-only.</p>
+<h2 id="caching-strategy">Caching Strategy</h2>
+<p>No caching layer is configured. The application does not use Spring Cache, Redis, EhCache, Caffeine, or any other cache provider. Every record is written directly to SQL Server on each file processing cycle. Given the append-only, write-only nature of the service, no read-path caching rationale applies.</p>
+<h2 id="data-ownership-boundaries">Data Ownership Boundaries</h2>
+<p>ZavaFileIngestion owns all three staging tables exclusively. There is no evidence of other services sharing the <code>ZavaBankCore</code> database, but the connection string points to a shared SQL Server instance, meaning logical isolation is the only boundary — no schema-per-service or database-per-service pattern is enforced.</p>
+<p>Cross-service data access is not applicable: the service performs no SELECT queries and exposes no read API. Downstream consumers must query the staging tables directly (via their own JDBC/ORM access) or consume the RabbitMQ events published after each ingestion.</p>
+<p>The service is entirely write-path (INSERT-only); there is no CQRS separation, no read model, and no event-sourcing pattern.</p>
+<h3 id="data-classification-sensitivity">Data Classification &amp; Sensitivity</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Table</th><th>Sensitive Fields</th><th>Classification</th><th>Controls in Place</th></tr></thead><tbody>
+<tr><td>StagingCheckImage</td><td>CheckNumber, AccountNumber, ImagePath</td><td>PCI-adjacent (check/account identifiers)</td><td>None — data stored in plaintext; no encryption-at-rest, column masking, or field-level access controls configured</td></tr>
+<tr><td>StagingWireConfirmation</td><td>WireReference, Amount, Beneficiary</td><td>Financially sensitive</td><td>None — stored in plaintext with no access controls or masking</td></tr>
+<tr><td>StagingRegulatoryFeed</td><td>FeedCode, RecordDate, Payload</td><td>Regulatory / potentially sensitive</td><td>None — Payload column stores raw feed data with no masking or encryption</td></tr>
+</tbody></table></div>
+<p>Database credentials (<code>db.username</code>, <code>db.password</code>) are stored in plaintext in <code>fileingestion.properties</code> and overridable via environment variables. No Azure Key Vault, HashiCorp Vault, or secrets management integration is present. Enabling SQL Server Transparent Data Encryption (TDE) and migrating credentials to a secrets manager should be treated as high-priority pre-migration tasks.</p>
+</div>
+</div>
+<p class="footer">Your feedback is invaluable &mdash; <a href="https://aka.ms/ghcp-appmod/feedback">Share feedback</a></p>
+<script>
+function toggleRow(rowId, triggerRow) {
+  var detail = document.getElementById(rowId);
+  var btn = document.getElementById('btn-' + rowId);
+  if (!detail) return;
+  var visible = detail.style.display !== 'none';
+  detail.style.display = visible ? 'none' : 'table-row';
+  if (btn) btn.classList.toggle('open', !visible);
+}
+(function() {
+  var nav = document.querySelector('.tab-nav');
+  if (!nav) return;
+  nav.addEventListener('click', function(e) {
+    var btn = e.target.closest('.tab-btn');
+    if (!btn) return;
+    var targetId = btn.getAttribute('data-tab');
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+    btn.classList.add('active');
+    var panel = document.getElementById(targetId);
+    if (panel) {
+      panel.classList.add('active');
+      // Render any mermaid diagrams in this panel that haven't been processed yet
+      if (window.__mermaidReady) { window.__renderMermaidIn(panel); }
+    }
+  });
+})();
+
+// ── Diagram lightbox ────────────────────────────────────────
+(function() {
+  var lightbox = document.getElementById('diagram-lightbox');
+  var inner = document.getElementById('diagram-lightbox-inner');
+  var closeBtn = document.getElementById('diagram-lightbox-close');
+  if (!lightbox || !inner || !closeBtn) return;
+
+  var scale = 1;
+  var translateX = 0;
+  var translateY = 0;
+  var isDragging = false;
+  var dragStartX = 0;
+  var dragStartY = 0;
+
+  function applyTransform() {
+    var svg = inner.querySelector('svg');
+    if (svg) {
+      svg.style.transform = 'translate(' + translateX + 'px, ' + translateY + 'px) scale(' + scale + ')';
+      svg.style.transformOrigin = 'center center';
+      svg.style.transition = 'none';
+    }
+  }
+
+  function resetTransform() {
+    scale = 1; translateX = 0; translateY = 0;
+    applyTransform();
+  }
+
+  function openLightbox(svgEl) {
+    inner.innerHTML = svgEl.outerHTML;
+    var injected = inner.querySelector('svg');
+    if (injected) {
+      injected.removeAttribute('width');
+      injected.removeAttribute('height');
+      injected.style.cursor = 'grab';
+    }
+    resetTransform();
+    lightbox.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLightbox() {
+    lightbox.classList.remove('open');
+    inner.innerHTML = '';
+    document.body.style.overflow = '';
+    resetTransform();
+  }
+
+  inner.addEventListener('wheel', function(e) {
+    e.preventDefault();
+    var delta = e.deltaY > 0 ? 0.9 : 1.1;
+    scale = Math.min(Math.max(scale * delta, 0.3), 8);
+    applyTransform();
+  }, { passive: false });
+
+  inner.addEventListener('mousedown', function(e) {
+    if (e.button !== 0) return;
+    isDragging = true;
+    dragStartX = e.clientX - translateX;
+    dragStartY = e.clientY - translateY;
+    var svg = inner.querySelector('svg');
+    if (svg) { svg.style.cursor = 'grabbing'; }
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', function(e) {
+    if (!isDragging) return;
+    translateX = e.clientX - dragStartX;
+    translateY = e.clientY - dragStartY;
+    applyTransform();
+  });
+
+  document.addEventListener('mouseup', function() {
+    if (!isDragging) return;
+    isDragging = false;
+    var svg = inner.querySelector('svg');
+    if (svg) { svg.style.cursor = 'grab'; }
+  });
+
+  inner.addEventListener('dblclick', function() { resetTransform(); });
+
+  document.addEventListener('click', function(e) {
+    var card = e.target.closest('.mermaid');
+    if (!card) return;
+    if (e.target.closest('.diagram-lightbox-close')) return;
+    var svg = card.querySelector('svg');
+    if (svg) { openLightbox(svg); }
+  });
+
+  closeBtn.addEventListener('click', closeLightbox);
+
+  lightbox.addEventListener('click', function(e) {
+    if (e.target === lightbox) { closeLightbox(); }
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') { closeLightbox(); }
+  });
+})();
+
+var _currentTarget = '';
+
+function toggleMultiSelect(id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  // Close others
+  document.querySelectorAll('.multi-select.open').forEach(function(ms) { if (ms.id !== id) ms.classList.remove('open'); });
+  el.classList.toggle('open');
+}
+
+// Close dropdowns on outside click
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.multi-select')) {
+    document.querySelectorAll('.multi-select.open').forEach(function(ms) { ms.classList.remove('open'); });
+  }
+});
+
+function getMultiSelectValues(msId) {
+  var el = document.getElementById(msId);
+  if (!el) return [];
+  var checked = el.querySelectorAll('input[type=checkbox]:checked');
+  var vals = [];
+  for (var i = 0; i < checked.length; i++) vals.push(checked[i].value);
+  return vals;
+}
+
+function onMultiSelectChange(msId, label) {
+  var el = document.getElementById(msId);
+  if (!el) return;
+  var vals = getMultiSelectValues(msId);
+  var total = el.querySelectorAll('input[type=checkbox]').length;
+  var btn = el.querySelector('.multi-select-btn');
+  if (btn) {
+    btn.textContent = vals.length > 0 && vals.length < total ? label + ' (' + vals.length + ')' : label;
+  }
+  applyFilters();
+}
+
+function applyFilters() {
+  var selectedDomains = getMultiSelectValues('domain-ms');
+  var selectedCrits = getMultiSelectValues('criticality-ms');
+
+  // Domain filter: show/hide entire sections (empty = show all)
+  var sections = document.querySelectorAll('.issue-section');
+  for (var i = 0; i < sections.length; i++) {
+    var domain = sections[i].getAttribute('data-domain');
+    sections[i].style.display = (selectedDomains.length === 0 || selectedDomains.indexOf(domain) >= 0) ? '' : 'none';
+  }
+
+  // Row-level filtering: respect target + criticality
+  var rows = document.querySelectorAll('.issue-row');
+  for (var i = 0; i < rows.length; i++) {
+    var row = rows[i];
+    var section = row.closest('.issue-section');
+    if (section && section.style.display === 'none') {
+      row.style.display = 'none';
+      var next = row.nextElementSibling;
+      if (next && next.classList.contains('detail-row')) next.style.display = 'none';
+      continue;
+    }
+
+    // Check target filter
+    var show = true;
+    if (_currentTarget && row.hasAttribute('data-targets')) {
+      var targetsStr = row.getAttribute('data-targets');
+      if (targetsStr && targetsStr !== '{}') {
+        try {
+          var targets = JSON.parse(targetsStr);
+          if (Object.keys(targets).length > 0 && !targets[_currentTarget]) {
+            show = false;
+          }
+        } catch(e) {}
+      }
+    }
+
+    // Check criticality filter
+    if (show && selectedCrits.length > 0) {
+      var crit = row.getAttribute('data-criticality');
+      if (selectedCrits.indexOf(crit) < 0) show = false;
+    }
+
+    row.style.display = show ? '' : 'none';
+    var nextRow = row.nextElementSibling;
+    if (nextRow && nextRow.classList.contains('detail-row')) {
+      if (!show) nextRow.style.display = 'none';
+    }
+  }
+}
+
+function clearAllFilters() {
+  document.querySelectorAll('.multi-select input[type=checkbox]').forEach(function(cb) { cb.checked = false; });
+  var domainBtn = document.querySelector('#domain-ms .multi-select-btn');
+  if (domainBtn) domainBtn.textContent = 'Domain';
+  var critBtn = document.querySelector('#criticality-ms .multi-select-btn');
+  if (critBtn) critBtn.textContent = 'Criticality';
+  applyFilters();
+}
+
+function onTargetChange(targetId) {
+  _currentTarget = targetId;
+  var rows = document.querySelectorAll('.issue-row[data-targets]');
+  var totalEffort = 0;
+  var domainCrits = {}; // domain -> {mandatory:0, potential:0, optional:0}
+
+  for (var i = 0; i < rows.length; i++) {
+    var row = rows[i];
+    var targets = JSON.parse(row.getAttribute('data-targets'));
+    var section = row.closest('.issue-section');
+    var domain = section ? section.getAttribute('data-domain') : '';
+
+    if (!targets || Object.keys(targets).length === 0) {
+      // No target data (e.g. security) — always show
+      var sp = parseFloat(row.querySelector('.sp-cell').textContent) || 0;
+      totalEffort += sp;
+      if (!domainCrits[domain]) domainCrits[domain] = {mandatory:0,potential:0,optional:0};
+      var crit = row.getAttribute('data-criticality') || 'optional';
+      domainCrits[domain][crit] = (domainCrits[domain][crit] || 0) + 1;
+      continue;
+    }
+
+    var override = targets[targetId];
+    if (!override) {
+      // Issue doesn't apply to this target
+      continue;
+    }
+
+    // Apply severity override
+    var newSeverity = (override.severity || row.getAttribute('data-default-severity') || '').toLowerCase();
+    row.setAttribute('data-criticality', newSeverity);
+    var critCell = row.querySelector('.crit-cell');
+    if (critCell) {
+      var critText = newSeverity === 'mandatory' ? 'Mandatory' : newSeverity === 'potential' ? 'Potential' : 'Optional';
+      var cssClass = newSeverity === 'mandatory' ? 'crit-square-mandatory' : newSeverity === 'potential' ? 'crit-square-potential' : 'crit-square-optional';
+      critCell.innerHTML = '<span class="crit-label"><span class="crit-square ' + cssClass + '"></span>' + critText + '</span>';
+    }
+
+    // Apply effort override
+    var newEffort = override.effort !== undefined ? override.effort : parseFloat(row.getAttribute('data-default-effort')) || 0;
+    var spCell = row.querySelector('.sp-cell');
+    if (spCell) spCell.textContent = newEffort;
+    totalEffort += newEffort;
+
+    if (!domainCrits[domain]) domainCrits[domain] = {mandatory:0,potential:0,optional:0};
+    domainCrits[domain][newSeverity] = (domainCrits[domain][newSeverity] || 0) + 1;
+  }
+
+  // Also add security findings effort (they don't have per-target data)
+  var secSection = document.querySelector('.issue-section[data-domain="security"]');
+  if (secSection) {
+    var secRows = secSection.querySelectorAll('.issue-row');
+    for (var j = 0; j < secRows.length; j++) {
+      if (!secRows[j].hasAttribute('data-targets') || secRows[j].getAttribute('data-targets') === '') {
+        var sp = parseFloat(secRows[j].querySelector('.sp-cell').textContent) || 0;
+        totalEffort += sp;
+        if (!domainCrits['security']) domainCrits['security'] = {mandatory:0,potential:0,optional:0};
+        var sc = secRows[j].getAttribute('data-criticality') || 'optional';
+        domainCrits['security'][sc] = (domainCrits['security'][sc] || 0) + 1;
+      }
+    }
+  }
+
+  // Update effort display
+  var label = totalEffort < 20 ? 'S' : totalEffort < 50 ? 'M' : totalEffort < 100 ? 'L' : 'XL';
+  var effortEl = document.getElementById('effort-display');
+  if (effortEl) effortEl.textContent = label + ' (total story points: ' + totalEffort + ')';
+
+  // Update donut charts
+  updateDonuts(domainCrits);
+
+  // Re-apply domain/criticality filters
+  applyFilters();
+}
+
+function updateDonuts(domainCrits) {
+  var container = document.getElementById('donut-container');
+  if (!container) return;
+  container.innerHTML = '';
+  var domainNames = {'cloud-readiness':'Cloud Readiness','java-upgrade':'Java Upgrade','dotnet-upgrade':'DotNET Upgrade','security':'Security'};
+  var domainOrder = ['cloud-readiness','java-upgrade','dotnet-upgrade','security'];
+  for (var d = 0; d < domainOrder.length; d++) {
+    var key = domainOrder[d];
+    var c = domainCrits[key];
+    if (!c || (c.mandatory + c.potential + c.optional) === 0) continue;
+    var total = c.mandatory + c.potential + c.optional;
+    var div = document.createElement('div');
+    div.className = 'domain-summary-item';
+    div.innerHTML = buildDonutSvg(c.mandatory, c.potential, c.optional) +
+      '<h3>' + domainNames[key] + '</h3>' +
+      '<div class="count">' + total + ' issue' + (total !== 1 ? 's' : '') + '</div>';
+    container.appendChild(div);
+  }
+}
+
+function buildDonutSvg(m, p, o) {
+  var total = m + p + o;
+  if (total === 0) return '<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;"><circle cx="50" cy="50" r="35" fill="none" stroke="#d0d7de" stroke-width="15" opacity="0.5"/></svg>';
+  var r = 35, circ = 2 * Math.PI * r, offset = 0;
+  var svg = '<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;transform:rotate(-90deg);">';
+  var segs = [{c:m,color:'var(--color-mandatory)'},{c:p,color:'var(--color-potential)'},{c:o,color:'var(--color-optional)'}];
+  for (var i = 0; i < segs.length; i++) {
+    if (segs[i].c === 0) continue;
+    var segLen = (segs[i].c / total) * circ;
+    var gap = total > segs[i].c ? 1.5 : 0;
+    var drawLen = Math.max(segLen - gap, 0.5);
+    svg += '<circle cx="50" cy="50" r="' + r + '" fill="none" stroke="' + segs[i].color + '" stroke-width="15" stroke-dasharray="' + drawLen.toFixed(2) + ' ' + circ.toFixed(2) + '" stroke-dashoffset="' + (-offset).toFixed(2) + '"/>';
+    offset += segLen;
+  }
+  svg += '</svg>';
+  return svg;
+}
+</script>
+<script>document.addEventListener('DOMContentLoaded', function() { onTargetChange('azure-container-apps'); });</script>
+</div></body></html>
